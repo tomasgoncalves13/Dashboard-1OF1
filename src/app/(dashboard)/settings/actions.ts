@@ -1,0 +1,42 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { getSessionUser } from "@/lib/supabase/server";
+import { prisma } from "@/lib/prisma";
+import { fullSync } from "@/lib/shopify/sync";
+import { shopifyGraphQL } from "@/lib/shopify/client";
+import { SHOP_QUERY } from "@/lib/shopify/queries";
+
+async function getOwnedStore() {
+  const user = await getSessionUser();
+  if (!user) throw new Error("Not authenticated");
+  const { ensureOwnedStore } = await import("@/lib/onboarding");
+  return ensureOwnedStore(user.id);
+}
+
+export async function testShopifyConnection() {
+  await getOwnedStore();
+  const data = await shopifyGraphQL<{ shop: { name: string; myshopifyDomain: string; currencyCode: string } }>(SHOP_QUERY);
+  return data.shop;
+}
+
+export async function runShopifyFullSync() {
+  const store = await getOwnedStore();
+
+  // Make sure the integration record exists & link the domain to the store.
+  await prisma.store.update({
+    where: { id: store.id },
+    data: { shopifyDomain: process.env.SHOPIFY_STORE_DOMAIN },
+  });
+  await prisma.integration.upsert({
+    where: { storeId_provider: { storeId: store.id, provider: "SHOPIFY" } },
+    update: { status: "CONNECTED" },
+    create: { storeId: store.id, provider: "SHOPIFY", status: "CONNECTED" },
+  });
+
+  const result = await fullSync(store.id);
+  revalidatePath("/dashboard");
+  revalidatePath("/orders");
+  revalidatePath("/products");
+  return result;
+}

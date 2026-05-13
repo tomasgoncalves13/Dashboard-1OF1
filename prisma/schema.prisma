@@ -1,0 +1,743 @@
+// Dashboard-1OF1 — Prisma schema
+// Single source of truth for the database.
+// Monetary fields use Decimal(14,2). Quantities use Int. Timestamps in UTC.
+// All FKs are explicit. Indexes added on every frequently-filtered column.
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["fullTextSearchPostgres"]
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ─────────────────────────────────────────────────────────────
+// AUTH & TENANCY
+// Supabase Auth owns the auth.users table. We mirror the user id
+// here so we can attach domain data and enforce RLS on app tables.
+// ─────────────────────────────────────────────────────────────
+
+model AppUser {
+  id          String   @id @db.Uuid // matches auth.users.id
+  email       String   @unique
+  fullName    String?
+  avatarUrl   String?
+  role        UserRole @default(OWNER)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  stores      Store[]
+  expenses    Expense[]
+  auditLogs   AuditLog[]
+
+  @@map("app_users")
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  STAFF
+  VIEWER
+}
+
+// ─────────────────────────────────────────────────────────────
+// STORES & INTEGRATIONS
+// A Store represents one Shopify shop. A user can have many.
+// Tokens are encrypted at rest (APP_ENCRYPTION_KEY).
+// ─────────────────────────────────────────────────────────────
+
+model Store {
+  id            String   @id @default(cuid())
+  ownerId       String   @db.Uuid
+  name          String
+  shopifyDomain String?  @unique
+  currency      String   @default("EUR") @db.Char(3)
+  timezone      String   @default("Europe/Lisbon")
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  owner            AppUser             @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  integrations     Integration[]
+  products         Product[]
+  variants         ProductVariant[]
+  orders           Order[]
+  customers        Customer[]
+  suppliers        Supplier[]
+  expenses         Expense[]
+  influencers      Influencer[]
+  influencerShipments InfluencerShipment[]
+  manualSales      ManualSale[]
+  adCampaigns      AdCampaign[]
+  stockMovements   StockMovement[]
+  uploads          Upload[]
+  analyticsSnapshots AnalyticsSnapshot[]
+
+  @@index([ownerId])
+  @@map("stores")
+}
+
+model Integration {
+  id            String           @id @default(cuid())
+  storeId       String
+  provider      IntegrationProvider
+  status        IntegrationStatus @default(DISCONNECTED)
+  accessToken   String?           // encrypted
+  refreshToken  String?           // encrypted
+  scope         String?
+  externalId    String?           // shop id, ad account id, etc.
+  metadata      Json?
+  lastSyncedAt  DateTime?
+  expiresAt     DateTime?
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, provider])
+  @@index([provider, status])
+  @@map("integrations")
+}
+
+enum IntegrationProvider {
+  SHOPIFY
+  META_ADS
+  GOOGLE_ADS
+  STRIPE
+  KLAVIYO
+}
+
+enum IntegrationStatus {
+  DISCONNECTED
+  CONNECTED
+  ERROR
+  REVOKED
+}
+
+// ─────────────────────────────────────────────────────────────
+// CATALOG
+// Product → ProductVariant (SKU level). Costs live on variants
+// because real COGS varies by size/colour. Product-level costs
+// are convenience defaults inherited by new variants.
+// ─────────────────────────────────────────────────────────────
+
+model Product {
+  id              String   @id @default(cuid())
+  storeId         String
+  shopifyId       String?
+  title           String
+  handle          String?
+  description     String?
+  imageUrl        String?
+  vendor          String?
+  productType     String?
+  tags            String[]
+  status          ProductStatus @default(ACTIVE)
+  supplierId      String?
+
+  defaultCost     Decimal? @db.Decimal(14, 2)
+  packagingCost   Decimal? @db.Decimal(14, 2)
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  store    Store            @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  supplier Supplier?        @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  variants ProductVariant[]
+
+  @@unique([storeId, shopifyId])
+  @@index([storeId, status])
+  @@index([storeId, title])
+  @@map("products")
+}
+
+enum ProductStatus {
+  ACTIVE
+  ARCHIVED
+  DRAFT
+}
+
+model ProductVariant {
+  id              String   @id @default(cuid())
+  storeId         String
+  productId       String
+  shopifyId       String?
+  sku             String?
+  barcode         String?
+  title           String   // e.g. "M / Red"
+  price           Decimal  @db.Decimal(14, 2)
+  compareAtPrice  Decimal? @db.Decimal(14, 2)
+
+  // ── COGS / cost breakdown (per unit) ──
+  unitCost        Decimal? @db.Decimal(14, 2) // product cost from supplier
+  shippingCost    Decimal? @db.Decimal(14, 2) // inbound shipping per unit (optional)
+  packagingCost   Decimal? @db.Decimal(14, 2)
+  customsCost     Decimal? @db.Decimal(14, 2)
+
+  // ── Inventory ──
+  stockOnHand     Int      @default(0)
+  stockReserved   Int      @default(0)
+  reorderPoint    Int?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  store    Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  orderItems            OrderItem[]
+  manualSaleItems       ManualSaleItem[]
+  influencerShipmentItems InfluencerShipmentItem[]
+  stockMovements        StockMovement[]
+
+  @@unique([storeId, shopifyId])
+  @@index([storeId, sku])
+  @@index([productId])
+  @@index([storeId, stockOnHand])
+  @@map("product_variants")
+}
+
+// ─────────────────────────────────────────────────────────────
+// CUSTOMERS
+// ─────────────────────────────────────────────────────────────
+
+model Customer {
+  id          String   @id @default(cuid())
+  storeId     String
+  shopifyId   String?
+  email       String?
+  firstName   String?
+  lastName    String?
+  phone       String?
+  country     String?
+  city        String?
+  marketingOptIn Boolean @default(false)
+  ordersCount Int      @default(0)
+  totalSpent  Decimal  @default(0) @db.Decimal(14, 2)
+  firstOrderAt DateTime?
+  lastOrderAt  DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  store  Store   @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@unique([storeId, shopifyId])
+  @@index([storeId, email])
+  @@index([storeId, country])
+  @@map("customers")
+}
+
+// ─────────────────────────────────────────────────────────────
+// ORDERS
+// One row per Shopify order. Financial breakdown is denormalized
+// here so analytics queries don't have to recompute.
+// ─────────────────────────────────────────────────────────────
+
+model Order {
+  id                String   @id @default(cuid())
+  storeId           String
+  shopifyId         String?
+  orderNumber       String?
+  customerId        String?
+  channel           SalesChannel @default(SHOPIFY)
+
+  // ── Money (all in store currency unless noted) ──
+  currency          String   @default("EUR") @db.Char(3)
+  subtotal          Decimal  @default(0) @db.Decimal(14, 2)
+  discountTotal     Decimal  @default(0) @db.Decimal(14, 2)
+  shippingCharged   Decimal  @default(0) @db.Decimal(14, 2)
+  taxTotal          Decimal  @default(0) @db.Decimal(14, 2)
+  total             Decimal  @default(0) @db.Decimal(14, 2)
+  refundedTotal     Decimal  @default(0) @db.Decimal(14, 2)
+
+  // ── Cost breakdown (computed by profit engine) ──
+  cogsTotal         Decimal  @default(0) @db.Decimal(14, 2)
+  shippingCost      Decimal  @default(0) @db.Decimal(14, 2) // what WE paid to ship
+  packagingCost     Decimal  @default(0) @db.Decimal(14, 2)
+  paymentFees       Decimal  @default(0) @db.Decimal(14, 2)
+  attributedAdSpend Decimal  @default(0) @db.Decimal(14, 2)
+  influencerCost    Decimal  @default(0) @db.Decimal(14, 2)
+  otherCosts        Decimal  @default(0) @db.Decimal(14, 2)
+
+  grossProfit       Decimal  @default(0) @db.Decimal(14, 2) // revenue - COGS
+  netProfit         Decimal  @default(0) @db.Decimal(14, 2) // gross - all costs
+  marginPct         Decimal? @db.Decimal(7, 4)
+
+  // ── Status ──
+  financialStatus   String?
+  fulfillmentStatus String?
+  cancelledAt       DateTime?
+
+  shippingCountry   String?
+  shippingCity      String?
+
+  processedAt       DateTime
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  store    Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  customer Customer?  @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  items    OrderItem[]
+  refunds  Refund[]
+
+  @@unique([storeId, shopifyId])
+  @@index([storeId, processedAt])
+  @@index([storeId, channel])
+  @@index([storeId, financialStatus])
+  @@index([customerId])
+  @@map("orders")
+}
+
+enum SalesChannel {
+  SHOPIFY
+  MANUAL
+  CLUB
+  EVENT
+  POPUP
+  WHOLESALE
+  INFLUENCER_GIFT
+}
+
+model OrderItem {
+  id            String   @id @default(cuid())
+  orderId       String
+  variantId     String?
+  shopifyLineId String?
+  title         String
+  sku           String?
+  quantity      Int
+  unitPrice     Decimal  @db.Decimal(14, 2)
+  unitCost      Decimal  @default(0) @db.Decimal(14, 2) // snapshot of variant cost at sale time
+  discount      Decimal  @default(0) @db.Decimal(14, 2)
+  totalRevenue  Decimal  @db.Decimal(14, 2)
+  totalCost     Decimal  @default(0) @db.Decimal(14, 2)
+
+  order   Order           @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+
+  @@index([orderId])
+  @@index([variantId])
+  @@map("order_items")
+}
+
+model Refund {
+  id          String   @id @default(cuid())
+  orderId     String
+  shopifyId   String?
+  amount      Decimal  @db.Decimal(14, 2)
+  reason      String?
+  processedAt DateTime @default(now())
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@map("refunds")
+}
+
+// ─────────────────────────────────────────────────────────────
+// STOCK MOVEMENTS — audit log of every quantity change
+// ─────────────────────────────────────────────────────────────
+
+model StockMovement {
+  id          String   @id @default(cuid())
+  storeId     String
+  variantId   String
+  type        StockMovementType
+  quantity    Int      // signed: positive = in, negative = out
+  reference   String?  // e.g. order id, manual sale id, shipment id
+  note        String?
+  createdAt   DateTime @default(now())
+  createdBy   String?  @db.Uuid
+
+  store   Store          @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+
+  @@index([storeId, createdAt])
+  @@index([variantId, createdAt])
+  @@map("stock_movements")
+}
+
+enum StockMovementType {
+  PURCHASE          // restocking from supplier
+  SHOPIFY_SALE
+  MANUAL_SALE
+  CLUB_SALE
+  INFLUENCER_GIFT
+  RETURN
+  ADJUSTMENT
+  LOSS
+}
+
+// ─────────────────────────────────────────────────────────────
+// SUPPLIERS
+// ─────────────────────────────────────────────────────────────
+
+model Supplier {
+  id        String   @id @default(cuid())
+  storeId   String
+  name      String
+  contact   String?
+  email     String?
+  phone     String?
+  country   String?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  store    Store     @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  products Product[]
+
+  @@index([storeId])
+  @@map("suppliers")
+}
+
+// ─────────────────────────────────────────────────────────────
+// INFLUENCERS
+// ─────────────────────────────────────────────────────────────
+
+model Influencer {
+  id          String   @id @default(cuid())
+  storeId     String
+  name        String
+  instagram   String?
+  tiktok      String?
+  email       String?
+  country     String?
+  followers   Int?
+  engagementRate Decimal? @db.Decimal(7, 4)
+  status      InfluencerStatus @default(PROSPECT)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  store     Store                @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  shipments InfluencerShipment[]
+  payments  InfluencerPayment[]
+
+  @@index([storeId, status])
+  @@map("influencers")
+}
+
+enum InfluencerStatus {
+  PROSPECT
+  CONTACTED
+  ACTIVE
+  COMPLETED
+  PAUSED
+  BLACKLIST
+}
+
+model InfluencerShipment {
+  id              String   @id @default(cuid())
+  storeId         String
+  influencerId    String
+  trackingNumber  String?
+  carrier         String?
+  shippingCost    Decimal  @default(0) @db.Decimal(14, 2)
+  status          ShipmentStatus @default(PREPARING)
+  sentAt          DateTime?
+  deliveredAt     DateTime?
+  contentPostedAt DateTime?
+  contentUrl      String?
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  store      Store                    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  influencer Influencer               @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+  items      InfluencerShipmentItem[]
+
+  @@index([storeId, status])
+  @@index([influencerId])
+  @@map("influencer_shipments")
+}
+
+enum ShipmentStatus {
+  PREPARING
+  SENT
+  DELIVERED
+  POSTED
+  NO_POST
+  CANCELLED
+}
+
+model InfluencerShipmentItem {
+  id          String  @id @default(cuid())
+  shipmentId  String
+  variantId   String
+  quantity    Int
+  unitCost    Decimal @db.Decimal(14, 2) // snapshot
+
+  shipment InfluencerShipment @relation(fields: [shipmentId], references: [id], onDelete: Cascade)
+  variant  ProductVariant     @relation(fields: [variantId], references: [id], onDelete: Restrict)
+
+  @@index([shipmentId])
+  @@map("influencer_shipment_items")
+}
+
+model InfluencerPayment {
+  id           String   @id @default(cuid())
+  influencerId String
+  amount       Decimal  @db.Decimal(14, 2)
+  currency     String   @default("EUR") @db.Char(3)
+  method       String?
+  paidAt       DateTime
+  note         String?
+  createdAt    DateTime @default(now())
+
+  influencer Influencer @relation(fields: [influencerId], references: [id], onDelete: Cascade)
+
+  @@index([influencerId, paidAt])
+  @@map("influencer_payments")
+}
+
+// ─────────────────────────────────────────────────────────────
+// EXPENSES
+// ─────────────────────────────────────────────────────────────
+
+model Expense {
+  id          String   @id @default(cuid())
+  storeId     String
+  createdById String?  @db.Uuid
+  category    ExpenseCategory
+  vendor      String?
+  description String?
+  amount      Decimal  @db.Decimal(14, 2)
+  currency    String   @default("EUR") @db.Char(3)
+  incurredOn  DateTime @db.Date
+  recurring   Boolean  @default(false)
+  recurringPeriod RecurringPeriod?
+  invoiceUrl  String?  // Supabase Storage path
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  store     Store    @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  createdBy AppUser? @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([storeId, incurredOn])
+  @@index([storeId, category])
+  @@map("expenses")
+}
+
+enum ExpenseCategory {
+  META_ADS
+  GOOGLE_ADS
+  TIKTOK_ADS
+  SOFTWARE
+  SHOPIFY_APPS
+  FREELANCERS
+  SUPPLIERS
+  BULK_INVENTORY
+  SHIPPING
+  PACKAGING
+  INFLUENCERS
+  SUBSCRIPTIONS
+  TAXES
+  RENT
+  TRAVEL
+  EVENTS
+  MISC
+}
+
+enum RecurringPeriod {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  YEARLY
+}
+
+// ─────────────────────────────────────────────────────────────
+// MANUAL SALES (clubs, events, popups, wholesale, personal)
+// ─────────────────────────────────────────────────────────────
+
+model ManualSale {
+  id            String   @id @default(cuid())
+  storeId       String
+  channel       SalesChannel
+  eventName     String?
+  customerName  String?
+  notes         String?
+
+  currency      String   @default("EUR") @db.Char(3)
+  subtotal      Decimal  @default(0) @db.Decimal(14, 2)
+  discount      Decimal  @default(0) @db.Decimal(14, 2)
+  total         Decimal  @default(0) @db.Decimal(14, 2)
+  cogsTotal     Decimal  @default(0) @db.Decimal(14, 2)
+  otherCosts    Decimal  @default(0) @db.Decimal(14, 2)
+  netProfit     Decimal  @default(0) @db.Decimal(14, 2)
+
+  soldAt        DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  store Store            @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  items ManualSaleItem[]
+
+  @@index([storeId, soldAt])
+  @@index([storeId, channel])
+  @@map("manual_sales")
+}
+
+model ManualSaleItem {
+  id           String  @id @default(cuid())
+  manualSaleId String
+  variantId    String
+  quantity     Int
+  unitPrice    Decimal @db.Decimal(14, 2)
+  unitCost     Decimal @default(0) @db.Decimal(14, 2)
+  totalRevenue Decimal @db.Decimal(14, 2)
+  totalCost    Decimal @default(0) @db.Decimal(14, 2)
+
+  sale    ManualSale     @relation(fields: [manualSaleId], references: [id], onDelete: Cascade)
+  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: Restrict)
+
+  @@index([manualSaleId])
+  @@map("manual_sale_items")
+}
+
+// ─────────────────────────────────────────────────────────────
+// AD CAMPAIGNS (Meta, Google, TikTok)
+// AdMetric holds per-day stats per campaign for time series.
+// ─────────────────────────────────────────────────────────────
+
+model AdCampaign {
+  id              String   @id @default(cuid())
+  storeId         String
+  provider        AdProvider
+  externalId      String   // Meta campaign id, etc.
+  name            String
+  objective       String?
+  status          String?
+  startedAt       DateTime?
+  endedAt         DateTime?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  store   Store      @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  metrics AdMetric[]
+
+  @@unique([storeId, provider, externalId])
+  @@index([storeId, provider])
+  @@map("ad_campaigns")
+}
+
+enum AdProvider {
+  META
+  GOOGLE
+  TIKTOK
+}
+
+model AdMetric {
+  id           String   @id @default(cuid())
+  campaignId   String
+  date         DateTime @db.Date
+  spend        Decimal  @default(0) @db.Decimal(14, 2)
+  impressions  Int      @default(0)
+  clicks       Int      @default(0)
+  purchases    Int      @default(0)
+  attributedRevenue Decimal @default(0) @db.Decimal(14, 2)
+  roas         Decimal? @db.Decimal(10, 4)
+  cpa          Decimal? @db.Decimal(14, 2)
+  ctr          Decimal? @db.Decimal(7, 4)
+  cpc          Decimal? @db.Decimal(14, 2)
+  cpm          Decimal? @db.Decimal(14, 2)
+
+  campaign AdCampaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+
+  @@unique([campaignId, date])
+  @@index([date])
+  @@map("ad_metrics")
+}
+
+// ─────────────────────────────────────────────────────────────
+// UPLOADS (Excel imports, invoices)
+// ─────────────────────────────────────────────────────────────
+
+model Upload {
+  id          String   @id @default(cuid())
+  storeId     String
+  filename    String
+  storagePath String
+  mimeType    String?
+  size        Int?
+  purpose     UploadPurpose
+  status      UploadStatus @default(PENDING)
+  meta        Json?       // column mapping, row counts, errors
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@index([storeId, purpose])
+  @@map("uploads")
+}
+
+enum UploadPurpose {
+  EXPENSE_IMPORT
+  ORDER_IMPORT
+  INFLUENCER_IMPORT
+  PRODUCT_IMPORT
+  INVOICE
+  OTHER
+}
+
+enum UploadStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+// ─────────────────────────────────────────────────────────────
+// ANALYTICS SNAPSHOTS — pre-computed daily rollups for fast dashboards
+// ─────────────────────────────────────────────────────────────
+
+model AnalyticsSnapshot {
+  id          String   @id @default(cuid())
+  storeId     String
+  date        DateTime @db.Date
+  revenue     Decimal  @default(0) @db.Decimal(14, 2)
+  orders      Int      @default(0)
+  cogs        Decimal  @default(0) @db.Decimal(14, 2)
+  adSpend     Decimal  @default(0) @db.Decimal(14, 2)
+  shippingCost Decimal @default(0) @db.Decimal(14, 2)
+  fees        Decimal  @default(0) @db.Decimal(14, 2)
+  influencerCost Decimal @default(0) @db.Decimal(14, 2)
+  otherExpenses Decimal @default(0) @db.Decimal(14, 2)
+  refunds     Decimal  @default(0) @db.Decimal(14, 2)
+  grossProfit Decimal  @default(0) @db.Decimal(14, 2)
+  netProfit   Decimal  @default(0) @db.Decimal(14, 2)
+  customers   Int      @default(0)
+  newCustomers Int     @default(0)
+  computedAt  DateTime @default(now())
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, date])
+  @@index([storeId, date])
+  @@map("analytics_snapshots")
+}
+
+// ─────────────────────────────────────────────────────────────
+// AUDIT LOG
+// ─────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?  @db.Uuid
+  action     String
+  entityType String
+  entityId   String?
+  diff       Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+
+  user AppUser? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([entityType, entityId])
+  @@index([userId, createdAt])
+  @@map("audit_logs")
+}
