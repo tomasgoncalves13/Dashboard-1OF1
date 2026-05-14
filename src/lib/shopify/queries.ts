@@ -74,6 +74,7 @@ export const ORDERS_QUERY = /* GraphQL */ `
           cancelledAt
           displayFinancialStatus
           displayFulfillmentStatus
+          paymentGatewayNames
           currencyCode
           customer { id }
           shippingAddress { country city }

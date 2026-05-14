@@ -1,20 +1,22 @@
 import { syncProducts } from "./products";
 import { syncCustomers } from "./customers";
 import { syncOrders } from "./orders";
+import { syncPayouts } from "./payouts";
 import { prisma } from "@/lib/prisma";
 
-/** Full sync: products → customers → orders (order matters: orders depend on the others). */
+/** Full sync: products → customers → orders → payouts. */
 export async function fullSync(storeId: string) {
   const products = await syncProducts(storeId);
   const customers = await syncCustomers(storeId);
   const orders = await syncOrders(storeId);
+  const payouts = await syncPayouts(storeId);
 
   await prisma.integration.updateMany({
     where: { storeId, provider: "SHOPIFY" },
     data: { lastSyncedAt: new Date(), status: "CONNECTED" },
   });
 
-  return { ...products, ...customers, ...orders };
+  return { ...products, ...customers, ...orders, ...payouts };
 }
 
 /** Incremental: only orders updated since `since` (ISO date string). */
@@ -27,4 +29,4 @@ export async function incrementalSync(storeId: string, since: string) {
   return orders;
 }
 
-export { syncProducts, syncCustomers, syncOrders };
+export { syncProducts, syncCustomers, syncOrders, syncPayouts };

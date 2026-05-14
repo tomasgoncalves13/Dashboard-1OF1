@@ -74,9 +74,97 @@ model Store {
   stockMovements   StockMovement[]
   uploads          Upload[]
   analyticsSnapshots AnalyticsSnapshot[]
+  payouts          Payout[]
+  eupagoTransactions EupagoTransaction[]
+  eupagoPayouts    EupagoPayout[]
 
   @@index([ownerId])
   @@map("stores")
+}
+
+model Payout {
+  id                String   @id @default(cuid())
+  storeId           String
+  shopifyId         String
+  status            String   // PAID | IN_TRANSIT | SCHEDULED | FAILED | CANCELLED
+  issuedAt          DateTime
+  net               Decimal  @db.Decimal(14, 2)
+  currency          String   @db.Char(3)
+  chargesGross      Decimal  @default(0) @db.Decimal(14, 2)
+  chargesFee        Decimal  @default(0) @db.Decimal(14, 2)
+  refundsGross      Decimal  @default(0) @db.Decimal(14, 2)
+  refundsFee        Decimal  @default(0) @db.Decimal(14, 2)
+  adjustmentsGross  Decimal  @default(0) @db.Decimal(14, 2)
+  adjustmentsFee    Decimal  @default(0) @db.Decimal(14, 2)
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, shopifyId])
+  @@index([storeId, issuedAt])
+  @@index([storeId, status])
+  @@map("payouts")
+}
+
+model EupagoTransaction {
+  id              String   @id @default(cuid())
+  storeId         String
+  trid            String   // Eupago transaction id (unique per channel)
+  identifier      String?
+  reference       String?
+  entity          String?
+  amount          Decimal  @db.Decimal(14, 2)
+  commission      Decimal  @default(0) @db.Decimal(14, 4) // base commission
+  commissionIva   Decimal  @default(0) @db.Decimal(14, 4)
+  totalCommission Decimal  @default(0) @db.Decimal(14, 4) // total fees (commission + IVA)
+  net             Decimal  @db.Decimal(14, 2) // amount - totalCommission
+  status          String   // Paga | Reembolsada | Cancelada | Expirada | Erro
+  method          String?  // MB / MBWAY / CARTAO / etc (inferred from entity)
+  channelId       String?
+  channelName     String?
+  datePayment     DateTime
+  dateTransfer    DateTime?
+  bookingDate     DateTime?
+  source          String   @default("API") // API | CSV | WEBHOOK
+  raw             Json?
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, trid])
+  @@index([storeId, datePayment])
+  @@index([storeId, status])
+  @@map("eupago_transactions")
+}
+
+model EupagoPayout {
+  id            String   @id @default(cuid())
+  storeId       String
+  status        String   // processada
+  issuedAt      DateTime // "Data" — date Eupago issued the payout
+  paymentDate   DateTime // "Data de Pagamento" — when funds landed in bank
+  netAmount     Decimal  @db.Decimal(14, 2) // "Valor" — to bank
+  grossAmount   Decimal  @db.Decimal(14, 2) // "Valor Pago" — gross customer payments
+  commission    Decimal  @default(0) @db.Decimal(14, 2)
+  iva           Decimal  @default(0) @db.Decimal(14, 2)
+  iban          String?
+  fileRef       String   // "Nome Ficheiro" — SEPA file id, unique per payout
+  periodStart   DateTime?
+  periodEnd     DateTime?
+  source        String   @default("CSV") // CSV | API
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, fileRef])
+  @@index([storeId, paymentDate])
+  @@map("eupago_payouts")
 }
 
 model Integration {
@@ -269,6 +357,7 @@ model Order {
   // ── Status ──
   financialStatus   String?
   fulfillmentStatus String?
+  paymentGateway    String?
   cancelledAt       DateTime?
 
   shippingCountry   String?

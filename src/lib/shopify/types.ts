@@ -51,6 +51,7 @@ export type ShopifyOrderNode = {
   cancelledAt: string | null;
   displayFinancialStatus: string | null;
   displayFulfillmentStatus: string | null;
+  paymentGatewayNames: string[];
   currencyCode: string;
   customer: { id: string } | null;
   shippingAddress: { country: string | null; city: string | null } | null;
