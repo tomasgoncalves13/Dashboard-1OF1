@@ -9,10 +9,22 @@ import {
   getDailyRevenue,
   getMoneyToBank,
   getGatewayBreakdown,
+  getPhysicalKpis,
+  getMonthlyPnL,
   type KpiSet,
   type GatewayRow,
+  type PhysicalKpiSet,
+  type MonthlyPnLRow,
 } from "@/lib/dashboard/kpis";
 import { DateRangePicker } from "@/components/dashboard/date-range-picker";
+
+const CHANNEL_LABELS: Record<string, string> = {
+  CLUB: "Clubes",
+  MANUAL: "Venda própria",
+  EVENT: "Evento",
+  POPUP: "Pop-up",
+  WHOLESALE: "Wholesale",
+};
 
 type Money = {
   payoutsNet: number;
@@ -36,13 +48,19 @@ export default async function DashboardPage({
   const sp = await searchParams;
   const range = resolveRange(sp);
 
-  const [paid, all, daily, money, gateways] = await Promise.all([
+  const [paid, all, daily, money, gateways, physical, monthlyPnL] = await Promise.all([
     getKpis(store.id, range.from, range.to, { paidOnly: true }),
     getKpis(store.id, range.from, range.to, { paidOnly: false }),
     getDailyRevenue(store.id, range.from, range.to, { paidOnly: true }),
     getMoneyToBank(store.id, range.from, range.to),
     getGatewayBreakdown(store.id, range.from, range.to),
+    getPhysicalKpis(store.id, range.from, range.to),
+    getMonthlyPnL(store.id, 6),
   ]);
+
+  const currency = store.currency;
+  const totalRevenue = paid.revenue + physical.revenue;
+  const totalNetProfit = paid.netProfit + physical.grossProfit;
 
   return (
     <div className="space-y-6">
@@ -54,7 +72,39 @@ export default async function DashboardPage({
         <DateRangePicker active={range.preset} />
       </div>
 
-      <KpiGrid kpis={paid} currency={store.currency} money={money} />
+      {/* Combined headline */}
+      {physical.salesCount > 0 && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: "Revenue total", value: formatMoney(totalRevenue, currency), hint: "Online + físico" },
+            { label: "Profit combinado", value: formatMoney(totalNetProfit, currency), hint: "Ecom net + físico gross" },
+            {
+              label: "Online revenue",
+              value: formatMoney(paid.revenue, currency),
+              hint: `${paid.ordersCount} encomendas`,
+            },
+            {
+              label: "Físico revenue",
+              value: formatMoney(physical.revenue, currency),
+              hint: `${physical.salesCount} vendas`,
+            },
+          ].map((k) => (
+            <Card key={k.label} className="bg-primary/5 border-primary/20">
+              <CardHeader className="pb-1"><CardTitle className="text-xs">{k.label}</CardTitle></CardHeader>
+              <CardContent>
+                <div className="text-xl font-semibold">{k.value}</div>
+                {k.hint && <p className="text-[11px] text-muted-foreground mt-0.5">{k.hint}</p>}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* Ecommerce KPIs */}
+      <div>
+        <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">Ecommerce (Shopify)</h2>
+        <KpiGrid kpis={paid} currency={currency} money={money} />
+      </div>
 
       <Card>
         <CardHeader>
@@ -69,16 +119,28 @@ export default async function DashboardPage({
         </CardContent>
       </Card>
 
-      <GatewayBreakdown rows={gateways} currency={store.currency} money={money} />
+      <GatewayBreakdown rows={gateways} currency={currency} money={money} />
 
+      {/* Physical Sales */}
+      {physical.salesCount > 0 && (
+        <div>
+          <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">Vendas Físicas</h2>
+          <PhysicalSection physical={physical} currency={currency} />
+        </div>
+      )}
+
+      {/* Monthly P&L */}
+      <MonthlyPnLTable rows={monthlyPnL} currency={currency} />
+
+      {/* Audit */}
       <div className="space-y-3 pt-4 border-t">
         <div>
           <h2 className="text-lg font-semibold tracking-tight">Auditoria · todas as encomendas</h2>
           <p className="text-xs text-muted-foreground">
-            Inclui pendentes, expiradas e reembolsadas. Para confirmares que os valores do Shopify batem certo.
+            Inclui pendentes, expiradas e reembolsadas.
           </p>
         </div>
-        <KpiGrid kpis={all} currency={store.currency} muted />
+        <KpiGrid kpis={all} currency={currency} muted />
       </div>
     </div>
   );
@@ -126,6 +188,57 @@ function KpiGrid({
           </CardContent>
         </Card>
       ))}
+    </div>
+  );
+}
+
+function PhysicalSection({ physical, currency }: { physical: PhysicalKpiSet; currency: string }) {
+  return (
+    <div className="space-y-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {[
+          { label: "Revenue", value: formatMoney(physical.revenue, currency) },
+          { label: "COGS", value: formatMoney(physical.cogs, currency) },
+          { label: "Gross profit", value: formatMoney(physical.grossProfit, currency) },
+          { label: "Margem", value: physical.margin !== null ? `${physical.margin.toFixed(1)}%` : "—" },
+        ].map((k) => (
+          <Card key={k.label}>
+            <CardHeader className="pb-2"><CardTitle>{k.label}</CardTitle></CardHeader>
+            <CardContent><div className="text-2xl font-semibold">{k.value}</div></CardContent>
+          </Card>
+        ))}
+      </div>
+      {physical.byChannel.length > 0 && (
+        <Card>
+          <CardHeader><CardTitle>Por canal</CardTitle></CardHeader>
+          <CardContent className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="text-xs text-muted-foreground border-b">
+                <tr>
+                  <th className="text-left font-medium py-2">Canal</th>
+                  <th className="text-right font-medium py-2">Vendas</th>
+                  <th className="text-right font-medium py-2">Revenue</th>
+                  <th className="text-right font-medium py-2">Gross profit</th>
+                  <th className="text-right font-medium py-2">Margem</th>
+                </tr>
+              </thead>
+              <tbody>
+                {physical.byChannel.map((r) => (
+                  <tr key={r.channel} className="border-b last:border-0">
+                    <td className="py-2 font-medium">{CHANNEL_LABELS[r.channel] ?? r.channel}</td>
+                    <td className="py-2 text-right tabular-nums">{r.count}</td>
+                    <td className="py-2 text-right tabular-nums">{formatMoney(r.revenue, currency)}</td>
+                    <td className="py-2 text-right tabular-nums">{formatMoney(r.grossProfit, currency)}</td>
+                    <td className="py-2 text-right tabular-nums text-muted-foreground">
+                      {r.revenue > 0 ? `${((r.grossProfit / r.revenue) * 100).toFixed(1)}%` : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
@@ -193,9 +306,70 @@ function GatewayBreakdown({
           </table>
         </div>
         <p className="text-[11px] text-muted-foreground leading-relaxed">
-          Shopify Payments e Eupago mostram o net real (depois das fees) — dados das APIs respetivas.
-          PayPal, Stripe e outros usam a revenue bruta da encomenda (não temos acesso às fees via API).
-          Eupago só guarda dados dos últimos 3 meses na API — para histórico antigo, importa CSV do backoffice.
+          Shopify Payments e Eupago mostram o net real (depois das fees).
+          PayPal, Stripe e outros usam a revenue bruta da encomenda.
+          Eupago só guarda dados dos últimos 3 meses na API — para histórico antigo, importa CSV.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function MonthlyPnLTable({ rows, currency }: { rows: MonthlyPnLRow[]; currency: string }) {
+  if (rows.every((r) => r.ecomRevenue === 0 && r.physRevenue === 0)) return null;
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>P&L mensal — últimos 6 meses</CardTitle>
+      </CardHeader>
+      <CardContent className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="text-xs text-muted-foreground border-b">
+            <tr>
+              <th className="text-left font-medium py-2">Mês</th>
+              <th className="text-right font-medium py-2">Revenue online</th>
+              <th className="text-right font-medium py-2">Net profit online</th>
+              <th className="text-right font-medium py-2">Revenue físico</th>
+              <th className="text-right font-medium py-2">Gross físico</th>
+              <th className="text-right font-medium py-2">Despesas</th>
+              <th className="text-right font-medium py-2 text-foreground">Net profit</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => {
+              const [yyyy, mm] = r.month.split("-");
+              const label = new Date(Number(yyyy), Number(mm) - 1).toLocaleString("pt-PT", {
+                month: "short",
+                year: "numeric",
+              });
+              return (
+                <tr key={r.month} className="border-b last:border-0">
+                  <td className="py-2 font-medium capitalize">{label}</td>
+                  <td className="py-2 text-right tabular-nums text-muted-foreground">
+                    {formatMoney(r.ecomRevenue, currency)}
+                  </td>
+                  <td className="py-2 text-right tabular-nums">
+                    {formatMoney(r.ecomNetProfit, currency)}
+                  </td>
+                  <td className="py-2 text-right tabular-nums text-muted-foreground">
+                    {r.physRevenue > 0 ? formatMoney(r.physRevenue, currency) : "—"}
+                  </td>
+                  <td className="py-2 text-right tabular-nums">
+                    {r.physGrossProfit > 0 ? formatMoney(r.physGrossProfit, currency) : "—"}
+                  </td>
+                  <td className="py-2 text-right tabular-nums text-destructive">
+                    {r.expenses > 0 ? `−${formatMoney(r.expenses, currency)}` : "—"}
+                  </td>
+                  <td className={`py-2 text-right tabular-nums font-semibold ${r.netProfit >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                    {formatMoney(r.netProfit, currency)}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+        <p className="text-[11px] text-muted-foreground mt-3">
+          Net profit = ecom net (pós fees + embalagem + ad spend) + gross físico − despesas registadas.
         </p>
       </CardContent>
     </Card>

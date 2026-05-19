@@ -51,3 +51,53 @@ export async function updateInfluencerRevenue(influencerId: string, revenue: num
   });
   revalidatePath("/influencers");
 }
+
+export async function addShipment(data: {
+  influencerId: string;
+  items: { variantId: string; quantity: number; unitCost: number }[];
+  shippingCost: number;
+  carrier?: string;
+  trackingNumber?: string;
+  contentType?: string;
+  notes?: string;
+}) {
+  const store = await getStore();
+  await prisma.$transaction(async (tx) => {
+    const shipment = await tx.influencerShipment.create({
+      data: {
+        storeId: store.id,
+        influencerId: data.influencerId,
+        shippingCost: data.shippingCost,
+        carrier: data.carrier || null,
+        trackingNumber: data.trackingNumber || null,
+        contentType: (data.contentType as never) || null,
+        notes: data.notes || null,
+        status: "PREPARING",
+        items: {
+          create: data.items.map((item) => ({
+            variantId: item.variantId,
+            quantity: item.quantity,
+            unitCost: item.unitCost,
+          })),
+        },
+      },
+    });
+    for (const item of data.items) {
+      await tx.productVariant.update({
+        where: { id: item.variantId },
+        data: { stockOnHand: { decrement: item.quantity } },
+      });
+      await tx.stockMovement.create({
+        data: {
+          storeId: store.id,
+          variantId: item.variantId,
+          type: "INFLUENCER_GIFT",
+          quantity: -item.quantity,
+          reference: shipment.id,
+        },
+      });
+    }
+  });
+  revalidatePath("/influencers");
+  revalidatePath("/inventory");
+}

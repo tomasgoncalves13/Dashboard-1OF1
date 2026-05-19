@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { calcClubCommission } from "./commission";
 
 // ── Club CRUD ──────────────────────────────────────────────
@@ -25,7 +26,7 @@ export async function createClub(
   data: {
     name: string;
     commissionEnabled: boolean;
-    commissionTiers: unknown;
+    commissionTiers: Prisma.InputJsonValue;
     notes?: string;
   },
 ) {
@@ -38,7 +39,7 @@ export async function updateClub(
   data: {
     name?: string;
     commissionEnabled?: boolean;
-    commissionTiers?: unknown;
+    commissionTiers?: Prisma.InputJsonValue;
     isActive?: boolean;
     notes?: string;
   },

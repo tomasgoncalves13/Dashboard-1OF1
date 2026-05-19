@@ -22,7 +22,7 @@ async function getStore() {
 export async function actionCreateClub(data: {
   name: string;
   commissionEnabled: boolean;
-  commissionTiers: unknown;
+  commissionTiers: import("@prisma/client").Prisma.InputJsonValue;
   notes?: string;
 }) {
   const store = await getStore();
@@ -35,7 +35,7 @@ export async function actionUpdateClub(
   data: {
     name?: string;
     commissionEnabled?: boolean;
-    commissionTiers?: unknown;
+    commissionTiers?: import("@prisma/client").Prisma.InputJsonValue;
     isActive?: boolean;
     notes?: string;
   },

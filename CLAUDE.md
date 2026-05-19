@@ -43,7 +43,8 @@ Route groups separate auth from the main shell:
 | `/costs` | Cost catalog | Product unit costs + per-order overheads config |
 | `/products` | Catalog | Product/variant management |
 | `/inventory` | Inventory | Stock per variant, movement log, adjust dialog |
-| `/clubs` | Physical Sales | Club management, physical sale registration, monthly commission |
+| `/clubs` | Physical Sales | Club list, monthly commission summary, sale registration |
+| `/clubs/[clubId]` | Club Detail | Per-product pricing, commission tier config, sales history |
 | `/customers` | Customers | Shopify customer sync |
 | `/influencers` | Influencers | Pipeline by status, ROI tracking, discount codes |
 | `/ads` | Ads | Ad campaign metrics (Meta/Google/TikTok) |
@@ -78,6 +79,7 @@ Every query must be scoped to `storeId` — retrieve it via `getSessionUser()` f
 **`OrderCostConfig`** (one per store, configurable in `/costs`): freeGiftCost (0.88€), bubbleMailerCost (0.69€), cardCost (0.01€), stickerCost (0.06€). Changing config triggers `profit/recalculate.all` Inngest job to retroactively update all orders.
 
 **Physical sales (clubs + self):**
+- Stored as `ManualSale` records with `clubId` FK (despite the model name, all physical sales go through this table)
 - COGS = Σ (quantity × variant.unitCost)
 - grossProfit = revenue − COGS
 - Commission = progressive tier (calcClubCommission in `src/lib/clubs/commission.ts`)
@@ -150,3 +152,5 @@ See `.env.example`. Critical:
 - `APP_ENCRYPTION_KEY` — 32-byte hex; required for integration tokens
 - `SHOPIFY_WEBHOOK_SECRET` — HMAC verification
 - `INNGEST_EVENT_KEY` + `INNGEST_SIGNING_KEY` — Inngest auth
+- `EUPAGO_CLIENT_ID` + `EUPAGO_CLIENT_SECRET` — Eupago OAuth (Portuguese MB/MBWay payment provider)
+- `EUPAGO_API_BASE` — defaults to `https://clientes.eupago.pt`

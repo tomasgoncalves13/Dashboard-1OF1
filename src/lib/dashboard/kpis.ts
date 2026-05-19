@@ -170,6 +170,123 @@ export async function getMoneyToBank(storeId: string, from: Date, to: Date) {
   };
 }
 
+export type PhysicalKpiSet = {
+  revenue: number;
+  cogs: number;
+  grossProfit: number;
+  salesCount: number;
+  margin: number | null;
+  byChannel: { channel: string; revenue: number; grossProfit: number; count: number }[];
+};
+
+export async function getPhysicalKpis(
+  storeId: string,
+  from: Date,
+  to: Date,
+): Promise<PhysicalKpiSet> {
+  const [agg, byChannel] = await Promise.all([
+    prisma.manualSale.aggregate({
+      where: { storeId, soldAt: { gte: from, lte: to } },
+      _sum: { total: true, cogsTotal: true, grossProfit: true },
+      _count: { _all: true },
+    }),
+    prisma.manualSale.groupBy({
+      by: ["channel"],
+      where: { storeId, soldAt: { gte: from, lte: to } },
+      _sum: { total: true, grossProfit: true },
+      _count: { _all: true },
+      orderBy: { _sum: { total: "desc" } },
+    }),
+  ]);
+  const revenue = Number(agg._sum.total ?? 0);
+  const grossProfit = Number(agg._sum.grossProfit ?? 0);
+  return {
+    revenue,
+    cogs: Number(agg._sum.cogsTotal ?? 0),
+    grossProfit,
+    salesCount: agg._count._all,
+    margin: revenue > 0 ? (grossProfit / revenue) * 100 : null,
+    byChannel: byChannel.map((r) => ({
+      channel: r.channel,
+      revenue: Number(r._sum.total ?? 0),
+      grossProfit: Number(r._sum.grossProfit ?? 0),
+      count: r._count._all,
+    })),
+  };
+}
+
+export type MonthlyPnLRow = {
+  month: string; // "YYYY-MM"
+  ecomRevenue: number;
+  ecomGrossProfit: number;
+  ecomNetProfit: number;
+  physRevenue: number;
+  physGrossProfit: number;
+  expenses: number;
+  netProfit: number;
+};
+
+/**
+ * Returns last `months` calendar months of combined P&L.
+ * netProfit = ecomNetProfit + physGrossProfit − expenses
+ * (ecomNetProfit already deducts COGS, packaging, payment fees, attributed ad spend)
+ */
+export async function getMonthlyPnL(storeId: string, months: number): Promise<MonthlyPnLRow[]> {
+  const now = new Date();
+  const from = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1);
+
+  const [ecomRows, physRows, expRows] = await Promise.all([
+    prisma.$queryRaw<{ month: string; revenue: number; gross_profit: number; net_profit: number }[]>`
+      SELECT TO_CHAR(DATE_TRUNC('month', "processedAt" AT TIME ZONE 'Europe/Lisbon'), 'YYYY-MM') as month,
+             SUM("total")::float                as revenue,
+             SUM("grossProfit")::float           as gross_profit,
+             SUM("netProfit")::float             as net_profit
+      FROM orders
+      WHERE "storeId" = ${storeId}
+        AND "processedAt" >= ${from}
+        AND "financialStatus" = 'PAID'
+      GROUP BY 1 ORDER BY 1`,
+    prisma.$queryRaw<{ month: string; revenue: number; gross_profit: number }[]>`
+      SELECT TO_CHAR(DATE_TRUNC('month', "soldAt" AT TIME ZONE 'Europe/Lisbon'), 'YYYY-MM') as month,
+             SUM("total")::float      as revenue,
+             SUM("grossProfit")::float as gross_profit
+      FROM manual_sales
+      WHERE "storeId" = ${storeId}
+        AND "soldAt" >= ${from}
+      GROUP BY 1 ORDER BY 1`,
+    prisma.$queryRaw<{ month: string; amount: number }[]>`
+      SELECT TO_CHAR(DATE_TRUNC('month', "incurredOn"), 'YYYY-MM') as month,
+             SUM("amount")::float as amount
+      FROM expenses
+      WHERE "storeId" = ${storeId}
+        AND "incurredOn" >= ${from}
+      GROUP BY 1 ORDER BY 1`,
+  ]);
+
+  const result: MonthlyPnLRow[] = [];
+  for (let i = months - 1; i >= 0; i--) {
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const ecom = ecomRows.find((r) => r.month === month);
+    const phys = physRows.find((r) => r.month === month);
+    const exp = expRows.find((r) => r.month === month);
+    const ecomNetProfit = ecom?.net_profit ?? 0;
+    const physGrossProfit = phys?.gross_profit ?? 0;
+    const expenses = exp?.amount ?? 0;
+    result.push({
+      month,
+      ecomRevenue: ecom?.revenue ?? 0,
+      ecomGrossProfit: ecom?.gross_profit ?? 0,
+      ecomNetProfit,
+      physRevenue: phys?.revenue ?? 0,
+      physGrossProfit,
+      expenses,
+      netProfit: ecomNetProfit + physGrossProfit - expenses,
+    });
+  }
+  return result;
+}
+
 export async function getDailyRevenue(
   storeId: string,
   from: Date,
