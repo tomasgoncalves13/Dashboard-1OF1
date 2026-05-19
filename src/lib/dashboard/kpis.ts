@@ -235,53 +235,51 @@ export async function getMonthlyPnL(storeId: string, months: number): Promise<Mo
   const now = new Date();
   const from = new Date(now.getFullYear(), now.getMonth() - (months - 1), 1);
 
-  const [ecomRows, physRows, expRows] = await Promise.all([
-    prisma.$queryRaw<{ month: string; revenue: number; gross_profit: number; net_profit: number }[]>`
-      SELECT TO_CHAR(DATE_TRUNC('month', "processedAt" AT TIME ZONE 'Europe/Lisbon'), 'YYYY-MM') as month,
-             SUM("total")::float                as revenue,
-             SUM("grossProfit")::float           as gross_profit,
-             SUM("netProfit")::float             as net_profit
-      FROM orders
-      WHERE "storeId" = ${storeId}
-        AND "processedAt" >= ${from}
-        AND "financialStatus" = 'PAID'
-      GROUP BY 1 ORDER BY 1`,
-    prisma.$queryRaw<{ month: string; revenue: number; gross_profit: number }[]>`
-      SELECT TO_CHAR(DATE_TRUNC('month', "soldAt" AT TIME ZONE 'Europe/Lisbon'), 'YYYY-MM') as month,
-             SUM("total")::float      as revenue,
-             SUM("grossProfit")::float as gross_profit
-      FROM manual_sales
-      WHERE "storeId" = ${storeId}
-        AND "soldAt" >= ${from}
-      GROUP BY 1 ORDER BY 1`,
-    prisma.$queryRaw<{ month: string; amount: number }[]>`
-      SELECT TO_CHAR(DATE_TRUNC('month', "incurredOn"), 'YYYY-MM') as month,
-             SUM("amount")::float as amount
-      FROM expenses
-      WHERE "storeId" = ${storeId}
-        AND "incurredOn" >= ${from}
-      GROUP BY 1 ORDER BY 1`,
+  // Fetch all data in 3 queries, group by month in JS to avoid raw SQL column-name issues
+  const [orders, physSales, expenses] = await Promise.all([
+    prisma.order.findMany({
+      where: { storeId, processedAt: { gte: from }, financialStatus: "PAID" },
+      select: { processedAt: true, total: true, grossProfit: true, netProfit: true },
+    }),
+    prisma.manualSale.findMany({
+      where: { storeId, soldAt: { gte: from } },
+      select: { soldAt: true, total: true, grossProfit: true },
+    }),
+    prisma.expense.findMany({
+      where: { storeId, incurredOn: { gte: from } },
+      select: { incurredOn: true, amount: true },
+    }),
   ]);
+
+  function toMonth(d: Date) {
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+  }
 
   const result: MonthlyPnLRow[] = [];
   for (let i = months - 1; i >= 0; i--) {
     const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-    const month = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
-    const ecom = ecomRows.find((r) => r.month === month);
-    const phys = physRows.find((r) => r.month === month);
-    const exp = expRows.find((r) => r.month === month);
-    const ecomNetProfit = ecom?.net_profit ?? 0;
-    const physGrossProfit = phys?.gross_profit ?? 0;
-    const expenses = exp?.amount ?? 0;
+    const month = toMonth(d);
+
+    const mo = orders.filter((o) => toMonth(o.processedAt) === month);
+    const mp = physSales.filter((s) => toMonth(s.soldAt) === month);
+    const me = expenses.filter((e) => toMonth(new Date(e.incurredOn)) === month);
+
+    const ecomRevenue = mo.reduce((s, o) => s + Number(o.total), 0);
+    const ecomGrossProfit = mo.reduce((s, o) => s + Number(o.grossProfit), 0);
+    const ecomNetProfit = mo.reduce((s, o) => s + Number(o.netProfit), 0);
+    const physRevenue = mp.reduce((s, p) => s + Number(p.total), 0);
+    const physGrossProfit = mp.reduce((s, p) => s + Number(p.grossProfit), 0);
+    const expensesTotal = me.reduce((s, e) => s + Number(e.amount), 0);
+
     result.push({
       month,
-      ecomRevenue: ecom?.revenue ?? 0,
-      ecomGrossProfit: ecom?.gross_profit ?? 0,
+      ecomRevenue,
+      ecomGrossProfit,
       ecomNetProfit,
-      physRevenue: phys?.revenue ?? 0,
+      physRevenue,
       physGrossProfit,
-      expenses,
-      netProfit: ecomNetProfit + physGrossProfit - expenses,
+      expenses: expensesTotal,
+      netProfit: ecomNetProfit + physGrossProfit - expensesTotal,
     });
   }
   return result;
