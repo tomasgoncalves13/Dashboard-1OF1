@@ -14,18 +14,24 @@ import {
   Upload,
   Settings,
   Sparkles,
+  Calculator,
+  Landmark,
+  Trophy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const nav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/orders", label: "Orders", icon: ShoppingBag },
+  { href: "/costs", label: "Costs", icon: Calculator },
   { href: "/products", label: "Catalog", icon: Package },
   { href: "/inventory", label: "Inventory", icon: Warehouse },
+  { href: "/clubs", label: "Physical Sales", icon: Trophy },
   { href: "/customers", label: "Customers", icon: Users },
   { href: "/influencers", label: "Influencers", icon: Sparkles },
   { href: "/ads", label: "Ads", icon: Megaphone },
   { href: "/expenses", label: "Expenses", icon: Receipt },
+  { href: "/finance", label: "Finance", icon: Landmark },
   { href: "/manual-sales", label: "Manual sales", icon: Store },
   { href: "/imports", label: "Imports", icon: Upload },
   { href: "/settings", label: "Settings", icon: Settings },
@@ -63,7 +69,7 @@ export function Sidebar() {
           );
         })}
       </nav>
-      <div className="px-5 py-4 text-xs text-muted-foreground border-t">v0.1 · Phase 0</div>
+      <div className="px-5 py-4 text-xs text-muted-foreground border-t">v0.2 · Phase 1–6</div>
     </aside>
   );
 }

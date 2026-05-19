@@ -5,7 +5,6 @@ export const inngest = new Inngest({
   eventKey: process.env.INNGEST_EVENT_KEY,
 });
 
-// Event catalogue — type-safe payloads for every background event in the system.
 export type Events = {
   "shopify/order.created": { data: { storeId: string; orderId: string } };
   "shopify/order.updated": { data: { storeId: string; orderId: string } };
@@ -14,4 +13,5 @@ export type Events = {
   "meta/sync.daily": { data: { storeId: string; since: string } };
   "analytics/snapshot.compute": { data: { storeId: string; date: string } };
   "profit/recalculate.order": { data: { orderId: string } };
+  "profit/recalculate.all": { data: { storeId: string } };
 };

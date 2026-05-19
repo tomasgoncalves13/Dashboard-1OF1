@@ -3,6 +3,7 @@ import { shopifyGraphQL, gidToId } from "../client";
 import { ORDERS_QUERY } from "../queries";
 import type { ShopifyOrderNode } from "../types";
 import { calculateOrderProfit } from "@/lib/profit/calculate";
+import { getOrderOverheads, type OrderOverheads } from "@/lib/profit/order-costs";
 
 type Page = { orders: { pageInfo: { hasNextPage: boolean; endCursor: string | null }; edges: { node: ShopifyOrderNode }[] } };
 
@@ -14,6 +15,8 @@ export type OrderSyncOptions = {
 export async function syncOrders(storeId: string, opts: OrderSyncOptions = {}) {
   let cursor: string | null = null;
   let total = 0;
+  // Fetch once per sync batch — all orders in a store share the same overhead config
+  const overheads = await getOrderOverheads(storeId);
 
   do {
     const data: Page = await shopifyGraphQL<Page>(ORDERS_QUERY, {
@@ -22,7 +25,7 @@ export async function syncOrders(storeId: string, opts: OrderSyncOptions = {}) {
     });
 
     for (const { node } of data.orders.edges) {
-      await ingestOrder(storeId, node);
+      await ingestOrder(storeId, node, overheads);
       total++;
     }
 
@@ -33,7 +36,12 @@ export async function syncOrders(storeId: string, opts: OrderSyncOptions = {}) {
 }
 
 /** Ingest a single order: upsert order + items, snapshot variant costs, compute profit. */
-export async function ingestOrder(storeId: string, order: ShopifyOrderNode) {
+export async function ingestOrder(
+  storeId: string,
+  order: ShopifyOrderNode,
+  overheads?: OrderOverheads,
+) {
+  const oh = overheads ?? (await getOrderOverheads(storeId));
   const shopifyOrderId = gidToId(order.id)!;
 
   // Resolve customer
@@ -60,7 +68,7 @@ export async function ingestOrder(storeId: string, order: ShopifyOrderNode) {
     ]),
   );
 
-  const profit = calculateOrderProfit(order, variantByGid);
+  const profit = calculateOrderProfit(order, variantByGid, oh);
 
   // Upsert the order header
   const orderRow = await prisma.order.upsert({

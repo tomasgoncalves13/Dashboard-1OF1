@@ -2,6 +2,7 @@ import { inngest } from "./client";
 import { fullSync, incrementalSync } from "@/lib/shopify/sync";
 import { syncSingleOrder } from "@/lib/shopify/sync/single-order";
 import { computeAnalyticsSnapshot } from "@/lib/analytics/snapshot";
+import { recalculateAllOrderProfits } from "@/lib/profit/recalculate";
 
 export const shopifyFullSync = inngest.createFunction(
   { id: "shopify-full-sync", concurrency: { limit: 1, key: "event.data.storeId" }, retries: 3 },
@@ -35,10 +36,32 @@ export const computeSnapshot = inngest.createFunction(
   },
 );
 
+// Triggered when OrderCostConfig changes — recalculates profit on all historical orders.
+export const profitRecalculateAll = inngest.createFunction(
+  { id: "profit-recalculate-all", concurrency: { limit: 1, key: "event.data.storeId" }, retries: 2 },
+  { event: "profit/recalculate.all" },
+  async ({ event, step }) => {
+    const result = await step.run("recalculate", () =>
+      recalculateAllOrderProfits(event.data.storeId),
+    );
+    // After recalculation, refresh snapshots for the last 90 days
+    const { prisma } = await import("@/lib/prisma");
+    for (let d = 0; d < 90; d++) {
+      const date = new Date();
+      date.setUTCDate(date.getUTCDate() - d);
+      const iso = date.toISOString().slice(0, 10);
+      await step.run(`snapshot-${iso}`, () =>
+        computeAnalyticsSnapshot(event.data.storeId, iso),
+      );
+    }
+    return result;
+  },
+);
+
 // Daily cron: refresh snapshots for the last 7 days (handles late refunds/edits).
 export const dailySnapshotCron = inngest.createFunction(
   { id: "analytics-snapshot-daily" },
-  { cron: "0 3 * * *" }, // 03:00 UTC
+  { cron: "0 3 * * *" },
   async ({ step }) => {
     const { prisma } = await import("@/lib/prisma");
     const stores = await prisma.store.findMany({ select: { id: true } });
@@ -53,7 +76,7 @@ export const dailySnapshotCron = inngest.createFunction(
   },
 );
 
-// Hourly: incremental Shopify pull as a safety net for missed webhooks.
+// Hourly: incremental Shopify pull as safety net for missed webhooks.
 export const hourlyShopifyPull = inngest.createFunction(
   { id: "shopify-hourly-pull" },
   { cron: "0 * * * *" },
@@ -75,6 +98,7 @@ export const functions = [
   shopifyIncrementalSync,
   shopifyOrderUpdated,
   computeSnapshot,
+  profitRecalculateAll,
   dailySnapshotCron,
   hourlyShopifyPull,
 ];
