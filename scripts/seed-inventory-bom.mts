@@ -21,34 +21,28 @@ function buildItems(): ItemDef[] {
     items.push({ code: `BUILTIN-${size}`, name: `Built-In Shin Pad ${size}`, family: "Built-In Shin Pads", unitCost: 2.84, stock });
   }
 
-  // Mini Shin Pads (size+color) — stock unknown, user adjusts
+  // Mini Shin Pads (size+color). M=10x6, S=8x5; Silver=Cinza
+  const miniStock: Record<string, number> = {
+    "MINI-10X6-PRETO": 100, "MINI-10X6-CINZA": 125, "MINI-8X5-CINZA": 30, "MINI-8X5-PRETO": 30,
+  };
   for (const size of ["10x6", "8x5"]) {
     for (const color of ["Cinza", "Preto"]) {
-      items.push({ code: `MINI-${slug(size)}-${slug(color)}`, name: `Mini Shin Pad ${size} ${color}`, family: "Mini Shin Pads", unitCost: 1.65, stock: 0 });
+      const code = `MINI-${slug(size)}-${slug(color)}`;
+      items.push({ code, name: `Mini Shin Pad ${size} ${color}`, family: "Mini Shin Pads", unitCost: 1.65, stock: miniStock[code] ?? 0 });
     }
   }
 
-  // Airflow (2 sizes) — stock unknown, user adjusts
+  // Airflow (2 sizes)
   for (const size of ["15X9", "9X6"]) {
-    items.push({ code: `AIRFLOW-${size}`, name: `Airflow ${size}`, family: "Airflow", unitCost: 1.67, stock: 0 });
+    items.push({ code: `AIRFLOW-${size}`, name: `Airflow ${size}`, family: "Airflow", unitCost: 1.67, stock: 50 });
   }
 
-  // Grip Socks adult (color × band) — Encomenda 4 adult, split 50/50 across bands
-  const gripAdult: Record<string, number> = { Preto: 50, Branco: 800, Vermelho: 100, Azul: 100, Verde: 100, Amarelo: 100 };
-  for (const color of COLORS) {
-    const half = Math.round((gripAdult[color] ?? 0) / 2);
-    for (const band of ["3640", "4048"]) {
-      items.push({ code: `GRIP-A-${slug(color)}-${band}`, name: `Grip Sock ${color} ${band === "3640" ? "36-40" : "40-48"} (Adulto)`, family: "Grip Socks", unitCost: 0.88, stock: half });
-    }
-  }
-
-  // Grip Socks kids (color × band) — Encomenda 4 kids, split 50/50
+  // Grip Socks — one item per color × adult/kids (no size band: adult=40-48, kids=36-40)
+  const gripAdult: Record<string, number> = { Preto: 100, Branco: 800, Vermelho: 100, Azul: 100, Verde: 100, Amarelo: 100 };
   const gripKids: Record<string, number> = { Preto: 50, Branco: 400, Vermelho: 50, Azul: 50, Verde: 50, Amarelo: 50 };
   for (const color of COLORS) {
-    const half = Math.round((gripKids[color] ?? 0) / 2);
-    for (const band of ["3640", "4048"]) {
-      items.push({ code: `GRIP-K-${slug(color)}-${band}`, name: `Grip Sock ${color} ${band === "3640" ? "36-40" : "40-48"} (Kids)`, family: "Grip Socks", unitCost: 0.88, stock: half });
-    }
+    items.push({ code: `GRIP-A-${slug(color)}`, name: `Grip Sock ${color} (Adulto)`, family: "Grip Socks", unitCost: 0.88, stock: gripAdult[color] ?? 0 });
+    items.push({ code: `GRIP-K-${slug(color)}`, name: `Grip Sock ${color} (Kids)`, family: "Grip Socks", unitCost: 0.88, stock: gripKids[color] ?? 0 });
   }
 
   // Sock Sleeves adult + kids (color × age)
@@ -79,11 +73,6 @@ function buildItems(): ItemDef[] {
 // ── Recipe resolver: variant → [{ code, qty }] ──────────────────
 function colorOf(title: string): string | null {
   for (const c of COLORS) if (title.includes(c)) return c;
-  return null;
-}
-function bandOf(title: string): "3640" | "4048" | null {
-  if (title.includes("40-48")) return "4048";
-  if (title.includes("36-40") || title.includes("32-40")) return "3640";
   return null;
 }
 const PACK_SIZE_ADULT: Record<string, string> = { MAXI: "XL", MIDI: "L", MINI: "M" };
@@ -127,15 +116,15 @@ function recipeFor(productTitle: string, variantTitle: string): { code: string; 
     return [{ code: `AIRFLOW-${size}`, qty: 1 }];
   }
 
-  // Grip Socks (adult: Pro Grip Socks + legacy Grip Socks share)
+  // Grip Socks (adult: Pro Grip Socks + legacy Grip Socks share). No band split.
   if (pt === "Pro Grip Socks" || pt === "Grip Socks") {
-    const color = colorOf(vt); const band = bandOf(vt);
-    if (color && band) return [{ code: `GRIP-A-${slug(color)}-${band}`, qty: 1 }];
+    const color = colorOf(vt);
+    if (color) return [{ code: `GRIP-A-${slug(color)}`, qty: 1 }];
     return null;
   }
   if (pt === "Kids Pro Grip Socks") {
-    const color = colorOf(vt); const band = bandOf(vt);
-    if (color && band) return [{ code: `GRIP-K-${slug(color)}-${band}`, qty: 1 }];
+    const color = colorOf(vt);
+    if (color) return [{ code: `GRIP-K-${slug(color)}`, qty: 1 }];
     return null;
   }
 
@@ -152,11 +141,11 @@ function recipeFor(productTitle: string, variantTitle: string): { code: string; 
     return null;
   }
 
-  // Grip sock bundles
+  // Grip sock bundles (adult)
   if (pt === "12 Pair Bundle - Pro Grip Socks" || pt === "Exclusive 6 Pair Bundle - Pro Grip Socks") {
-    const color = colorOf(vt); const band = bandOf(vt);
+    const color = colorOf(vt);
     const qty = pt.startsWith("12") ? 12 : 6;
-    if (color && band) return [{ code: `GRIP-A-${slug(color)}-${band}`, qty }];
+    if (color) return [{ code: `GRIP-A-${slug(color)}`, qty }];
     return null;
   }
 
@@ -168,7 +157,7 @@ function recipeFor(productTitle: string, variantTitle: string): { code: string; 
     if (vt.includes("Adulto")) {
       return [
         { code: `BUILTIN-${PACK_SIZE_ADULT[packSize]}`, qty: 1 },
-        { code: `GRIP-A-${slug(color)}-4048`, qty: 6 },
+        { code: `GRIP-A-${slug(color)}`, qty: 6 },
         { code: `SLEEVE-A-${slug(color)}`, qty: 2 },
       ];
     }
@@ -176,7 +165,7 @@ function recipeFor(productTitle: string, variantTitle: string): { code: string; 
       if (packSize === "MAXI") return null; // no kids MAXI pack
       return [
         { code: `BUILTIN-${PACK_SIZE_KIDS[packSize]}`, qty: 1 },
-        { code: `GRIP-K-${slug(color)}-4048`, qty: 6 },
+        { code: `GRIP-K-${slug(color)}`, qty: 6 },
         { code: `SLEEVE-K-${slug(color)}`, qty: 2 },
       ];
     }
@@ -188,7 +177,7 @@ function recipeFor(productTitle: string, variantTitle: string): { code: string; 
     if (!color) return null;
     return [
       { code: `BUILTIN-${PACK_SIZE_KIDS[packSize]}`, qty: 1 },
-      { code: `GRIP-K-${slug(color)}-4048`, qty: 6 },
+      { code: `GRIP-K-${slug(color)}`, qty: 6 },
       { code: `SLEEVE-K-${slug(color)}`, qty: 2 },
     ];
   }
