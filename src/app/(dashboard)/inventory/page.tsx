@@ -109,7 +109,7 @@ export default async function InventoryPage() {
               <Card key={family}>
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-baseline">
-                    <CardTitle>{family}</CardTitle>
+                    <CardTitle className="text-foreground">{family}</CardTitle>
                     <div className="text-sm text-muted-foreground tabular-nums">
                       {totalFam} un · {formatMoney(valFam, currency)}
                     </div>
