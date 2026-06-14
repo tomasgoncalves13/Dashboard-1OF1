@@ -9,32 +9,30 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { adjustStock } from "./actions";
 import { toast } from "sonner";
 import { SlidersHorizontal } from "lucide-react";
-import type { Prisma } from "@prisma/client";
 
-type Variant = { id: string; title: string; stockOnHand: number };
-type Product = { id: string; title: string; variants: Variant[] };
-type Props = { products: Product[]; storeId: string };
+type Item = { id: string; name: string; family: string; stockOnHand: number };
+type Props = { items: Item[] };
 
-export function StockAdjustDialog({ products }: Props) {
+export function StockAdjustDialog({ items }: Props) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
-  const [variantId, setVariantId] = useState("");
+  const [itemId, setItemId] = useState("");
   const [type, setType] = useState<"ADJUSTMENT" | "PURCHASE" | "LOSS">("ADJUSTMENT");
   const [quantity, setQuantity] = useState("");
   const [note, setNote] = useState("");
 
-  const selectedVariant = products.flatMap((p) => p.variants).find((v) => v.id === variantId);
+  const selectedItem = items.find((i) => i.id === itemId);
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!variantId || !quantity) return;
+    if (!itemId || !quantity) return;
     const qty = Number(quantity);
     startTransition(async () => {
       try {
-        await adjustStock({ variantId, type, quantity: qty, note: note || undefined });
+        await adjustStock({ inventoryItemId: itemId, type, quantity: qty, note: note || undefined });
         toast.success("Stock ajustado.");
         setOpen(false);
-        setVariantId(""); setQuantity(""); setNote("");
+        setItemId(""); setQuantity(""); setNote("");
       } catch (err) {
         toast.error(err instanceof Error ? err.message : "Erro ao ajustar stock.");
       }
@@ -52,15 +50,15 @@ export function StockAdjustDialog({ products }: Props) {
         <DialogHeader><DialogTitle>Ajuste manual de stock</DialogTitle></DialogHeader>
         <form onSubmit={submit} className="space-y-4 pt-2">
           <div className="space-y-1.5">
-            <Label>Variante</Label>
-            <Select value={variantId} onValueChange={setVariantId}>
-              <SelectTrigger><SelectValue placeholder="Seleciona variante…" /></SelectTrigger>
+            <Label>Item físico</Label>
+            <Select value={itemId} onValueChange={setItemId}>
+              <SelectTrigger><SelectValue placeholder="Seleciona item…" /></SelectTrigger>
               <SelectContent>
-                {products.map((p) => p.variants.map((v) => (
-                  <SelectItem key={v.id} value={v.id}>
-                    {p.title} — {v.title} (stock: {v.stockOnHand})
+                {items.map((i) => (
+                  <SelectItem key={i.id} value={i.id}>
+                    {i.name} (stock: {i.stockOnHand})
                   </SelectItem>
-                )))}
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -85,11 +83,11 @@ export function StockAdjustDialog({ products }: Props) {
               />
             </div>
           </div>
-          {selectedVariant && (
+          {selectedItem && (
             <p className="text-xs text-muted-foreground">
-              Stock actual: <strong>{selectedVariant.stockOnHand}</strong>
+              Stock actual: <strong>{selectedItem.stockOnHand}</strong>
               {quantity && !isNaN(Number(quantity)) && (
-                <> → <strong>{selectedVariant.stockOnHand + Number(quantity)}</strong></>
+                <> → <strong>{selectedItem.stockOnHand + Number(quantity)}</strong></>
               )}
             </p>
           )}

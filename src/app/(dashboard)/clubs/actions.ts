@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/supabase/server";
+import { restoreStock } from "@/lib/inventory/consume";
 import {
   createClub,
   updateClub,
@@ -91,28 +92,20 @@ export async function actionDeleteSale(saleId: string) {
   });
   if (!sale) throw new Error("Sale not found");
 
-  // Restore stock
-  await Promise.all(
-    sale.items.map((item) =>
-      Promise.all([
-        prisma.productVariant.update({
-          where: { id: item.variantId },
-          data: { stockOnHand: { increment: item.quantity } },
-        }),
-        prisma.stockMovement.create({
-          data: {
-            storeId: store.id,
-            variantId: item.variantId,
-            type: "RETURN",
-            quantity: item.quantity,
-            reference: saleId,
-            note: "Venda eliminada",
-          },
-        }),
-      ]),
-    ),
-  );
+  // Restore physical stock via each variant's recipe, then delete
+  await prisma.$transaction(async (tx) => {
+    for (const item of sale.items) {
+      await restoreStock(tx, {
+        storeId: store.id,
+        variantId: item.variantId,
+        saleQty: item.quantity,
+        reference: saleId,
+        note: "Venda eliminada",
+      });
+    }
+    await tx.manualSale.delete({ where: { id: saleId } });
+  });
 
-  await prisma.manualSale.delete({ where: { id: saleId } });
   revalidatePath("/clubs");
+  revalidatePath("/inventory");
 }

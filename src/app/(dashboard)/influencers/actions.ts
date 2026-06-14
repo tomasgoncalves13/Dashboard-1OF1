@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/supabase/server";
+import { consumeStock } from "@/lib/inventory/consume";
 
 async function getStore() {
   const user = await getSessionUser();
@@ -83,18 +84,12 @@ export async function addShipment(data: {
       },
     });
     for (const item of data.items) {
-      await tx.productVariant.update({
-        where: { id: item.variantId },
-        data: { stockOnHand: { decrement: item.quantity } },
-      });
-      await tx.stockMovement.create({
-        data: {
-          storeId: store.id,
-          variantId: item.variantId,
-          type: "INFLUENCER_GIFT",
-          quantity: -item.quantity,
-          reference: shipment.id,
-        },
+      await consumeStock(tx, {
+        storeId: store.id,
+        variantId: item.variantId,
+        saleQty: item.quantity,
+        type: "INFLUENCER_GIFT",
+        reference: shipment.id,
       });
     }
   });

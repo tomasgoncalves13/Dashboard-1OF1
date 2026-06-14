@@ -9,133 +9,127 @@ export default async function InventoryPage() {
   const store = user ? await prisma.store.findFirst({ where: { ownerId: user.id } }) : null;
   if (!store) return null;
 
-  const products = await prisma.product.findMany({
-    where: { storeId: store.id, status: "ACTIVE" },
+  const items = await prisma.inventoryItem.findMany({
+    where: { storeId: store.id },
     include: {
-      variants: {
-        orderBy: { title: "asc" },
-        select: {
-          id: true, title: true, sku: true,
-          stockOnHand: true, stockReserved: true, reorderPoint: true,
-          unitCost: true,
-        },
+      components: {
+        include: { variant: { include: { product: { select: { title: true } } } } },
       },
     },
-    orderBy: { title: "asc" },
+    orderBy: [{ family: "asc" }, { name: "asc" }],
   });
 
-  const allVariants = products.flatMap((p) => p.variants);
-  const totalUnits = allVariants.reduce((s, v) => s + v.stockOnHand, 0);
-  const totalValue = allVariants.reduce(
-    (s, v) => s + v.stockOnHand * Number(v.unitCost ?? 0),
-    0,
-  );
-  const lowStock = allVariants.filter(
-    (v) => v.reorderPoint !== null && v.stockOnHand <= v.reorderPoint,
-  );
-  const outOfStock = allVariants.filter((v) => v.stockOnHand <= 0);
+  const totalUnits = items.reduce((s, i) => s + i.stockOnHand, 0);
+  const totalValue = items.reduce((s, i) => s + i.stockOnHand * Number(i.unitCost ?? 0), 0);
+  const lowStock = items.filter((i) => i.reorderPoint !== null && i.stockOnHand <= i.reorderPoint);
+  const outOfStock = items.filter((i) => i.stockOnHand <= 0);
   const currency = store.currency;
 
+  // Group by family
+  const families = Array.from(new Set(items.map((i) => i.family)));
+  const byFamily = families.map((fam) => ({
+    family: fam,
+    items: items.filter((i) => i.family === fam),
+  }));
+
   const recentMovements = await prisma.stockMovement.findMany({
-    where: { storeId: store.id },
+    where: { storeId: store.id, inventoryItemId: { not: null } },
     orderBy: { createdAt: "desc" },
     take: 30,
-    include: {
-      variant: { select: { title: true, product: { select: { title: true } } } },
-    },
+    include: { inventoryItem: { select: { name: true } } },
   });
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Inventory</h1>
-          <p className="text-sm text-muted-foreground">Stock actual + histórico de movimentos</p>
+          <h1 className="text-2xl font-semibold tracking-tight">Inventário físico</h1>
+          <p className="text-sm text-muted-foreground">
+            Stock real no armazém. Cada item mostra as variantes/packs que o consomem.
+          </p>
         </div>
-        <StockAdjustDialog products={products} storeId={store.id} />
+        <StockAdjustDialog items={items.map((i) => ({ id: i.id, name: i.name, family: i.family, stockOnHand: i.stockOnHand }))} />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {[
-          { label: "Total unidades", value: totalUnits.toLocaleString("pt-PT") },
-          { label: "Valor em stock", value: formatMoney(totalValue, currency) },
-          { label: "Low stock", value: lowStock.length.toString(), warn: lowStock.length > 0 },
-          { label: "Sem stock", value: outOfStock.length.toString(), warn: outOfStock.length > 0 },
-        ].map((k) => (
-          <Card key={k.label}>
-            <CardHeader className="pb-2"><CardTitle>{k.label}</CardTitle></CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-semibold ${k.warn ? "text-amber-500" : ""}`}>{k.value}</div>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {lowStock.length > 0 && (
-        <div className="rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 p-4">
-          <p className="text-sm font-medium">⚠️ Atenção — stock baixo</p>
-          <div className="mt-2 space-y-1 text-xs text-muted-foreground">
-            {lowStock.map((v) => (
-              <div key={v.id}>{v.title} — {v.stockOnHand} un (reorder point: {v.reorderPoint})</div>
+      {items.length === 0 ? (
+        <Card className="p-12 text-center text-sm text-muted-foreground">
+          Sem itens físicos. Corre o seed de inventário para criar os itens.
+        </Card>
+      ) : (
+        <>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              { label: "Total unidades", value: totalUnits.toLocaleString("pt-PT") },
+              { label: "Valor em stock", value: formatMoney(totalValue, currency) },
+              { label: "Low stock", value: lowStock.length.toString(), warn: lowStock.length > 0 },
+              { label: "Sem stock", value: outOfStock.length.toString(), warn: outOfStock.length > 0 },
+            ].map((k) => (
+              <Card key={k.label}>
+                <CardHeader className="pb-2"><CardTitle>{k.label}</CardTitle></CardHeader>
+                <CardContent>
+                  <div className={`text-2xl font-semibold ${k.warn ? "text-amber-500" : ""}`}>{k.value}</div>
+                </CardContent>
+              </Card>
             ))}
           </div>
-        </div>
-      )}
 
-      {products.map((product) => {
-        const totalProd = product.variants.reduce((s, v) => s + v.stockOnHand, 0);
-        const totalVal = product.variants.reduce(
-          (s, v) => s + v.stockOnHand * Number(v.unitCost ?? 0), 0,
-        );
-        return (
-          <Card key={product.id}>
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-baseline">
-                <CardTitle>{product.title}</CardTitle>
-                <div className="text-sm text-muted-foreground tabular-nums">
-                  {totalProd} un · {formatMoney(totalVal, currency)}
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="text-xs text-muted-foreground border-b">
-                  <tr>
-                    <th className="text-left font-medium py-1.5">Variante</th>
-                    <th className="text-left font-medium py-1.5">SKU</th>
-                    <th className="text-right font-medium py-1.5">Em stock</th>
-                    <th className="text-right font-medium py-1.5">Reservado</th>
-                    <th className="text-right font-medium py-1.5">Disponível</th>
-                    <th className="text-right font-medium py-1.5">Valor</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {product.variants.map((v) => {
-                    const available = v.stockOnHand - v.stockReserved;
-                    const low = v.reorderPoint !== null && v.stockOnHand <= v.reorderPoint;
-                    return (
-                      <tr key={v.id} className={`border-b last:border-0 ${low ? "bg-amber-50/50 dark:bg-amber-950/10" : ""}`}>
-                        <td className="py-1.5 text-muted-foreground">{v.title}</td>
-                        <td className="py-1.5 text-xs text-muted-foreground tabular-nums">{v.sku ?? "—"}</td>
-                        <td className={`py-1.5 text-right tabular-nums font-medium ${
-                          v.stockOnHand <= 0 ? "text-destructive" : low ? "text-amber-600" : ""
-                        }`}>
-                          {v.stockOnHand}
-                        </td>
-                        <td className="py-1.5 text-right tabular-nums text-muted-foreground">{v.stockReserved}</td>
-                        <td className="py-1.5 text-right tabular-nums">{available}</td>
-                        <td className="py-1.5 text-right tabular-nums text-muted-foreground">
-                          {v.unitCost ? formatMoney(v.stockOnHand * Number(v.unitCost), currency) : "—"}
-                        </td>
+          {byFamily.map(({ family, items: famItems }) => {
+            const totalFam = famItems.reduce((s, i) => s + i.stockOnHand, 0);
+            const valFam = famItems.reduce((s, i) => s + i.stockOnHand * Number(i.unitCost ?? 0), 0);
+            return (
+              <Card key={family}>
+                <CardHeader className="pb-2">
+                  <div className="flex justify-between items-baseline">
+                    <CardTitle>{family}</CardTitle>
+                    <div className="text-sm text-muted-foreground tabular-nums">
+                      {totalFam} un · {formatMoney(valFam, currency)}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="text-xs text-muted-foreground border-b">
+                      <tr>
+                        <th className="text-left font-medium py-1.5">Item</th>
+                        <th className="text-right font-medium py-1.5">Em stock</th>
+                        <th className="text-right font-medium py-1.5">Valor</th>
+                        <th className="text-left font-medium py-1.5 pl-6">Ligações</th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
-        );
-      })}
+                    </thead>
+                    <tbody>
+                      {famItems.map((i) => {
+                        const low = i.reorderPoint !== null && i.stockOnHand <= i.reorderPoint;
+                        return (
+                          <tr key={i.id} className={`border-b last:border-0 ${low ? "bg-amber-50/50 dark:bg-amber-950/10" : ""}`}>
+                            <td className="py-1.5">{i.name}</td>
+                            <td className={`py-1.5 text-right tabular-nums font-medium ${
+                              i.stockOnHand <= 0 ? "text-destructive" : low ? "text-amber-600" : ""
+                            }`}>
+                              {i.stockOnHand}
+                            </td>
+                            <td className="py-1.5 text-right tabular-nums text-muted-foreground">
+                              {i.unitCost ? formatMoney(i.stockOnHand * Number(i.unitCost), currency) : "—"}
+                            </td>
+                            <td className="py-1.5 pl-6 text-xs text-muted-foreground">
+                              {i.components.length === 0 ? (
+                                <span className="italic">sem ligações</span>
+                              ) : (
+                                i.components
+                                  .map((c) => `${c.variant.product.title} ${c.variant.title} ×${c.quantity}`)
+                                  .join(" · ")
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </>
+      )}
 
       <Card>
         <CardHeader><CardTitle>Movimentos recentes</CardTitle></CardHeader>
@@ -147,7 +141,7 @@ export default async function InventoryPage() {
               <thead className="text-xs text-muted-foreground border-b">
                 <tr>
                   <th className="text-left font-medium py-2">Data</th>
-                  <th className="text-left font-medium py-2">Produto / variante</th>
+                  <th className="text-left font-medium py-2">Item</th>
                   <th className="text-left font-medium py-2">Tipo</th>
                   <th className="text-right font-medium py-2">Qtd</th>
                   <th className="text-left font-medium py-2">Nota</th>
@@ -159,10 +153,7 @@ export default async function InventoryPage() {
                     <td className="py-2 tabular-nums text-muted-foreground text-xs">
                       {m.createdAt.toLocaleDateString("pt-PT")}
                     </td>
-                    <td className="py-2 text-xs">
-                      {m.variant.product.title}{" "}
-                      <span className="text-muted-foreground">{m.variant.title}</span>
-                    </td>
+                    <td className="py-2 text-xs">{m.inventoryItem?.name ?? "—"}</td>
                     <td className="py-2">
                       <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
                         m.quantity > 0

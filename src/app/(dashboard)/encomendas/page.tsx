@@ -2,7 +2,6 @@ import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/supabase/server";
 import { formatMoney } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { NewOrderDialog } from "./new-order-dialog";
 
 export default async function EncomendasPage() {
@@ -42,7 +41,7 @@ export default async function EncomendasPage() {
               <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <Badge variant="outline" className="font-mono">#{order.orderNumber}</Badge>
+                    <span className="font-mono text-xs rounded border px-2 py-0.5">#{order.orderNumber}</span>
                     <CardTitle className="text-base">{order.supplier}</CardTitle>
                   </div>
                   <div className="text-right">

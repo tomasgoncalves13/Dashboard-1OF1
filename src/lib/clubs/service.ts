@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
 import { calcClubCommission } from "./commission";
+import { consumeStock } from "@/lib/inventory/consume";
 
 // ── Club CRUD ──────────────────────────────────────────────
 
@@ -136,53 +137,47 @@ export async function registerPhysicalSale(
   const cogsTotal = data.items.reduce((s, i) => s + i.unitCost * i.quantity, 0);
   const grossProfit = subtotal - cogsTotal;
 
-  const sale = await prisma.manualSale.create({
-    data: {
-      storeId,
-      channel: data.channel,
-      clubId: data.clubId ?? null,
-      eventName: data.eventName,
-      customerName: data.customerName,
-      notes: data.notes,
-      soldAt: data.soldAt,
-      subtotal: subtotal.toFixed(2),
-      total: subtotal.toFixed(2),
-      cogsTotal: cogsTotal.toFixed(2),
-      grossProfit: grossProfit.toFixed(2),
-      netProfit: grossProfit.toFixed(2), // commission subtracted at month level
-      items: {
-        create: data.items.map((i) => ({
-          variantId: i.variantId,
-          quantity: i.quantity,
-          unitPrice: i.unitPrice.toFixed(2),
-          unitCost: i.unitCost.toFixed(2),
-          totalRevenue: (i.unitPrice * i.quantity).toFixed(2),
-          totalCost: (i.unitCost * i.quantity).toFixed(2),
-        })),
+  const movementType = data.channel === "CLUB" ? "CLUB_SALE" : "MANUAL_SALE";
+
+  return prisma.$transaction(async (tx) => {
+    const sale = await tx.manualSale.create({
+      data: {
+        storeId,
+        channel: data.channel,
+        clubId: data.clubId ?? null,
+        eventName: data.eventName,
+        customerName: data.customerName,
+        notes: data.notes,
+        soldAt: data.soldAt,
+        subtotal: subtotal.toFixed(2),
+        total: subtotal.toFixed(2),
+        cogsTotal: cogsTotal.toFixed(2),
+        grossProfit: grossProfit.toFixed(2),
+        netProfit: grossProfit.toFixed(2), // commission subtracted at month level
+        items: {
+          create: data.items.map((i) => ({
+            variantId: i.variantId,
+            quantity: i.quantity,
+            unitPrice: i.unitPrice.toFixed(2),
+            unitCost: i.unitCost.toFixed(2),
+            totalRevenue: (i.unitPrice * i.quantity).toFixed(2),
+            totalCost: (i.unitCost * i.quantity).toFixed(2),
+          })),
+        },
       },
-    },
+    });
+
+    // Decrement physical stock via each variant's recipe
+    for (const item of data.items) {
+      await consumeStock(tx, {
+        storeId,
+        variantId: item.variantId,
+        saleQty: item.quantity,
+        type: movementType,
+        reference: sale.id,
+      });
+    }
+
+    return sale;
   });
-
-  // Decrement stock for each item
-  await Promise.all(
-    data.items.map((item) =>
-      Promise.all([
-        prisma.productVariant.update({
-          where: { id: item.variantId },
-          data: { stockOnHand: { decrement: item.quantity } },
-        }),
-        prisma.stockMovement.create({
-          data: {
-            storeId,
-            variantId: item.variantId,
-            type: data.channel === "CLUB" ? "CLUB_SALE" : "MANUAL_SALE",
-            quantity: -item.quantity,
-            reference: sale.id,
-          },
-        }),
-      ]),
-    ),
-  );
-
-  return sale;
 }
