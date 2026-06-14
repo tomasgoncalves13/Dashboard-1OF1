@@ -75,6 +75,7 @@ model Store {
   eupagoPayouts       EupagoPayout[]
   orderCostConfig     OrderCostConfig?
   clubs               Club[]
+  purchaseOrders      PurchaseOrder[]
 
   @@index([ownerId])
   @@map("stores")
@@ -493,6 +494,44 @@ model Supplier {
 
   @@index([storeId])
   @@map("suppliers")
+}
+
+// ─────────────────────────────────────────────────────────────
+// PURCHASE ORDERS — supplier orders / stock imports
+// ─────────────────────────────────────────────────────────────
+
+model PurchaseOrder {
+  id          String   @id @default(cuid())
+  storeId     String
+  orderNumber Int
+  date        DateTime
+  supplier    String
+  totalCost   Decimal  @db.Decimal(14, 2)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  store Store               @relation(fields: [storeId], references: [id], onDelete: Cascade)
+  items PurchaseOrderItem[]
+
+  @@index([storeId, date])
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderItem {
+  id             String   @id @default(cuid())
+  orderId        String
+  productName    String
+  quantity       Int?
+  productionCost Decimal? @db.Decimal(14, 2)
+  transportCost  Decimal? @db.Decimal(14, 2)
+  totalCost      Decimal  @db.Decimal(14, 2)
+  unitCost       Decimal? @db.Decimal(14, 2)
+  note           String?
+
+  order PurchaseOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@map("purchase_order_items")
 }
 
 // ─────────────────────────────────────────────────────────────
