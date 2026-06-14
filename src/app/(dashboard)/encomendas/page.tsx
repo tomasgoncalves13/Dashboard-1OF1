@@ -2,7 +2,6 @@ import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/supabase/server";
 import { formatMoney } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { NewOrderDialog } from "./new-order-dialog";
 
 export default async function EncomendasPage() {
   const user = await getSessionUser();
@@ -16,18 +15,16 @@ export default async function EncomendasPage() {
   });
 
   const totalInvested = orders.reduce((s, o) => s + Number(o.totalCost), 0);
-  const nextNumber = orders.length > 0 ? Math.max(...orders.map((o) => o.orderNumber)) + 1 : 1;
 
   return (
     <div className="space-y-6">
       <div className="flex items-start justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Encomendas a Fornecedores</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Importações</h1>
           <p className="text-sm text-muted-foreground">
             {orders.length} encomendas · {formatMoney(totalInvested, store.currency)} investido no total
           </p>
         </div>
-        <NewOrderDialog nextNumber={nextNumber} />
       </div>
 
       {orders.length === 0 ? (
