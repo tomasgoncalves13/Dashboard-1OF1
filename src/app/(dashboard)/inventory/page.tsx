@@ -11,11 +11,6 @@ export default async function InventoryPage() {
 
   const items = await prisma.inventoryItem.findMany({
     where: { storeId: store.id },
-    include: {
-      components: {
-        include: { variant: { include: { product: { select: { title: true } } } } },
-      },
-    },
     orderBy: [{ family: "asc" }, { name: "asc" }],
   });
 
@@ -93,7 +88,6 @@ export default async function InventoryPage() {
                         <th className="text-left font-medium py-1.5">Item</th>
                         <th className="text-right font-medium py-1.5">Em stock</th>
                         <th className="text-right font-medium py-1.5">Valor</th>
-                        <th className="text-left font-medium py-1.5 pl-6">Ligações</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -109,15 +103,6 @@ export default async function InventoryPage() {
                             </td>
                             <td className="py-1.5 text-right tabular-nums text-muted-foreground">
                               {i.unitCost ? formatMoney(i.stockOnHand * Number(i.unitCost), currency) : "—"}
-                            </td>
-                            <td className="py-1.5 pl-6 text-xs text-muted-foreground">
-                              {i.components.length === 0 ? (
-                                <span className="italic">sem ligações</span>
-                              ) : (
-                                i.components
-                                  .map((c) => `${c.variant.product.title} ${c.variant.title} ×${c.quantity}`)
-                                  .join(" · ")
-                              )}
                             </td>
                           </tr>
                         );
