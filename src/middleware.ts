@@ -30,7 +30,9 @@ export async function middleware(request: NextRequest) {
     isAuthRoute ||
     pathname.startsWith("/api/webhooks") ||
     pathname.startsWith("/api/inngest") ||
-    pathname === "/";
+    pathname === "/" ||
+    pathname === "/manifest.json" ||
+    pathname === "/sw.js";
 
   if (!user && !isPublic) {
     const url = request.nextUrl.clone();
