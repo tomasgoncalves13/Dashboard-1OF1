@@ -20,12 +20,25 @@ export default async function InventoryPage() {
   const outOfStock = items.filter((i) => i.stockOnHand <= 0);
   const currency = store.currency;
 
-  // Group by family
-  const families = Array.from(new Set(items.map((i) => i.family)));
-  const byFamily = families.map((fam) => ({
-    family: fam,
-    items: items.filter((i) => i.family === fam),
-  }));
+  // Group for display — split Grip Socks & Sock Sleeves by adult/kids
+  const groupOf = (i: (typeof items)[number]) => {
+    if (i.family === "Grip Socks") return i.name.includes("(Kids)") ? "Grip Socks Criança" : "Grip Socks";
+    if (i.family === "Sock Sleeves") return i.name.includes("(Kids)") ? "Sock Sleeves Criança" : "Sock Sleeves";
+    return i.family;
+  };
+  const GROUP_ORDER = [
+    "Built-In Shin Pads",
+    "Grip Socks",
+    "Grip Socks Criança",
+    "Sock Sleeves",
+    "Sock Sleeves Criança",
+    "Mini Shin Pads",
+    "Airflow",
+    "Outros",
+  ];
+  const byFamily = GROUP_ORDER
+    .map((group) => ({ family: group, items: items.filter((i) => groupOf(i) === group) }))
+    .filter((g) => g.items.length > 0);
 
   const recentMovements = await prisma.stockMovement.findMany({
     where: { storeId: store.id, inventoryItemId: { not: null } },
