@@ -37,7 +37,12 @@ export default async function InventoryPage() {
     "Outros",
   ];
   const byFamily = GROUP_ORDER
-    .map((group) => ({ family: group, items: items.filter((i) => groupOf(i) === group) }))
+    .map((group) => ({
+      family: group,
+      items: items
+        .filter((i) => groupOf(i) === group)
+        .sort((a, b) => b.stockOnHand - a.stockOnHand),
+    }))
     .filter((g) => g.items.length > 0);
 
   // Short row label — drop the family prefix (already shown as box title) and adult/kids suffix
