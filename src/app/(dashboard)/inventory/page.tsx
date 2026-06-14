@@ -88,12 +88,12 @@ export default async function InventoryPage() {
         <>
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: "Total unidades", value: totalUnits.toLocaleString("pt-PT") },
-              { label: "Valor em stock", value: formatMoney(totalValue, currency) },
-              { label: "Low stock", value: lowStock.length.toString(), warn: lowStock.length > 0 },
-              { label: "Sem stock", value: outOfStock.length.toString(), warn: outOfStock.length > 0 },
+              { label: "Total unidades", value: totalUnits.toLocaleString("pt-PT"), hideMobile: false },
+              { label: "Valor em stock", value: formatMoney(totalValue, currency), hideMobile: false },
+              { label: "Low stock", value: lowStock.length.toString(), warn: lowStock.length > 0, hideMobile: true },
+              { label: "Sem stock", value: outOfStock.length.toString(), warn: outOfStock.length > 0, hideMobile: true },
             ].map((k) => (
-              <Card key={k.label}>
+              <Card key={k.label} className={k.hideMobile ? "hidden lg:block" : ""}>
                 <CardHeader className="pb-2"><CardTitle>{k.label}</CardTitle></CardHeader>
                 <CardContent>
                   <div className={`text-2xl font-semibold ${k.warn ? "text-amber-500" : ""}`}>{k.value}</div>
