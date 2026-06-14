@@ -5,6 +5,8 @@ export type OrderOverheads = {
   bubbleMailerCost: number;
   cardCost: number;
   stickerCost: number;
+  shippingDomestic: number;
+  shippingEU: number;
   totalPerOrder: number;
 };
 
@@ -13,6 +15,8 @@ const DEFAULTS: Omit<OrderOverheads, "totalPerOrder"> = {
   bubbleMailerCost: 0.69,
   cardCost: 0.01,
   stickerCost: 0.06,
+  shippingDomestic: 2.34,
+  shippingEU: 4.25,
 };
 
 export async function getOrderOverheads(storeId: string): Promise<OrderOverheads> {
@@ -23,6 +27,8 @@ export async function getOrderOverheads(storeId: string): Promise<OrderOverheads
         bubbleMailerCost: Number(cfg.bubbleMailerCost),
         cardCost: Number(cfg.cardCost),
         stickerCost: Number(cfg.stickerCost),
+        shippingDomestic: Number(cfg.shippingDomestic),
+        shippingEU: Number(cfg.shippingEU),
       }
     : DEFAULTS;
   return { ...v, totalPerOrder: v.freeGiftCost + v.bubbleMailerCost + v.cardCost + v.stickerCost };

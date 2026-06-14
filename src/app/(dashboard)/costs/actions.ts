@@ -33,6 +33,8 @@ export async function updateOrderOverheads(data: {
   bubbleMailerCost: number;
   cardCost: number;
   stickerCost: number;
+  shippingDomestic: number;
+  shippingEU: number;
 }) {
   const store = await getStore();
   await upsertOrderCostConfig(store.id, data);

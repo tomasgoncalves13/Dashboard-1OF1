@@ -93,6 +93,8 @@ model OrderCostConfig {
   bubbleMailerCost Decimal  @default(0.69) @db.Decimal(14, 2)
   cardCost         Decimal  @default(0.01) @db.Decimal(14, 2)
   stickerCost      Decimal  @default(0.06) @db.Decimal(14, 2)
+  shippingDomestic Decimal  @default(2.34) @db.Decimal(14, 2)
+  shippingEU       Decimal  @default(4.25) @db.Decimal(14, 2)
   updatedAt        DateTime @updatedAt
 
   store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
