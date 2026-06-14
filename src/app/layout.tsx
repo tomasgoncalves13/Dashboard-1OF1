@@ -7,6 +7,13 @@ export const metadata: Metadata = {
   title: "1OF1 Dashboard",
   description: "Ecommerce intelligence & operations for 1OF1 Fútbol",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/favicon-16.png", sizes: "16x16", type: "image/png" },
+      { url: "/favicon-32.png", sizes: "32x32", type: "image/png" },
+    ],
+    apple: "/apple-touch-icon.png",
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
