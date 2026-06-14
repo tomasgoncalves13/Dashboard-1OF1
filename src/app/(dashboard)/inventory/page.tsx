@@ -40,6 +40,22 @@ export default async function InventoryPage() {
     .map((group) => ({ family: group, items: items.filter((i) => groupOf(i) === group) }))
     .filter((g) => g.items.length > 0);
 
+  // Short row label — drop the family prefix (already shown as box title) and adult/kids suffix
+  const FAMILY_PREFIX: Record<string, string> = {
+    "Built-In Shin Pads": "Built-In Shin Pad ",
+    "Mini Shin Pads": "Mini Shin Pad ",
+    "Airflow": "Airflow ",
+    "Grip Socks": "Grip Sock ",
+    "Sock Sleeves": "Sock Sleeve ",
+  };
+  const shortName = (i: (typeof items)[number]) => {
+    let n = i.name;
+    const pre = FAMILY_PREFIX[i.family];
+    if (pre && n.startsWith(pre)) n = n.slice(pre.length);
+    n = n.replace(/\s*\((Adulto|Kids)\)\s*$/, "").trim();
+    return n || i.name;
+  };
+
   const recentMovements = await prisma.stockMovement.findMany({
     where: { storeId: store.id, inventoryItemId: { not: null } },
     orderBy: { createdAt: "desc" },
@@ -108,7 +124,7 @@ export default async function InventoryPage() {
                         const low = i.reorderPoint !== null && i.stockOnHand <= i.reorderPoint;
                         return (
                           <tr key={i.id} className={`border-b last:border-0 ${low ? "bg-amber-50/50 dark:bg-amber-950/10" : ""}`}>
-                            <td className="py-1.5">{i.name}</td>
+                            <td className="py-1.5">{shortName(i)}</td>
                             <td className={`py-1.5 text-right tabular-nums font-medium ${
                               i.stockOnHand <= 0 ? "text-destructive" : low ? "text-amber-600" : ""
                             }`}>
