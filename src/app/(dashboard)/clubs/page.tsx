@@ -36,7 +36,7 @@ export default async function ClubsPage({
         components: {
           select: {
             quantity: true,
-            inventoryItem: { select: { name: true, family: true, stockOnHand: true, unitCost: true } },
+            inventoryItem: { select: { id: true, name: true, family: true, stockOnHand: true, unitCost: true } },
           },
         },
         product: { select: { title: true } },
@@ -53,22 +53,22 @@ export default async function ClubsPage({
     }),
   ]);
 
-  // Build inventory-labelled options: simple variants get the inventory item name,
-  // multi-component bundles keep the catalog name under "Packs".
+  // Only show simple inventory items (1 component, qty=1), deduplicated by inventoryItemId.
+  // Bundles and duplicates are excluded — each physical item appears exactly once.
+  const seenInventoryItems = new Set<string>();
   const inventoryProducts = rawVariants
-    .map((v) => {
-      const simple = v.components.length === 1 && v.components[0].quantity === 1;
-      const comp = v.components[0]?.inventoryItem;
-      const stock = simple && comp
-        ? comp.stockOnHand
-        : Math.min(...v.components.map((c) => c.inventoryItem.stockOnHand));
-      return {
+    .flatMap((v) => {
+      if (v.components.length !== 1 || v.components[0].quantity !== 1) return [];
+      const comp = v.components[0].inventoryItem;
+      if (seenInventoryItems.has(comp.id)) return [];
+      seenInventoryItems.add(comp.id);
+      return [{
         variantId: v.id,
-        name: simple && comp ? comp.name : `${v.product.title} — ${v.title}`,
-        family: simple && comp ? comp.family : "Packs",
-        stockOnHand: stock,
-        unitCost: Number(v.unitCost ?? comp?.unitCost ?? 0),
-      };
+        name: comp.name,
+        family: comp.family,
+        stockOnHand: comp.stockOnHand,
+        unitCost: Number(v.unitCost ?? comp.unitCost ?? 0),
+      }];
     })
     .sort((a, b) => a.family.localeCompare(b.family) || a.name.localeCompare(b.name));
 
