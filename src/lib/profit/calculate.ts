@@ -31,6 +31,8 @@ export function calculateOrderProfit(
   let cogs = 0;
 
   for (const { node: line } of order.lineItems.edges) {
+    // Skip free-gift items (price = 0) — their cost is already in packagingCost.freeGiftCost
+    if (Number(line.discountedUnitPriceSet.shopMoney.amount) === 0) continue;
     const variantGid = line.variant?.id ?? null;
     const dbVariant = variantGid ? variantById.get(variantGid) : null;
     const unitCostStr =

@@ -40,7 +40,7 @@ export async function recalculateAllOrderProfits(storeId: string): Promise<{ upd
         attributedAdSpend: true,
         influencerCost: true,
         otherCosts: true,
-        items: { select: { id: true, variantId: true, sku: true, unitCost: true, quantity: true } },
+        items: { select: { id: true, variantId: true, sku: true, unitCost: true, unitPrice: true, quantity: true } },
       },
       skip,
       take,
@@ -53,6 +53,9 @@ export async function recalculateAllOrderProfits(storeId: string): Promise<{ upd
       let cogs = 0;
 
       for (const item of order.items) {
+        // Free-gift items (price = 0) are already in packagingCost.freeGiftCost — skip from COGS
+        if (Number(item.unitPrice) === 0) continue;
+
         let currentCost: number;
 
         if (item.variantId && costByVariantId.has(item.variantId)) {
