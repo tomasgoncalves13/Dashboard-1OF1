@@ -49,7 +49,17 @@ export default async function ClubsPage({
       take: 20,
       include: {
         club: { select: { name: true } },
-        items: { include: { variant: { select: { title: true, product: { select: { title: true } } } } } },
+        items: {
+          include: {
+            variant: {
+              select: {
+                title: true,
+                product: { select: { title: true } },
+                components: { select: { inventoryItem: { select: { name: true } } } },
+              },
+            },
+          },
+        },
       },
     }),
   ]);
@@ -188,9 +198,12 @@ export default async function ClubsPage({
                       {sale.club ? sale.club.name : channelLabel(sale.channel)}
                     </td>
                     <td className="py-2 text-muted-foreground text-xs">
-                      {sale.items.map((i) =>
-                        `${i.quantity}× ${i.variant.product.title} ${i.variant.title}`
-                      ).join(", ")}
+                      {sale.items.map((i) => {
+                        const invName = i.variant.components.length === 1
+                          ? i.variant.components[0].inventoryItem.name
+                          : i.variant.title;
+                        return `${i.quantity}× ${invName}`;
+                      }).join(", ")}
                     </td>
                     <td className="py-2 text-right tabular-nums">{formatMoney(Number(sale.total), currency)}</td>
                     <td className="py-2 text-right tabular-nums">{formatMoney(Number(sale.grossProfit), currency)}</td>
