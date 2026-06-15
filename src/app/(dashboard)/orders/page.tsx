@@ -32,6 +32,8 @@ export default async function OrdersPage({
   const totalRevenue = paid.reduce((s, o) => s + Number(o.total), 0);
   const totalNetProfit = paid.reduce((s, o) => s + Number(o.netProfit), 0);
   const totalCogs = paid.reduce((s, o) => s + Number(o.cogsTotal), 0);
+  const totalPackaging = paid.reduce((s, o) => s + Number(o.packagingCost), 0);
+  const totalShipping = paid.reduce((s, o) => s + Number(o.shippingCost), 0);
   const avgMargin = totalRevenue > 0 ? (totalNetProfit / totalRevenue) * 100 : 0;
   const currency = store.currency;
 
@@ -45,12 +47,14 @@ export default async function OrdersPage({
         <DateRangePicker active={range.preset} />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
         {[
           { label: "Revenue (pagas)", value: formatMoney(totalRevenue, currency) },
           { label: "Net profit", value: formatMoney(totalNetProfit, currency) },
-          { label: "Custo produto", value: formatMoney(totalCogs, currency) },
           { label: "Margem média", value: `${avgMargin.toFixed(1)}%` },
+          { label: "Custo produto", value: formatMoney(totalCogs, currency) },
+          { label: "Custo embalagem", value: formatMoney(totalPackaging, currency) },
+          { label: "Custo envio", value: formatMoney(totalShipping, currency) },
         ].map((k) => (
           <Card key={k.label}>
             <CardHeader className="pb-2"><CardTitle>{k.label}</CardTitle></CardHeader>
@@ -78,6 +82,7 @@ export default async function OrdersPage({
                   <Th className="text-right">Revenue</Th>
                   <Th className="text-right">Custo produto</Th>
                   <Th className="text-right">Embal.</Th>
+                  <Th className="text-right">Envio</Th>
                   <Th className="text-right">Fees</Th>
                   <Th className="text-right">Net profit</Th>
                   <Th className="text-right">Margem</Th>
@@ -111,6 +116,7 @@ export default async function OrdersPage({
                       <Td className="text-right tabular-nums">{formatMoney(o.total.toString(), o.currency)}</Td>
                       <Td className="text-right tabular-nums text-muted-foreground">{formatMoney(o.cogsTotal.toString(), o.currency)}</Td>
                       <Td className="text-right tabular-nums text-muted-foreground">{formatMoney(o.packagingCost.toString(), o.currency)}</Td>
+                      <Td className="text-right tabular-nums text-muted-foreground">{formatMoney(o.shippingCost.toString(), o.currency)}</Td>
                       <Td className="text-right tabular-nums text-muted-foreground">{formatMoney(o.paymentFees.toString(), o.currency)}</Td>
                       <Td className={`text-right tabular-nums font-medium ${Number(o.netProfit) >= 0 ? "text-emerald-600" : "text-destructive"}`}>
                         {formatMoney(o.netProfit.toString(), o.currency)}
