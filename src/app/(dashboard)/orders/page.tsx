@@ -57,10 +57,10 @@ export default async function OrdersPage({
           { label: "Net profit", value: formatMoney(totalNetProfit, currency) },
           { label: "Margem média", value: `${avgMargin.toFixed(1)}%` },
           { label: "AOV", value: formatMoney(aov, currency) },
-          { label: "Custo médio/enc.", value: formatMoney(avgCostPerOrder, currency) },
-          { label: "Produto", value: formatMoney(totalCogs, currency) },
-          { label: "Custo embalagem", value: formatMoney(totalPackaging, currency) },
           { label: "Custo envio", value: formatMoney(totalShipping, currency) },
+          { label: "Custo produto", value: formatMoney(totalCogs, currency) },
+          { label: "Custo embalagem", value: formatMoney(totalPackaging, currency) },
+          { label: "Custo médio/enc.", value: formatMoney(avgCostPerOrder, currency) },
         ].map((k) => (
           <Card key={k.label}>
             <CardHeader className="pb-2"><CardTitle>{k.label}</CardTitle></CardHeader>
