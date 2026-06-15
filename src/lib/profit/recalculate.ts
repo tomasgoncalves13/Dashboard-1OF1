@@ -1,13 +1,21 @@
 import { prisma } from "@/lib/prisma";
 import { getOrderOverheads } from "./order-costs";
 
-// Recalculates profit for ALL orders in a store using the current OrderCostConfig.
-// Used when costs are updated (e.g., user changes bubble mailer price) or on first setup.
-// Runs in batches to avoid memory exhaustion on large order histories.
+// Recalculates profit for ALL orders using current ProductVariant.unitCost (not the
+// stale snapshot in OrderItem). Also refreshes OrderItem.unitCost so future runs stay correct.
 
 export async function recalculateAllOrderProfits(storeId: string): Promise<{ updated: number }> {
   const overheads = await getOrderOverheads(storeId);
   const overhead = overheads.totalPerOrder;
+
+  // Load all variants for this store once — used to resolve unitCost per item
+  const variants = await prisma.productVariant.findMany({
+    where: { storeId },
+    select: { id: true, unitCost: true },
+  });
+  const costByVariantId = new Map(
+    variants.map((v) => [v.id, Number(v.unitCost ?? 0)]),
+  );
 
   let skip = 0;
   const take = 100;
@@ -25,7 +33,7 @@ export async function recalculateAllOrderProfits(storeId: string): Promise<{ upd
         attributedAdSpend: true,
         influencerCost: true,
         otherCosts: true,
-        items: { select: { unitCost: true, quantity: true } },
+        items: { select: { id: true, variantId: true, unitCost: true, quantity: true } },
       },
       skip,
       take,
@@ -35,10 +43,28 @@ export async function recalculateAllOrderProfits(storeId: string): Promise<{ upd
     if (orders.length === 0) break;
 
     for (const order of orders) {
-      const cogs = order.items.reduce(
-        (sum, item) => sum + Number(item.unitCost) * item.quantity,
-        0,
-      );
+      let cogs = 0;
+
+      // Update each OrderItem with the current variant cost, then sum COGS
+      for (const item of order.items) {
+        const currentCost = item.variantId
+          ? (costByVariantId.get(item.variantId) ?? Number(item.unitCost))
+          : Number(item.unitCost);
+
+        cogs += currentCost * item.quantity;
+
+        // Refresh the snapshot so future recalculations don't regress
+        if (item.variantId && currentCost !== Number(item.unitCost)) {
+          await prisma.orderItem.update({
+            where: { id: item.id },
+            data: {
+              unitCost: currentCost.toFixed(2),
+              totalCost: (currentCost * item.quantity).toFixed(2),
+            },
+          });
+        }
+      }
+
       const revenueNet = Number(order.total) - Number(order.refundedTotal);
       const fees = Number(order.paymentFees);
       const shipping = order.shippingCountry === "PT"
