@@ -60,7 +60,7 @@ export default async function DashboardPage({
 
   const currency = store.currency;
   const totalRevenue = paid.revenue + physical.revenue;
-  const totalNetProfit = paid.netProfit + physical.grossProfit;
+  const totalNetProfit = paid.netProfit + physical.netProfit;
 
   return (
     <div className="space-y-6">
@@ -103,7 +103,7 @@ export default async function DashboardPage({
       {/* Ecommerce KPIs */}
       <div>
         <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">Ecommerce (Shopify)</h2>
-        <KpiGrid kpis={paid} currency={currency} money={money} />
+        <KpiGrid kpis={paid} currency={currency} />
       </div>
 
       <Card>
@@ -150,12 +150,10 @@ function KpiGrid({
   kpis,
   currency,
   muted,
-  money,
 }: {
   kpis: KpiSet;
   currency: string;
   muted?: boolean;
-  money?: Money;
 }) {
   const cards = [
     { label: "Revenue", value: formatMoney(kpis.revenue, currency) },
@@ -166,13 +164,6 @@ function KpiGrid({
     { label: "Total de produtos", value: formatMoney(kpis.cogs, currency) },
     { label: "Total de envios", value: formatMoney(kpis.shippingCost, currency) },
     { label: "Taxas pagamento", value: formatMoney(kpis.fees, currency) },
-    {
-      label: "Pagamento p/ conta bancária",
-      value: money ? formatMoney(money.total, currency) : "—",
-      hint: money
-        ? `SP net: ${formatMoney(money.payoutsNet, currency)} · Eupago net: ${formatMoney(money.eupagoNet, currency)} · Outros (bruto): ${formatMoney(money.othersGross, currency)}`
-        : undefined,
-    },
   ];
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -183,9 +174,6 @@ function KpiGrid({
             <div className={`text-2xl font-semibold tracking-tight ${muted ? "text-muted-foreground" : ""}`}>
               {k.value}
             </div>
-            {"hint" in k && k.hint && (
-              <div className="text-[11px] text-muted-foreground mt-1 leading-tight">{k.hint}</div>
-            )}
           </CardContent>
         </Card>
       ))}
@@ -199,9 +187,9 @@ function PhysicalSection({ physical, currency }: { physical: PhysicalKpiSet; cur
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "Revenue", value: formatMoney(physical.revenue, currency) },
-          { label: "COGS", value: formatMoney(physical.cogs, currency) },
-          { label: "Gross profit", value: formatMoney(physical.grossProfit, currency) },
-          { label: "Margem", value: physical.margin !== null ? `${physical.margin.toFixed(1)}%` : "—" },
+          { label: "Profit", value: formatMoney(physical.netProfit, currency) },
+          { label: `Custo produtos (${physical.itemsCount} und.)`, value: formatMoney(physical.cogs, currency) },
+          { label: "Comissão paga", value: formatMoney(physical.commission, currency) },
         ].map((k) => (
           <Card key={k.label}>
             <CardHeader className="pb-2"><CardTitle>{k.label}</CardTitle></CardHeader>

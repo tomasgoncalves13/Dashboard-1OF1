@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { calcClubCommission } from "@/lib/clubs/commission";
 
 const PAID_STATUSES = ["PAID"];
 
@@ -178,6 +179,9 @@ export type PhysicalKpiSet = {
   revenue: number;
   cogs: number;
   grossProfit: number;
+  commission: number;
+  netProfit: number;
+  itemsCount: number;
   salesCount: number;
   margin: number | null;
   byChannel: { channel: string; revenue: number; grossProfit: number; count: number }[];
@@ -188,7 +192,7 @@ export async function getPhysicalKpis(
   from: Date,
   to: Date,
 ): Promise<PhysicalKpiSet> {
-  const [agg, byChannel] = await Promise.all([
+  const [agg, byChannel, clubs, allSales] = await Promise.all([
     prisma.manualSale.aggregate({
       where: { storeId, soldAt: { gte: from, lte: to } },
       _sum: { total: true, cogsTotal: true, grossProfit: true },
@@ -201,15 +205,50 @@ export async function getPhysicalKpis(
       _count: { _all: true },
       orderBy: { _sum: { total: "desc" } },
     }),
+    prisma.club.findMany({
+      where: { storeId },
+      select: { id: true, commissionEnabled: true, commissionTiers: true },
+    }),
+    prisma.manualSale.findMany({
+      where: { storeId, soldAt: { gte: from, lte: to } },
+      select: { clubId: true, soldAt: true, total: true, items: { select: { quantity: true } } },
+    }),
   ]);
+
+  // Commission: group by clubId+month, apply tier per group
+  const clubMap = new Map(clubs.map((c) => [c.id, c]));
+  const grouped = new Map<string, { clubId: string; revenue: number }>();
+  let itemsCount = 0;
+
+  for (const sale of allSales) {
+    for (const item of sale.items) itemsCount += item.quantity;
+    if (!sale.clubId) continue;
+    const key = `${sale.clubId}__${sale.soldAt.getFullYear()}-${sale.soldAt.getMonth()}`;
+    const g = grouped.get(key);
+    if (g) g.revenue += Number(sale.total);
+    else grouped.set(key, { clubId: sale.clubId, revenue: Number(sale.total) });
+  }
+
+  let commission = 0;
+  for (const { clubId, revenue: rev } of grouped.values()) {
+    const club = clubMap.get(clubId);
+    if (club) commission += calcClubCommission(rev, club.commissionEnabled, club.commissionTiers);
+  }
+  commission = Math.round(commission * 100) / 100;
+
   const revenue = Number(agg._sum.total ?? 0);
   const grossProfit = Number(agg._sum.grossProfit ?? 0);
+  const netProfit = Math.round((grossProfit - commission) * 100) / 100;
+
   return {
     revenue,
     cogs: Number(agg._sum.cogsTotal ?? 0),
     grossProfit,
+    commission,
+    netProfit,
+    itemsCount,
     salesCount: agg._count._all,
-    margin: revenue > 0 ? (grossProfit / revenue) * 100 : null,
+    margin: revenue > 0 ? (netProfit / revenue) * 100 : null,
     byChannel: byChannel.map((r) => ({
       channel: r.channel,
       revenue: Number(r._sum.total ?? 0),
