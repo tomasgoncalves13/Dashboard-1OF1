@@ -52,7 +52,7 @@ export default async function OrdersPage({
           { label: "Revenue (pagas)", value: formatMoney(totalRevenue, currency) },
           { label: "Net profit", value: formatMoney(totalNetProfit, currency) },
           { label: "Margem média", value: `${avgMargin.toFixed(1)}%` },
-          { label: "Custo produto", value: formatMoney(totalCogs, currency) },
+          { label: "Produto", value: formatMoney(totalCogs, currency) },
           { label: "Custo embalagem", value: formatMoney(totalPackaging, currency) },
           { label: "Custo envio", value: formatMoney(totalShipping, currency) },
         ].map((k) => (
@@ -80,10 +80,11 @@ export default async function OrdersPage({
                   <Th>Status</Th>
                   <Th className="text-right">Itens</Th>
                   <Th className="text-right">Revenue</Th>
-                  <Th className="text-right">Custo produto</Th>
+                  <Th className="text-right">Produto</Th>
                   <Th className="text-right">Embal.</Th>
                   <Th className="text-right">Envio</Th>
                   <Th className="text-right">Fees</Th>
+                  <Th className="text-right">Custo total</Th>
                   <Th className="text-right">Net profit</Th>
                   <Th className="text-right">Margem</Th>
                 </tr>
@@ -118,6 +119,9 @@ export default async function OrdersPage({
                       <Td className="text-right tabular-nums text-muted-foreground">{formatMoney(o.packagingCost.toString(), o.currency)}</Td>
                       <Td className="text-right tabular-nums text-muted-foreground">{formatMoney(o.shippingCost.toString(), o.currency)}</Td>
                       <Td className="text-right tabular-nums text-muted-foreground">{formatMoney(o.paymentFees.toString(), o.currency)}</Td>
+                      <Td className="text-right tabular-nums text-muted-foreground font-medium">
+                        {formatMoney((Number(o.cogsTotal) + Number(o.packagingCost) + Number(o.shippingCost) + Number(o.paymentFees)).toFixed(2), o.currency)}
+                      </Td>
                       <Td className={`text-right tabular-nums font-medium ${Number(o.netProfit) >= 0 ? "text-emerald-600" : "text-destructive"}`}>
                         {formatMoney(o.netProfit.toString(), o.currency)}
                       </Td>
