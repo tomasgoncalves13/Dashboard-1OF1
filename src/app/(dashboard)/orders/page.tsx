@@ -49,7 +49,7 @@ export default async function OrdersPage({
         {[
           { label: "Revenue (pagas)", value: formatMoney(totalRevenue, currency) },
           { label: "Net profit", value: formatMoney(totalNetProfit, currency) },
-          { label: "COGS", value: formatMoney(totalCogs, currency) },
+          { label: "Custo produto", value: formatMoney(totalCogs, currency) },
           { label: "Margem média", value: `${avgMargin.toFixed(1)}%` },
         ].map((k) => (
           <Card key={k.label}>
@@ -76,7 +76,7 @@ export default async function OrdersPage({
                   <Th>Status</Th>
                   <Th className="text-right">Itens</Th>
                   <Th className="text-right">Revenue</Th>
-                  <Th className="text-right">COGS</Th>
+                  <Th className="text-right">Custo produto</Th>
                   <Th className="text-right">Embal.</Th>
                   <Th className="text-right">Fees</Th>
                   <Th className="text-right">Net profit</Th>
