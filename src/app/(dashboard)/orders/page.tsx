@@ -42,7 +42,7 @@ export default async function OrdersPage({
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Orders</h1>
-          <p className="text-sm text-muted-foreground">{range.label} · {orders.length} encomendas</p>
+          <p className="text-sm text-muted-foreground">{range.label} · {paid.length} encomendas pagas</p>
         </div>
         <DateRangePicker active={range.preset} />
       </div>
