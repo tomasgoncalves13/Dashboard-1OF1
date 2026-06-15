@@ -34,7 +34,11 @@ export default async function OrdersPage({
   const totalCogs = paid.reduce((s, o) => s + Number(o.cogsTotal), 0);
   const totalPackaging = paid.reduce((s, o) => s + Number(o.packagingCost), 0);
   const totalShipping = paid.reduce((s, o) => s + Number(o.shippingCost), 0);
+  const totalFees = paid.reduce((s, o) => s + Number(o.paymentFees), 0);
+  const totalCost = totalCogs + totalPackaging + totalShipping + totalFees;
   const avgMargin = totalRevenue > 0 ? (totalNetProfit / totalRevenue) * 100 : 0;
+  const aov = paid.length > 0 ? totalRevenue / paid.length : 0;
+  const avgCostPerOrder = paid.length > 0 ? totalCost / paid.length : 0;
   const currency = store.currency;
 
   return (
@@ -47,11 +51,13 @@ export default async function OrdersPage({
         <DateRangePicker active={range.preset} />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "Revenue (pagas)", value: formatMoney(totalRevenue, currency) },
           { label: "Net profit", value: formatMoney(totalNetProfit, currency) },
           { label: "Margem média", value: `${avgMargin.toFixed(1)}%` },
+          { label: "AOV", value: formatMoney(aov, currency) },
+          { label: "Custo médio/enc.", value: formatMoney(avgCostPerOrder, currency) },
           { label: "Produto", value: formatMoney(totalCogs, currency) },
           { label: "Custo embalagem", value: formatMoney(totalPackaging, currency) },
           { label: "Custo envio", value: formatMoney(totalShipping, currency) },
