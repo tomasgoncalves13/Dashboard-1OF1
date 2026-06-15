@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { fullSync } from "@/lib/shopify/sync";
 import { shopifyGraphQL } from "@/lib/shopify/client";
 import { SHOP_QUERY } from "@/lib/shopify/queries";
+import { recalculateAllOrderProfits } from "@/lib/profit/recalculate";
 
 async function getOwnedStore() {
   const user = await getSessionUser();
@@ -38,5 +39,13 @@ export async function runShopifyFullSync() {
   revalidatePath("/dashboard");
   revalidatePath("/orders");
   revalidatePath("/products");
+  return result;
+}
+
+export async function runProfitRecalculate() {
+  const store = await getOwnedStore();
+  const result = await recalculateAllOrderProfits(store.id);
+  revalidatePath("/dashboard");
+  revalidatePath("/orders");
   return result;
 }

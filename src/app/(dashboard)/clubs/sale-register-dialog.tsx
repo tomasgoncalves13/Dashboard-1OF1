@@ -5,28 +5,35 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Select, SelectContent, SelectGroup, SelectItem,
+  SelectLabel, SelectTrigger, SelectValue,
+} from "@/components/ui/select";
 import { actionRegisterSale } from "./actions";
 import { toast } from "sonner";
 import { ShoppingBag, Plus, Trash2 } from "lucide-react";
-import type { Prisma } from "@prisma/client";
 
 type Club = { id: string; name: string };
-type Variant = { id: string; title: string; unitCost: Prisma.Decimal | null; stockOnHand: number };
-type Product = { id: string; title: string; variants: Variant[] };
 
-type Props = { clubs: Club[]; products: Product[]; currency: string };
+type InventoryProduct = {
+  variantId: string;
+  name: string;
+  family: string;
+  stockOnHand: number;
+  unitCost: number;
+};
+
+type Props = { clubs: Club[]; inventoryProducts: InventoryProduct[]; currency: string };
 
 type LineItem = {
   variantId: string;
-  productTitle: string;
-  variantTitle: string;
+  name: string;
   quantity: number;
   unitPrice: number;
   unitCost: number;
 };
 
-export function SaleRegisterDialog({ clubs, products, currency }: Props) {
+export function SaleRegisterDialog({ clubs, inventoryProducts, currency }: Props) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [channel, setChannel] = useState<"CLUB" | "MANUAL" | "EVENT">("MANUAL");
@@ -35,27 +42,30 @@ export function SaleRegisterDialog({ clubs, products, currency }: Props) {
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<LineItem[]>([]);
 
-  // For adding a new line
   const [selVariantId, setSelVariantId] = useState("");
   const [selQty, setSelQty] = useState(1);
   const [selPrice, setSelPrice] = useState("");
 
-  const selectedVariant = products.flatMap((p) => p.variants).find((v) => v.id === selVariantId);
-  const selectedProduct = products.find((p) => p.variants.some((v) => v.id === selVariantId));
+  const selected = inventoryProducts.find((p) => p.variantId === selVariantId);
+
+  // Group by family for the select dropdown
+  const byFamily = inventoryProducts.reduce<Record<string, InventoryProduct[]>>((acc, p) => {
+    (acc[p.family] ??= []).push(p);
+    return acc;
+  }, {});
 
   function addItem() {
-    if (!selVariantId || !selectedVariant || !selectedProduct) return;
+    if (!selVariantId || !selected) return;
     const price = Number(selPrice);
     if (price <= 0) return;
     setItems((prev) => [
       ...prev,
       {
         variantId: selVariantId,
-        productTitle: selectedProduct.title,
-        variantTitle: selectedVariant.title,
+        name: selected.name,
         quantity: selQty,
         unitPrice: price,
-        unitCost: Number(selectedVariant.unitCost ?? 0),
+        unitCost: selected.unitCost,
       },
     ]);
     setSelVariantId("");
@@ -144,15 +154,20 @@ export function SaleRegisterDialog({ clubs, products, currency }: Props) {
             <div className="grid grid-cols-2 gap-2">
               <div className="col-span-2">
                 <Select value={selVariantId} onValueChange={setSelVariantId}>
-                  <SelectTrigger><SelectValue placeholder="Produto / variante…" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Produto…" />
+                  </SelectTrigger>
                   <SelectContent>
-                    {products.map((p) => (
-                      p.variants.map((v) => (
-                        <SelectItem key={v.id} value={v.id}>
-                          {p.title} — {v.title}
-                          {v.stockOnHand <= 0 && " ⚠️ sem stock"}
-                        </SelectItem>
-                      ))
+                    {Object.entries(byFamily).map(([family, products]) => (
+                      <SelectGroup key={family}>
+                        <SelectLabel>{family}</SelectLabel>
+                        {products.map((p) => (
+                          <SelectItem key={p.variantId} value={p.variantId}>
+                            {p.name}
+                            {p.stockOnHand <= 0 && " ⚠️ sem stock"}
+                          </SelectItem>
+                        ))}
+                      </SelectGroup>
                     ))}
                   </SelectContent>
                 </Select>
@@ -185,9 +200,7 @@ export function SaleRegisterDialog({ clubs, products, currency }: Props) {
             <div className="space-y-1">
               {items.map((item, i) => (
                 <div key={i} className="flex items-center justify-between text-sm border rounded px-3 py-1.5">
-                  <span>
-                    {item.quantity}× {item.productTitle} <span className="text-muted-foreground">{item.variantTitle}</span>
-                  </span>
+                  <span>{item.quantity}× {item.name}</span>
                   <div className="flex items-center gap-2">
                     <span className="tabular-nums font-medium">
                       €{(item.unitPrice * item.quantity).toFixed(2)}

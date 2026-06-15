@@ -21,7 +21,7 @@ export async function recalculateAllOrderProfits(storeId: string): Promise<{ upd
         total: true,
         refundedTotal: true,
         paymentFees: true,
-        shippingCost: true,
+        shippingCountry: true,
         attributedAdSpend: true,
         influencerCost: true,
         otherCosts: true,
@@ -41,7 +41,9 @@ export async function recalculateAllOrderProfits(storeId: string): Promise<{ upd
       );
       const revenueNet = Number(order.total) - Number(order.refundedTotal);
       const fees = Number(order.paymentFees);
-      const shipping = Number(order.shippingCost);
+      const shipping = order.shippingCountry === "PT"
+        ? overheads.shippingDomestic
+        : overheads.shippingEU;
       const ad = Number(order.attributedAdSpend);
       const influencer = Number(order.influencerCost);
       const other = Number(order.otherCosts);
@@ -54,6 +56,7 @@ export async function recalculateAllOrderProfits(storeId: string): Promise<{ upd
         where: { id: order.id },
         data: {
           cogsTotal: cogs.toFixed(2),
+          shippingCost: shipping.toFixed(2),
           packagingCost: overhead.toFixed(2),
           grossProfit: grossProfit.toFixed(2),
           netProfit: netProfit.toFixed(2),

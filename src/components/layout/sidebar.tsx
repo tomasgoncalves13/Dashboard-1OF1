@@ -4,27 +4,25 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, ShoppingBag, Package, Warehouse, Users,
-  Megaphone, Receipt, Store, Upload, Settings, Sparkles,
+  Receipt, Upload, Settings, Sparkles,
   Calculator, Landmark, Trophy, X, ShoppingCart,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const nav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/orders", label: "Orders", icon: ShoppingBag },
-  { href: "/costs", label: "Costs", icon: Calculator },
-  { href: "/encomendas", label: "Importações", icon: ShoppingCart },
-  { href: "/products", label: "Catalog", icon: Package },
-  { href: "/inventory", label: "Inventory", icon: Warehouse },
-  { href: "/clubs", label: "Physical Sales", icon: Trophy },
-  { href: "/customers", label: "Customers", icon: Users },
+  { href: "/finance", label: "Finanças", icon: Landmark },
+  { href: "/orders", label: "Encomendas Site", icon: ShoppingBag },
+  { href: "/clubs", label: "Vendas Físicas", icon: Trophy },
   { href: "/influencers", label: "Influencers", icon: Sparkles },
-  { href: "/ads", label: "Ads", icon: Megaphone },
-  { href: "/expenses", label: "Expenses", icon: Receipt },
-  { href: "/finance", label: "Finance", icon: Landmark },
-  { href: "/manual-sales", label: "Manual sales", icon: Store },
-  { href: "/imports", label: "Imports", icon: Upload },
-  { href: "/settings", label: "Settings", icon: Settings },
+  { href: "/inventory", label: "Inventário", icon: Warehouse },
+  { href: "/products", label: "Catálogo", icon: Package },
+  { href: "/customers", label: "Clientes", icon: Users },
+  { href: "/costs", label: "Custos", icon: Calculator },
+  { href: "/encomendas", label: "Importações", icon: ShoppingCart },
+  { href: "/expenses", label: "Despesas Mensais", icon: Receipt },
+  { href: "/imports", label: "Importar", icon: Upload },
+  { href: "/settings", label: "Definições", icon: Settings },
 ];
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {

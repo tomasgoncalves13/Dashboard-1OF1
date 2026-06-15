@@ -163,7 +163,8 @@ function KpiGrid({
     { label: "Margem", value: kpis.margin === null ? "—" : `${kpis.margin.toFixed(1)}%` },
     { label: "Encomendas", value: formatNumber(kpis.ordersCount) },
     { label: "AOV", value: formatMoney(kpis.aov, currency) },
-    { label: "COGS", value: formatMoney(kpis.cogs, currency) },
+    { label: "Total de produtos", value: formatMoney(kpis.cogs, currency) },
+    { label: "Total de envios", value: formatMoney(kpis.shippingCost, currency) },
     { label: "Taxas pagamento", value: formatMoney(kpis.fees, currency) },
     {
       label: "Pagamento p/ conta bancária",

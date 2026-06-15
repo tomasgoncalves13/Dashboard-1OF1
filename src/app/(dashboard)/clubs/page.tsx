@@ -21,16 +21,26 @@ export default async function ClubsPage({
   const year = Number(sp.year ?? now.getFullYear());
   const month = Number(sp.month ?? now.getMonth() + 1);
 
-  const [clubs, summaries, products, recentSales] = await Promise.all([
+  const [clubs, summaries, rawVariants, recentSales] = await Promise.all([
     prisma.club.findMany({ where: { storeId: store.id }, orderBy: { name: "asc" } }),
     getMonthlyClubSummaries(store.id, year, month),
-    prisma.product.findMany({
-      where: { storeId: store.id, status: "ACTIVE" },
-      select: {
-        id: true, title: true,
-        variants: { select: { id: true, title: true, unitCost: true, stockOnHand: true } },
+    prisma.productVariant.findMany({
+      where: {
+        product: { storeId: store.id, status: "ACTIVE" },
+        components: { some: {} },
       },
-      orderBy: { title: "asc" },
+      select: {
+        id: true,
+        unitCost: true,
+        title: true,
+        components: {
+          select: {
+            quantity: true,
+            inventoryItem: { select: { name: true, family: true, stockOnHand: true, unitCost: true } },
+          },
+        },
+        product: { select: { title: true } },
+      },
     }),
     prisma.manualSale.findMany({
       where: { storeId: store.id },
@@ -42,6 +52,25 @@ export default async function ClubsPage({
       },
     }),
   ]);
+
+  // Build inventory-labelled options: simple variants get the inventory item name,
+  // multi-component bundles keep the catalog name under "Packs".
+  const inventoryProducts = rawVariants
+    .map((v) => {
+      const simple = v.components.length === 1 && v.components[0].quantity === 1;
+      const comp = v.components[0]?.inventoryItem;
+      const stock = simple && comp
+        ? comp.stockOnHand
+        : Math.min(...v.components.map((c) => c.inventoryItem.stockOnHand));
+      return {
+        variantId: v.id,
+        name: simple && comp ? comp.name : `${v.product.title} — ${v.title}`,
+        family: simple && comp ? comp.family : "Packs",
+        stockOnHand: stock,
+        unitCost: Number(v.unitCost ?? comp?.unitCost ?? 0),
+      };
+    })
+    .sort((a, b) => a.family.localeCompare(b.family) || a.name.localeCompare(b.name));
 
   const currency = store.currency;
   const monthLabel = new Date(year, month - 1).toLocaleString("pt-PT", { month: "long", year: "numeric" });
@@ -58,7 +87,7 @@ export default async function ClubsPage({
           <p className="text-sm text-muted-foreground">Clubes, vendas próprias e eventos</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <SaleRegisterDialog clubs={clubs} products={products} currency={currency} />
+          <SaleRegisterDialog clubs={clubs} inventoryProducts={inventoryProducts} currency={currency} />
           <ClubCreateDialog />
         </div>
       </div>

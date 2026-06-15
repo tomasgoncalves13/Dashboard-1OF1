@@ -53,7 +53,9 @@ export function calculateOrderProfit(
 
   // Per-order overheads (from OrderCostConfig)
   const packaging = overheads.totalPerOrder;
-  const shippingCost = 0;   // configured per-store shipping cost (future)
+  const shippingCost = order.shippingAddress?.country === "PT"
+    ? overheads.shippingDomestic
+    : overheads.shippingEU;
   const attributedAd = 0;   // filled later by ad-attribution job
   const influencer = 0;
   const other = 0;

@@ -8,6 +8,7 @@ export type KpiSet = {
   cogs: number;
   fees: number;
   adSpend: number;
+  shippingCost: number;
   ordersCount: number;
   aov: number;
   margin: number | null;
@@ -34,6 +35,7 @@ export async function getKpis(
         paymentFees: true,
         netProfit: true,
         attributedAdSpend: true,
+        shippingCost: true,
       },
     }),
     prisma.order.count({ where }),
@@ -44,6 +46,7 @@ export async function getKpis(
   const cogs = Number(agg._sum.cogsTotal ?? 0);
   const fees = Number(agg._sum.paymentFees ?? 0);
   const adSpend = Number(agg._sum.attributedAdSpend ?? 0);
+  const shippingCost = Number(agg._sum.shippingCost ?? 0);
 
   return {
     revenue,
@@ -51,6 +54,7 @@ export async function getKpis(
     cogs,
     fees,
     adSpend,
+    shippingCost,
     ordersCount,
     aov: ordersCount > 0 ? revenue / ordersCount : 0,
     margin: revenue > 0 ? (netProfit / revenue) * 100 : null,
