@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import Link from "next/link";
 import { ClubCreateDialog } from "./club-create-dialog";
 import { SaleRegisterDialog } from "./sale-register-dialog";
+import { AddMonthDialog } from "./add-month-dialog";
 
 export default async function ClubsPage({
   searchParams,
@@ -87,6 +88,7 @@ export default async function ClubsPage({
           <p className="text-sm text-muted-foreground">Clubes, vendas próprias e eventos</p>
         </div>
         <div className="flex gap-2 flex-wrap">
+          <AddMonthDialog clubs={clubs} inventoryProducts={inventoryProducts} currency={currency} />
           <SaleRegisterDialog clubs={clubs} inventoryProducts={inventoryProducts} currency={currency} />
           <ClubCreateDialog />
         </div>
@@ -128,10 +130,9 @@ export default async function ClubsPage({
                 <tr>
                   <th className="text-left font-medium py-2">Clube</th>
                   <th className="text-right font-medium py-2">Revenue</th>
-                  <th className="text-right font-medium py-2">COGS</th>
-                  <th className="text-right font-medium py-2">Gross profit</th>
-                  <th className="text-right font-medium py-2">Comissão</th>
-                  <th className="text-right font-medium py-2">Net profit</th>
+                  <th className="text-right font-medium py-2">Custo produtos</th>
+                  <th className="text-right font-medium py-2">Custo comissão</th>
+                  <th className="text-right font-medium py-2">Lucro</th>
                   <th className="text-right font-medium py-2">Margem</th>
                   <th className="py-2"></th>
                 </tr>
@@ -142,7 +143,6 @@ export default async function ClubsPage({
                     <td className="py-2 font-medium">{s.clubName}</td>
                     <td className="py-2 text-right tabular-nums">{formatMoney(s.revenue, currency)}</td>
                     <td className="py-2 text-right tabular-nums text-muted-foreground">{formatMoney(s.cogs, currency)}</td>
-                    <td className="py-2 text-right tabular-nums">{formatMoney(s.grossProfit, currency)}</td>
                     <td className="py-2 text-right tabular-nums text-orange-500">{formatMoney(s.commission, currency)}</td>
                     <td className="py-2 text-right tabular-nums font-semibold">{formatMoney(s.netProfit, currency)}</td>
                     <td className="py-2 text-right tabular-nums">
