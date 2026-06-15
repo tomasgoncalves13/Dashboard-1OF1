@@ -1,11 +1,9 @@
-// Progressive commission calculator (like tax brackets).
+// Flat-tier commission calculator.
 // commissionTiers: [{upTo: 100, rate: 0.25}, {upTo: 300, rate: 0.30}, {upTo: null, rate: 0.35}]
 //
-// Example: revenue = 500€
-//   First 100€  → 25% = 25€
-//   Next  200€  → 30% = 60€  (100→300)
-//   Remaining 200€ → 35% = 70€  (300→500)
-//   Total: 155€
+// The rate of the tier that contains the revenue applies to the ENTIRE revenue.
+// Example: revenue = 115€ → exceeds 100 threshold → 30% × 115 = 34.50€
+// Example: revenue = 55€  → within 100 threshold  → 25% × 55  = 13.75€
 
 export type CommissionTier = {
   upTo: number | null; // null = unlimited (top bracket)
@@ -25,21 +23,9 @@ export function calculateProgressiveCommission(
     return a.upTo - b.upTo;
   });
 
-  let commission = 0;
-  let remaining = revenue;
-  let prevThreshold = 0;
-
-  for (const tier of sorted) {
-    if (remaining <= 0) break;
-    const bandTop = tier.upTo ?? Infinity;
-    const bandSize = bandTop - prevThreshold;
-    const slice = Math.min(remaining, bandSize);
-    commission += slice * tier.rate;
-    remaining -= slice;
-    prevThreshold = bandTop === Infinity ? prevThreshold : bandTop;
-  }
-
-  return Math.round(commission * 100) / 100;
+  // Find the first tier where revenue fits (revenue <= upTo), fallback to last tier
+  const tier = sorted.find((t) => t.upTo === null || revenue <= t.upTo) ?? sorted[sorted.length - 1];
+  return Math.round(revenue * tier.rate * 100) / 100;
 }
 
 // Calculate commission for a club for a given month's revenue.
