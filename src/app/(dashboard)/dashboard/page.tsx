@@ -135,7 +135,7 @@ export default async function DashboardPage({
       {/* Audit */}
       <div className="space-y-3 pt-4 border-t">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">Auditoria · todas as encomendas</h2>
+          <h2 className="text-lg font-semibold tracking-tight">Auditoria · todas as encomendas Site</h2>
           <p className="text-xs text-muted-foreground">
             Inclui pendentes, expiradas e reembolsadas.
           </p>
