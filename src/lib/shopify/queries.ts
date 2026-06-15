@@ -77,7 +77,7 @@ export const ORDERS_QUERY = /* GraphQL */ `
           paymentGatewayNames
           currencyCode
           customer { id }
-          shippingAddress { country city }
+          shippingAddress { countryCodeV2 city }
           subtotalPriceSet { shopMoney { amount } }
           totalDiscountsSet { shopMoney { amount } }
           totalShippingPriceSet { shopMoney { amount } }

@@ -1,20 +1,27 @@
 import { prisma } from "@/lib/prisma";
 import { getOrderOverheads } from "./order-costs";
 
-// Recalculates profit for ALL orders using current ProductVariant.unitCost (not the
-// stale snapshot in OrderItem). Also refreshes OrderItem.unitCost so future runs stay correct.
+// Recalculates profit for ALL orders using current ProductVariant.unitCost.
+// Matches by variantId first, falls back to SKU when variantId is null (orders
+// synced before variant linking was set up). Also normalises shippingCountry to
+// the ISO code ("PT") so the domestic rate is applied correctly.
+
+const DOMESTIC_COUNTRIES = new Set(["PT", "Portugal"]);
 
 export async function recalculateAllOrderProfits(storeId: string): Promise<{ updated: number }> {
   const overheads = await getOrderOverheads(storeId);
   const overhead = overheads.totalPerOrder;
 
-  // Load all variants for this store once — used to resolve unitCost per item
+  // Load all variants once — two lookup maps: by id and by sku
   const variants = await prisma.productVariant.findMany({
     where: { storeId },
-    select: { id: true, unitCost: true },
+    select: { id: true, sku: true, unitCost: true },
   });
-  const costByVariantId = new Map(
-    variants.map((v) => [v.id, Number(v.unitCost ?? 0)]),
+  const costByVariantId = new Map(variants.map((v) => [v.id, Number(v.unitCost ?? 0)]));
+  const costByVariantSku = new Map(
+    variants
+      .filter((v) => v.sku)
+      .map((v) => [v.sku!.trim().toLowerCase(), Number(v.unitCost ?? 0)]),
   );
 
   let skip = 0;
@@ -33,7 +40,7 @@ export async function recalculateAllOrderProfits(storeId: string): Promise<{ upd
         attributedAdSpend: true,
         influencerCost: true,
         otherCosts: true,
-        items: { select: { id: true, variantId: true, unitCost: true, quantity: true } },
+        items: { select: { id: true, variantId: true, sku: true, unitCost: true, quantity: true } },
       },
       skip,
       take,
@@ -45,16 +52,20 @@ export async function recalculateAllOrderProfits(storeId: string): Promise<{ upd
     for (const order of orders) {
       let cogs = 0;
 
-      // Update each OrderItem with the current variant cost, then sum COGS
       for (const item of order.items) {
-        const currentCost = item.variantId
-          ? (costByVariantId.get(item.variantId) ?? Number(item.unitCost))
-          : Number(item.unitCost);
+        let currentCost: number;
+
+        if (item.variantId && costByVariantId.has(item.variantId)) {
+          currentCost = costByVariantId.get(item.variantId)!;
+        } else if (item.sku && costByVariantSku.has(item.sku.trim().toLowerCase())) {
+          currentCost = costByVariantSku.get(item.sku.trim().toLowerCase())!;
+        } else {
+          currentCost = Number(item.unitCost);
+        }
 
         cogs += currentCost * item.quantity;
 
-        // Refresh the snapshot so future recalculations don't regress
-        if (item.variantId && currentCost !== Number(item.unitCost)) {
+        if (currentCost !== Number(item.unitCost)) {
           await prisma.orderItem.update({
             where: { id: item.id },
             data: {
@@ -67,9 +78,12 @@ export async function recalculateAllOrderProfits(storeId: string): Promise<{ upd
 
       const revenueNet = Number(order.total) - Number(order.refundedTotal);
       const fees = Number(order.paymentFees);
-      const shipping = order.shippingCountry === "PT"
-        ? overheads.shippingDomestic
-        : overheads.shippingEU;
+
+      // Handle both "Portugal" (old syncs) and "PT" (new syncs with countryCodeV2)
+      const isDomestic = DOMESTIC_COUNTRIES.has(order.shippingCountry ?? "");
+      const shipping = isDomestic ? overheads.shippingDomestic : overheads.shippingEU;
+      const normalizedCountry = isDomestic ? "PT" : (order.shippingCountry ?? null);
+
       const ad = Number(order.attributedAdSpend);
       const influencer = Number(order.influencerCost);
       const other = Number(order.otherCosts);
@@ -87,6 +101,7 @@ export async function recalculateAllOrderProfits(storeId: string): Promise<{ upd
           grossProfit: grossProfit.toFixed(2),
           netProfit: netProfit.toFixed(2),
           marginPct: marginPct !== null ? marginPct.toFixed(4) : null,
+          shippingCountry: normalizedCountry,
         },
       });
       updated++;

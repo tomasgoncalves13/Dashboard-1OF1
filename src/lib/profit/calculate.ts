@@ -53,7 +53,7 @@ export function calculateOrderProfit(
 
   // Per-order overheads (from OrderCostConfig)
   const packaging = overheads.totalPerOrder;
-  const shippingCost = order.shippingAddress?.country === "PT"
+  const shippingCost = ["PT", "Portugal"].includes(order.shippingAddress?.countryCodeV2 ?? "")
     ? overheads.shippingDomestic
     : overheads.shippingEU;
   const attributedAd = 0;   // filled later by ad-attribution job

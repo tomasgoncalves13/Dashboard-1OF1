@@ -54,7 +54,7 @@ export type ShopifyOrderNode = {
   paymentGatewayNames: string[];
   currencyCode: string;
   customer: { id: string } | null;
-  shippingAddress: { country: string | null; city: string | null } | null;
+  shippingAddress: { countryCodeV2: string | null; city: string | null } | null;
   subtotalPriceSet: ShopMoneyBag;
   totalDiscountsSet: ShopMoneyBag;
   totalShippingPriceSet: ShopMoneyBag;
