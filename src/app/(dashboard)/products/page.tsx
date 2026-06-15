@@ -54,7 +54,6 @@ export default async function ProductsPage() {
                   <Th className="text-right">Lucro PT</Th>
                   <Th className="text-right">Total EU</Th>
                   <Th className="text-right">Lucro EU</Th>
-                  <Th className="text-right">Stock</Th>
                 </tr>
               </thead>
               <tbody className="divide-y">
@@ -98,9 +97,6 @@ export default async function ProductsPage() {
                       </Td>
                       <Td className={`text-right tabular-nums font-medium ${lucroEU !== null && lucroEU > 0 ? "text-green-500" : "text-red-500"}`}>
                         {lucroEU !== null ? formatMoney(lucroEU) : "—"}
-                      </Td>
-                      <Td className={`text-right tabular-nums ${v.stockOnHand <= 5 ? "text-yellow-500 font-medium" : ""}`}>
-                        {v.stockOnHand}
                       </Td>
                     </tr>
                   );

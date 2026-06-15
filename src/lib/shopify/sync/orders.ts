@@ -4,6 +4,7 @@ import { ORDERS_QUERY } from "../queries";
 import type { ShopifyOrderNode } from "../types";
 import { calculateOrderProfit } from "@/lib/profit/calculate";
 import { getOrderOverheads, type OrderOverheads } from "@/lib/profit/order-costs";
+import { consumeStock } from "@/lib/inventory/consume";
 
 type Page = { orders: { pageInfo: { hasNextPage: boolean; endCursor: string | null }; edges: { node: ShopifyOrderNode }[] } };
 
@@ -144,6 +145,28 @@ export async function ingestOrder(
       };
     }),
   });
+
+  // Consume physical inventory — idempotent: skip if already consumed for this order
+  const alreadyConsumed = await prisma.stockMovement.findFirst({
+    where: { storeId, reference: shopifyOrderId, type: "SHOPIFY_SALE" },
+  });
+
+  if (!alreadyConsumed) {
+    for (const { node: li } of order.lineItems.edges) {
+      const variantGid = li.variant?.id ?? null;
+      const dbV = variantGid ? variantByGid.get(variantGid) : null;
+      if (!dbV?.id) continue;
+      await prisma.$transaction((tx) =>
+        consumeStock(tx, {
+          storeId,
+          variantId: dbV.id,
+          saleQty: li.quantity,
+          type: "SHOPIFY_SALE",
+          reference: shopifyOrderId,
+        }),
+      );
+    }
+  }
 
   return orderRow;
 }
