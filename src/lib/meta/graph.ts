@@ -105,11 +105,14 @@ export interface MetaPage {
   category: string;
 }
 
+export const PAGE_ID = "501834049687066";
+
 export async function getPages(): Promise<MetaPage[]> {
   const data = await get<{ data: MetaPage[] }>("/me/accounts", systemToken(), {
     fields: "id,name,access_token,category",
   });
-  return data.data;
+  // Use system token as fallback if page token is not returned
+  return data.data.map((p) => ({ ...p, access_token: p.access_token || systemToken() }));
 }
 
 export interface PageInfo {
