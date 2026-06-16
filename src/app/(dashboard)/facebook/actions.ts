@@ -1,6 +1,6 @@
 "use server";
 
-import { getPages, publishFbPost } from "@/lib/meta/graph";
+import { PAGE_ID, systemToken, publishFbPost } from "@/lib/meta/graph";
 
 export async function scheduleFbPost(params: {
   pageId: string;
@@ -8,16 +8,13 @@ export async function scheduleFbPost(params: {
   link?: string;
   scheduledAt: string | null;
 }) {
-  const pages = await getPages();
-  if (!pages.length) throw new Error("Nenhuma página Meta encontrada");
-  const page = pages.find((p) => p.id === params.pageId) ?? pages[0];
-  const pageToken = page.access_token;
+  const pageToken = systemToken();
 
   const scheduledTime = params.scheduledAt
     ? Math.floor(new Date(params.scheduledAt).getTime() / 1000)
     : undefined;
 
-  await publishFbPost(page.id, pageToken, {
+  await publishFbPost(PAGE_ID, pageToken, {
     message: params.message,
     link: params.link,
     scheduledTime,

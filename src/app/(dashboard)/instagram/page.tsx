@@ -1,4 +1,4 @@
-import { getPages, getPageInfo, getIgMedia, getIgInsights } from "@/lib/meta/graph";
+import { PAGE_ID, systemToken, getPageInfo, getIgMedia, getIgInsights } from "@/lib/meta/graph";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SchedulePostDialog } from "./schedule-post-dialog";
 import { Heart, MessageCircle } from "lucide-react";
@@ -21,12 +21,8 @@ export default async function InstagramPage() {
   let media: Awaited<ReturnType<typeof getIgMedia>> = [];
 
   try {
-    const pages = await getPages();
-    if (!pages.length) throw new Error("Nenhuma página Facebook encontrada");
-    const page = pages[0];
-    const pageToken = page.access_token;
-
-    const info = await getPageInfo(page.id, pageToken);
+    const tok = systemToken();
+    const info = await getPageInfo(PAGE_ID, tok);
     if (!info.instagram_business_account) {
       throw new Error("Nenhuma conta Instagram Business associada a esta página");
     }
@@ -36,8 +32,8 @@ export default async function InstagramPage() {
     igFollowers = ig.followers_count;
 
     const [mediaData, insights] = await Promise.all([
-      getIgMedia(igId, pageToken, 12),
-      getIgInsights(igId, pageToken).catch(() => []),
+      getIgMedia(igId, tok, 12),
+      getIgInsights(igId, tok).catch(() => []),
     ]);
     media = mediaData;
 

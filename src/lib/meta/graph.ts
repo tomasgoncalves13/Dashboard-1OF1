@@ -23,7 +23,7 @@ async function metaPost<T>(path: string, token: string, body: Record<string, str
   return data;
 }
 
-function systemToken() {
+export function systemToken() {
   const t = process.env.META_PAGE_ACCESS_TOKEN;
   if (!t) throw new Error("META_PAGE_ACCESS_TOKEN não configurado");
   return t;

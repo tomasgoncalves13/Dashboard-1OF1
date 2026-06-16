@@ -1,4 +1,4 @@
-import { getPages, getPageInfo, getPagePosts } from "@/lib/meta/graph";
+import { PAGE_ID, systemToken, getPageInfo, getPagePosts } from "@/lib/meta/graph";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScheduleFbPostDialog } from "./schedule-post-dialog";
 import { ThumbsUp, MessageCircle, Share2, ExternalLink } from "lucide-react";
@@ -19,15 +19,12 @@ export default async function FacebookPage() {
   let posts: Awaited<ReturnType<typeof getPagePosts>> = [];
 
   try {
-    const pages = await getPages();
-    if (!pages.length) throw new Error("Nenhuma página Facebook encontrada");
-    const page = pages[0];
-    pageId = page.id;
-    const pageToken = page.access_token;
+    const tok = systemToken();
+    pageId = PAGE_ID;
 
     const [info, pagePosts] = await Promise.all([
-      getPageInfo(pageId, pageToken),
-      getPagePosts(pageId, pageToken, 15),
+      getPageInfo(PAGE_ID, tok),
+      getPagePosts(PAGE_ID, tok, 15),
     ]);
 
     pageName = info.name;
