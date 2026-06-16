@@ -1,4 +1,4 @@
-const API_VERSION = "v18";
+const API_VERSION = "v21";
 const BASE = `https://googleads.googleapis.com/${API_VERSION}`;
 
 let cachedToken: { token: string; expiresAt: number } | null = null;
