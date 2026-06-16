@@ -151,3 +151,128 @@ export async function getCampaignInsights(since: string, until: string): Promise
     }))
     .sort((a, b) => b.spend - a.spend);
 }
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function mutate(resource: string, operations: Record<string, any>[]): Promise<{ resourceName: string }[]> {
+  const developerToken = process.env.GOOGLE_ADS_DEVELOPER_TOKEN;
+  if (!developerToken) throw new Error("GOOGLE_ADS_DEVELOPER_TOKEN não configurado");
+  const loginCustomerId = process.env.GOOGLE_ADS_LOGIN_CUSTOMER_ID;
+
+  const token = await getAccessToken();
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${token}`,
+    "developer-token": developerToken,
+    "Content-Type": "application/json",
+  };
+  if (loginCustomerId) headers["login-customer-id"] = loginCustomerId;
+
+  const res = await fetch(`${BASE}/customers/${customerId()}/${resource}:mutate`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({ operations }),
+  });
+  const data = await res.json();
+  if (!res.ok) {
+    const message = data?.error?.message ?? JSON.stringify(data);
+    throw new Error(message);
+  }
+  return data.results;
+}
+
+/** Cria um orçamento diário (em euros). Devolve o resourceName a usar em createSearchCampaign. */
+export async function createCampaignBudget(name: string, dailyAmountEur: number): Promise<string> {
+  const [result] = await mutate("campaignBudgets", [
+    { create: { name, amountMicros: Math.round(dailyAmountEur * 1_000_000), deliveryMethod: "STANDARD" } },
+  ]);
+  return result.resourceName;
+}
+
+/**
+ * Cria uma campanha de Pesquisa (Search). Fica sempre como PAUSED por segurança —
+ * tem de ser ativada manualmente (no Google Ads ou via setCampaignStatus) antes de gastar.
+ */
+export async function createSearchCampaign(params: {
+  name: string;
+  budgetResourceName: string;
+}): Promise<string> {
+  const [result] = await mutate("campaigns", [
+    {
+      create: {
+        name: params.name,
+        status: "PAUSED",
+        advertisingChannelType: "SEARCH",
+        campaignBudget: params.budgetResourceName,
+        manualCpc: {},
+        networkSettings: {
+          targetGoogleSearch: true,
+          targetSearchNetwork: false,
+          targetContentNetwork: false,
+          targetPartnerSearchNetwork: false,
+        },
+      },
+    },
+  ]);
+  return result.resourceName;
+}
+
+export async function createAdGroup(campaignResourceName: string, name: string, maxCpcEur: number): Promise<string> {
+  const [result] = await mutate("adGroups", [
+    {
+      create: {
+        name,
+        campaign: campaignResourceName,
+        status: "ENABLED",
+        type: "SEARCH_STANDARD",
+        cpcBidMicros: Math.round(maxCpcEur * 1_000_000),
+      },
+    },
+  ]);
+  return result.resourceName;
+}
+
+export async function createResponsiveSearchAd(
+  adGroupResourceName: string,
+  params: { headlines: string[]; descriptions: string[]; finalUrl: string },
+): Promise<string> {
+  const [result] = await mutate("adGroupAds", [
+    {
+      create: {
+        adGroup: adGroupResourceName,
+        status: "ENABLED",
+        ad: {
+          finalUrls: [params.finalUrl],
+          responsiveSearchAd: {
+            headlines: params.headlines.map((text) => ({ text })),
+            descriptions: params.descriptions.map((text) => ({ text })),
+          },
+        },
+      },
+    },
+  ]);
+  return result.resourceName;
+}
+
+export async function addKeywords(
+  adGroupResourceName: string,
+  keywords: { text: string; matchType: "EXACT" | "PHRASE" | "BROAD" }[],
+): Promise<void> {
+  await mutate(
+    "adGroupCriteria",
+    keywords.map((k) => ({
+      create: {
+        adGroup: adGroupResourceName,
+        status: "ENABLED",
+        keyword: { text: k.text, matchType: k.matchType },
+      },
+    })),
+  );
+}
+
+export async function setCampaignStatus(
+  campaignResourceName: string,
+  status: "ENABLED" | "PAUSED" | "REMOVED",
+): Promise<void> {
+  await mutate("campaigns", [
+    { update: { resourceName: campaignResourceName, status }, updateMask: "status" },
+  ]);
+}
