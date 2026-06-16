@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SpendChart } from "./spend-chart";
 import { DateRangePicker } from "@/components/dashboard/date-range-picker";
 import { resolveRange, ymd } from "@/lib/dashboard/range";
+import { AdsTabs } from "./ads-tabs";
 
 function fmtMoney(v: string | number) {
   return `€${Number(v).toFixed(2)}`;
@@ -50,6 +51,7 @@ export default async function AdsPage({
   if (error) {
     return (
       <div className="space-y-6">
+        <AdsTabs />
         <h1 className="text-2xl font-semibold tracking-tight">Facebook Ads</h1>
         <Card>
           <CardContent className="pt-6">
@@ -80,6 +82,7 @@ export default async function AdsPage({
 
   return (
     <div className="space-y-6">
+      <AdsTabs />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Facebook Ads</h1>
