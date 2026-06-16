@@ -17,6 +17,8 @@ import {
   type MonthlyPnLRow,
 } from "@/lib/dashboard/kpis";
 import { DateRangePicker } from "@/components/dashboard/date-range-picker";
+import { getMonthlyCashflow, getFinanceBreakdown } from "@/lib/finance/cashflow";
+import { CashflowChart } from "../finance/cashflow-chart";
 
 const CHANNEL_LABELS: Record<string, string> = {
   CLUB: "Clubes",
@@ -48,7 +50,7 @@ export default async function DashboardPage({
   const sp = await searchParams;
   const range = resolveRange(sp);
 
-  const [paid, all, daily, money, gateways, physical, monthlyPnL] = await Promise.all([
+  const [paid, all, daily, money, gateways, physical, monthlyPnL, monthlyCashflow, financeBreakdown] = await Promise.all([
     getKpis(store.id, range.from, range.to, { paidOnly: true }),
     getKpis(store.id, range.from, range.to, { paidOnly: false }),
     getDailyRevenue(store.id, range.from, range.to, { paidOnly: true }),
@@ -56,20 +58,131 @@ export default async function DashboardPage({
     getGatewayBreakdown(store.id, range.from, range.to),
     getPhysicalKpis(store.id, range.from, range.to),
     getMonthlyPnL(store.id, 6),
+    getMonthlyCashflow(store.id, 6),
+    getFinanceBreakdown(store.id, range.from, range.to),
   ]);
 
   const currency = store.currency;
   const totalRevenue = paid.revenue + physical.revenue;
   const totalNetProfit = paid.netProfit + physical.netProfit;
 
+  const totalIn = financeBreakdown.cashIn;
+  const totalOut = financeBreakdown.cashOut;
+  const netCashflow = financeBreakdown.netCashflow;
+
+  const orderAgg = await prisma.order.aggregate({
+    where: {
+      storeId: store.id,
+      processedAt: { gte: range.from, lte: range.to },
+      financialStatus: "PAID",
+    },
+    _sum: { netProfit: true, total: true },
+  });
+  const accountingProfit = Number(orderAgg._sum.netProfit ?? 0);
+  const accountingRevenue = Number(orderAgg._sum.total ?? 0);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Finance · Cashflow</h1>
+          <p className="text-sm text-muted-foreground">{range.label} · dinheiro real que entrou e saiu</p>
+        </div>
+        <DateRangePicker active={range.preset} />
+      </div>
+
+      {/* KPI cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2"><CardTitle>Cash in</CardTitle></CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold text-emerald-600">{formatMoney(totalIn, currency)}</div>
+            <p className="text-xs text-muted-foreground mt-1">Vendas físicas + Vendas site</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle>Cash out</CardTitle></CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold text-destructive">{formatMoney(totalOut, currency)}</div>
+            <p className="text-xs text-muted-foreground mt-1">Todos os custos do período</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle>Net cashflow</CardTitle></CardHeader>
+          <CardContent>
+            <div className={`text-2xl font-semibold ${netCashflow >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+              {formatMoney(netCashflow, currency)}
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle>Lucro contabilístico</CardTitle></CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold">{formatMoney(accountingProfit, currency)}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              vs revenue {formatMoney(accountingRevenue, currency)}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Revenue + cost breakdown */}
+      <div>
+        <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">Receitas</h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Vendas físicas</CardTitle></CardHeader>
+            <CardContent>
+              <div className="text-xl font-semibold text-emerald-600">{formatMoney(financeBreakdown.physicalRevenue, currency)}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Vendas site</CardTitle></CardHeader>
+            <CardContent>
+              <div className="text-xl font-semibold text-emerald-600">{formatMoney(financeBreakdown.onlineRevenue, currency)}</div>
+              <p className="text-xs text-muted-foreground mt-1">Shopify + Eupago</p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <div>
+        <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">Custos</h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: "Custo vendas físicas", value: financeBreakdown.physicalCost, sub: "COGS + comissão clubes" },
+            { label: "Custo encomendas site", value: financeBreakdown.onlineOrderCost, sub: "COGS + embalagem + taxas + envio" },
+            { label: "Custo Facebook Ads", value: financeBreakdown.facebookAdsCost },
+            { label: "Custo Google Ads", value: financeBreakdown.googleAdsCost },
+            { label: "Custo influencers", value: financeBreakdown.influencerCost },
+            { label: "Custo despesas mensais", value: financeBreakdown.monthlyExpensesCost, sub: "Shopify, software, academia, etc" },
+          ].map((c) => (
+            <Card key={c.label}>
+              <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">{c.label}</CardTitle></CardHeader>
+              <CardContent>
+                <div className="text-xl font-semibold text-destructive">{formatMoney(c.value, currency)}</div>
+                {c.sub && <p className="text-xs text-muted-foreground mt-1">{c.sub}</p>}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Monthly cashflow chart */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Cashflow mensal — últimos 6 meses</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <CashflowChart data={monthlyCashflow} />
+        </CardContent>
+      </Card>
+
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between pt-4 border-t">
+        <div>
           <h1 className="text-2xl font-semibold tracking-tight">Overview</h1>
           <p className="text-sm text-muted-foreground">{range.label} · {store.name}</p>
         </div>
-        <DateRangePicker active={range.preset} />
       </div>
 
       {/* Combined headline */}

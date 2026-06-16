@@ -22,7 +22,7 @@ function monthLabel(month: string) {
 export function CashflowChart({ data }: { data: MonthData[] }) {
   if (!data.length) return <p className="text-sm text-muted-foreground text-center py-8">Sem dados</p>;
 
-  const chartData = data.map((m) => ({ ...m, label: monthLabel(m.month) }));
+  const chartData = data.map((m) => ({ ...m, label: monthLabel(m.month), cashOutNeg: -m.cashOut }));
 
   return (
     <ResponsiveContainer width="100%" height={280}>
@@ -32,22 +32,30 @@ export function CashflowChart({ data }: { data: MonthData[] }) {
             <stop offset="0%" stopColor="#10b981" stopOpacity={0.95} />
             <stop offset="100%" stopColor="#10b981" stopOpacity={0.55} />
           </linearGradient>
-          <linearGradient id="cashOutGradient" x1="0" y1="0" x2="0" y2="1">
+          <linearGradient id="cashOutGradient" x1="0" y1="1" x2="0" y2="0">
             <stop offset="0%" stopColor="#f87171" stopOpacity={0.95} />
             <stop offset="100%" stopColor="#f87171" stopOpacity={0.55} />
           </linearGradient>
         </defs>
         <CartesianGrid strokeDasharray="3 3" vertical={false} className="stroke-border" />
         <XAxis dataKey="label" tick={{ fontSize: 12 }} axisLine={false} tickLine={false} />
-        <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `€${v}`} width={52} axisLine={false} tickLine={false} />
+        <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `€${Math.abs(v)}`} width={52} axisLine={false} tickLine={false} />
         <Tooltip
           cursor={{ fill: "hsl(var(--muted))", opacity: 0.4 }}
-          contentStyle={{ borderRadius: 8, fontSize: 12, border: "1px solid hsl(var(--border))" }}
-          formatter={(v: number, name: string) => [fmt(v), name]}
+          contentStyle={{
+            borderRadius: 8,
+            fontSize: 12,
+            border: "1px solid hsl(var(--border))",
+            backgroundColor: "hsl(var(--popover))",
+            color: "hsl(var(--popover-foreground))",
+          }}
+          labelStyle={{ color: "hsl(var(--popover-foreground))" }}
+          itemStyle={{ color: "hsl(var(--popover-foreground))" }}
+          formatter={(v: number, name: string) => [fmt(Math.abs(v)), name]}
         />
         <Legend wrapperStyle={{ fontSize: 12 }} iconType="circle" />
         <Bar dataKey="cashIn" name="Cash in" fill="url(#cashInGradient)" radius={[6, 6, 0, 0]} maxBarSize={28} />
-        <Bar dataKey="cashOut" name="Cash out" fill="url(#cashOutGradient)" radius={[6, 6, 0, 0]} maxBarSize={28} />
+        <Bar dataKey="cashOutNeg" name="Cash out" fill="url(#cashOutGradient)" radius={[0, 0, 6, 6]} maxBarSize={28} />
         <Line
           type="monotone"
           dataKey="net"
