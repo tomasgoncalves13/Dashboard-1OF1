@@ -18,3 +18,5 @@ prisma/migrations/dev
 coverage
 .turbo
 next-env.d.ts
+
+.vercel

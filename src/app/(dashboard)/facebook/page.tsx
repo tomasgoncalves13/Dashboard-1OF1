@@ -1,4 +1,4 @@
-import { PAGE_ID, systemToken, getPageInfo, getPagePosts } from "@/lib/meta/graph";
+import { PAGE_ID, systemToken, getPageInfo, getPagePosts, getPageAccessToken } from "@/lib/meta/graph";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ScheduleFbPostDialog } from "./schedule-post-dialog";
 import { ThumbsUp, MessageCircle, Share2, ExternalLink } from "lucide-react";
@@ -21,10 +21,11 @@ export default async function FacebookPage() {
   try {
     const tok = systemToken();
     pageId = PAGE_ID;
+    const pageTok = await getPageAccessToken(PAGE_ID);
 
     const [info, pagePosts] = await Promise.all([
       getPageInfo(PAGE_ID, tok),
-      getPagePosts(PAGE_ID, tok, 15),
+      getPagePosts(PAGE_ID, pageTok, 15),
     ]);
 
     pageName = info.name;
@@ -49,7 +50,6 @@ export default async function FacebookPage() {
   }
 
   const totalReactions = posts.reduce((s, p) => s + (p.reactions?.summary?.total_count ?? 0), 0);
-  const totalComments = posts.reduce((s, p) => s + (p.comments?.summary?.total_count ?? 0), 0);
   const totalShares = posts.reduce((s, p) => s + (p.shares?.count ?? 0), 0);
 
   return (

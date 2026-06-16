@@ -130,6 +130,13 @@ export interface PageInfo {
   };
 }
 
+export async function getPageAccessToken(pageId: string): Promise<string> {
+  const data = await get<{ access_token: string }>(`/${pageId}`, systemToken(), {
+    fields: "access_token",
+  });
+  return data.access_token;
+}
+
 export async function getPageInfo(pageId: string, pageToken: string): Promise<PageInfo> {
   return get<PageInfo>(`/${pageId}`, pageToken, {
     fields: "id,name,fan_count,followers_count,instagram_business_account{id,username,followers_count,media_count,profile_picture_url,biography}",
@@ -149,7 +156,7 @@ export interface PagePost {
 }
 
 export async function getPagePosts(pageId: string, pageToken: string, limit = 15): Promise<PagePost[]> {
-  const data = await get<{ data: PagePost[] }>(`/${pageId}/feed`, pageToken, {
+  const data = await get<{ data: PagePost[] }>(`/${pageId}/published_posts`, pageToken, {
     fields: "id,message,story,created_time,full_picture,permalink_url,reactions.summary(true),comments.summary(true),shares",
     limit: limit.toString(),
   });
@@ -176,13 +183,13 @@ export async function getIgMedia(igId: string, pageToken: string, limit = 12): P
   return data.data;
 }
 
-export async function getIgInsights(igId: string, pageToken: string) {
-  const since = Math.floor(Date.now() / 1000) - 30 * 24 * 3600;
-  const until = Math.floor(Date.now() / 1000);
+export async function getIgInsights(igId: string, pageToken: string, fromDate?: Date, toDate?: Date) {
+  const since = Math.floor((fromDate ?? new Date(Date.now() - 30 * 24 * 3600 * 1000)).getTime() / 1000);
+  const until = Math.floor((toDate ?? new Date()).getTime() / 1000);
   const data = await get<{ data: { name: string; values: { value: number; end_time: string }[] }[] }>(
     `/${igId}/insights`,
     pageToken,
-    { metric: "follower_count,reach,impressions,profile_views", period: "day", since: since.toString(), until: until.toString() },
+    { metric: "follower_count,reach,profile_views,accounts_engaged", period: "day", since: since.toString(), until: until.toString() },
   );
   return data.data;
 }

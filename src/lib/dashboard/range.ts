@@ -1,7 +1,7 @@
 // Date-range parsing for the dashboard. Reads URL searchParams and returns a
 // `{ from, to, preset, label }` window. Capped at 365 days.
 
-export type RangePreset = "today" | "yesterday" | "7d" | "30d" | "90d" | "365d" | "custom";
+export type RangePreset = "today" | "yesterday" | "7d" | "30d" | "90d" | "365d" | "month" | "custom";
 
 export type DateRange = {
   from: Date;
@@ -10,7 +10,7 @@ export type DateRange = {
   label: string;
 };
 
-const PRESET_LABELS: Record<Exclude<RangePreset, "custom">, string> = {
+const PRESET_LABELS: Record<Exclude<RangePreset, "custom" | "month">, string> = {
   today: "Hoje",
   yesterday: "Ontem",
   "7d": "Últimos 7 dias",
@@ -45,6 +45,15 @@ export function resolveRange(searchParams: Record<string, string | string[] | un
     const days = { "7d": 7, "30d": 30, "90d": 90, "365d": 365 }[preset];
     const from = new Date(now); from.setDate(now.getDate() - (days - 1));
     return { preset, from: startOfDay(from), to: endOfDay(now), label: PRESET_LABELS[preset] };
+  }
+
+  if (preset === "month") {
+    const monthStr = asString(searchParams.month) ?? `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+    const [yyyy, mm] = monthStr.split("-").map(Number);
+    const from = new Date(yyyy, mm - 1, 1);
+    const to = new Date(yyyy, mm, 0);
+    const raw = from.toLocaleString("pt-PT", { month: "long", year: "numeric" });
+    return { preset: "month", from: startOfDay(from), to: endOfDay(to), label: raw.charAt(0).toUpperCase() + raw.slice(1) };
   }
 
   // custom

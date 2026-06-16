@@ -2,6 +2,8 @@ import { PAGE_ID, systemToken, getPageInfo, getIgMedia, getIgInsights } from "@/
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SchedulePostDialog } from "./schedule-post-dialog";
 import { Heart, MessageCircle } from "lucide-react";
+import { DateRangePicker } from "@/components/dashboard/date-range-picker";
+import { resolveRange } from "@/lib/dashboard/range";
 
 function timeAgo(iso: string) {
   const d = Math.floor((Date.now() - new Date(iso).getTime()) / 86400000);
@@ -10,7 +12,11 @@ function timeAgo(iso: string) {
   return `há ${d} dias`;
 }
 
-export default async function InstagramPage() {
+export default async function InstagramPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   let error: string | null = null;
   let igId = "";
   let igUsername = "";
@@ -19,6 +25,9 @@ export default async function InstagramPage() {
   let totalReach = 0;
   let totalImpressions = 0;
   let media: Awaited<ReturnType<typeof getIgMedia>> = [];
+
+  const sp = await searchParams;
+  const range = resolveRange(sp);
 
   try {
     const tok = systemToken();
@@ -33,7 +42,7 @@ export default async function InstagramPage() {
 
     const [mediaData, insights] = await Promise.all([
       getIgMedia(igId, tok, 12),
-      getIgInsights(igId, tok).catch(() => []),
+      getIgInsights(igId, tok, range.from, range.to).catch(() => []),
     ]);
     media = mediaData;
 
@@ -44,8 +53,8 @@ export default async function InstagramPage() {
     }
     const reachInsight = insights.find((i) => i.name === "reach");
     if (reachInsight) totalReach = reachInsight.values.reduce((s, v) => s + v.value, 0);
-    const impInsight = insights.find((i) => i.name === "impressions");
-    if (impInsight) totalImpressions = impInsight.values.reduce((s, v) => s + v.value, 0);
+    const engInsight = insights.find((i) => i.name === "accounts_engaged");
+    if (engInsight) totalImpressions = engInsight.values.reduce((s, v) => s + v.value, 0);
   } catch (e) {
     error = (e as Error).message;
   }
@@ -75,10 +84,12 @@ export default async function InstagramPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Instagram</h1>
-          <p className="text-sm text-muted-foreground">@{igUsername} · últimos 30 dias</p>
+          <p className="text-sm text-muted-foreground">@{igUsername} · {range.label}</p>
         </div>
         <SchedulePostDialog igId={igId} />
       </div>
+
+      <DateRangePicker active={range.preset} />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {[
@@ -90,7 +101,7 @@ export default async function InstagramPage() {
             positive: followerGrowth >= 0,
           },
           { label: "Alcance (30d)", value: totalReach.toLocaleString("pt-PT") },
-          { label: "Impressões (30d)", value: totalImpressions.toLocaleString("pt-PT") },
+          { label: "Contas envolvidas (30d)", value: totalImpressions.toLocaleString("pt-PT") },
         ].map((k) => (
           <Card key={k.label}>
             <CardHeader className="pb-2">

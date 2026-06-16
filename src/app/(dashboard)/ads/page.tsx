@@ -1,17 +1,8 @@
 import { getAdAccountInsights, getAdAccountInsightsDaily, getCampaignInsights } from "@/lib/meta/graph";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SpendChart } from "./spend-chart";
-import { TrendingUp, TrendingDown, Minus } from "lucide-react";
-
-function dateSince(days: number) {
-  const d = new Date();
-  d.setDate(d.getDate() - days);
-  return d.toISOString().slice(0, 10);
-}
-
-function today() {
-  return new Date().toISOString().slice(0, 10);
-}
+import { DateRangePicker } from "@/components/dashboard/date-range-picker";
+import { resolveRange, ymd } from "@/lib/dashboard/range";
 
 function fmtMoney(v: string | number) {
   return `€${Number(v).toFixed(2)}`;
@@ -31,38 +22,26 @@ function roas(insight: { purchase_roas?: { action_type: string; value: string }[
   return r ? Number(r.value).toFixed(2) : null;
 }
 
-function StatusBadge({ status }: { status?: string }) {
-  const map: Record<string, string> = {
-    ACTIVE: "bg-emerald-100 text-emerald-700",
-    PAUSED: "bg-yellow-100 text-yellow-700",
-    DELETED: "bg-red-100 text-red-700",
-    ARCHIVED: "bg-gray-100 text-gray-500",
-  };
-  const s = status ?? "UNKNOWN";
-  return (
-    <span className={`text-[11px] px-1.5 py-0.5 rounded font-medium ${map[s] ?? "bg-gray-100 text-gray-500"}`}>
-      {s === "ACTIVE" ? "Ativa" : s === "PAUSED" ? "Pausada" : s === "ARCHIVED" ? "Arquivada" : s}
-    </span>
-  );
-}
-
-export default async function AdsPage() {
-  const since30 = dateSince(30);
-  const since7 = dateSince(7);
-  const until = today();
+export default async function AdsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const sp = await searchParams;
+  const range = resolveRange(sp);
+  const since = ymd(range.from);
+  const until = ymd(range.to);
 
   let error: string | null = null;
-  let insight30: Awaited<ReturnType<typeof getAdAccountInsights>> = null;
-  let insight7: Awaited<ReturnType<typeof getAdAccountInsights>> = null;
+  let insight: Awaited<ReturnType<typeof getAdAccountInsights>> = null;
   let daily: Awaited<ReturnType<typeof getAdAccountInsightsDaily>> = [];
   let campaigns: Awaited<ReturnType<typeof getCampaignInsights>> = [];
 
   try {
-    [insight30, insight7, daily, campaigns] = await Promise.all([
-      getAdAccountInsights(since30, until),
-      getAdAccountInsights(since7, until),
-      getAdAccountInsightsDaily(since30, until),
-      getCampaignInsights(since30, until),
+    [insight, daily, campaigns] = await Promise.all([
+      getAdAccountInsights(since, until),
+      getAdAccountInsightsDaily(since, until),
+      getCampaignInsights(since, until),
     ]);
   } catch (e) {
     error = (e as Error).message;
@@ -81,9 +60,7 @@ export default async function AdsPage() {
     );
   }
 
-  const spend30 = Number(insight30?.spend ?? 0);
-  const spend7 = Number(insight7?.spend ?? 0);
-  const roasVal = roas(insight30);
+  const roasVal = roas(insight);
 
   const chartData = daily.map((d) => ({
     date: d.date_start,
@@ -91,24 +68,26 @@ export default async function AdsPage() {
   }));
 
   const kpis = [
-    { label: "Gasto (30d)", value: fmtMoney(spend30) },
-    { label: "Gasto (7d)", value: fmtMoney(spend7) },
-    { label: "Impressões (30d)", value: fmtNum(insight30?.impressions ?? 0) },
-    { label: "Cliques (30d)", value: fmtNum(insight30?.clicks ?? 0) },
-    { label: "CTR (30d)", value: fmtPct(insight30?.ctr ?? 0) },
-    { label: "CPC (30d)", value: fmtMoney(insight30?.cpc ?? 0) },
-    { label: "CPM (30d)", value: fmtMoney(insight30?.cpm ?? 0) },
-    { label: "ROAS (30d)", value: roasVal ? `${roasVal}×` : "—" },
+    { label: "Gasto", value: fmtMoney(insight?.spend ?? 0) },
+    { label: "Impressões", value: fmtNum(insight?.impressions ?? 0) },
+    { label: "Cliques", value: fmtNum(insight?.clicks ?? 0) },
+    { label: "CTR", value: fmtPct(insight?.ctr ?? 0) },
+    { label: "CPC", value: fmtMoney(insight?.cpc ?? 0) },
+    { label: "CPM", value: fmtMoney(insight?.cpm ?? 0) },
+    { label: "Alcance", value: fmtNum(insight?.reach ?? 0) },
+    { label: "ROAS", value: roasVal ? `${roasVal}×` : "—" },
   ];
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Facebook Ads</h1>
-        <p className="text-sm text-muted-foreground">Conta 1OF1 Fútbol · últimos 30 dias</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Facebook Ads</h1>
+          <p className="text-sm text-muted-foreground">Conta 1OF1 Fútbol · {range.label}</p>
+        </div>
+        <DateRangePicker active={range.preset} />
       </div>
 
-      {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((k) => (
           <Card key={k.label}>
@@ -122,17 +101,15 @@ export default async function AdsPage() {
         ))}
       </div>
 
-      {/* Spend Chart */}
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium">Gasto diário (últimos 30 dias)</CardTitle>
+          <CardTitle className="text-sm font-medium">Gasto diário</CardTitle>
         </CardHeader>
         <CardContent>
           <SpendChart data={chartData} />
         </CardContent>
       </Card>
 
-      {/* Campaigns Table */}
       <div>
         <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
           Campanhas ({campaigns.length})

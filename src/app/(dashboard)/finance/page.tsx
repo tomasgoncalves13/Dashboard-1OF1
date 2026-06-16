@@ -4,6 +4,7 @@ import { getCashflowEntries, getMonthlyCashflow } from "@/lib/finance/cashflow";
 import { formatMoney } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { resolveRange } from "@/lib/dashboard/range";
+import { DateRangePicker } from "@/components/dashboard/date-range-picker";
 
 export default async function FinancePage({
   searchParams,
@@ -44,9 +45,12 @@ export default async function FinancePage({
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Finance · Cashflow</h1>
-        <p className="text-sm text-muted-foreground">{range.label} · dinheiro real que entrou e saiu</p>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Finance · Cashflow</h1>
+          <p className="text-sm text-muted-foreground">{range.label} · dinheiro real que entrou e saiu</p>
+        </div>
+        <DateRangePicker active={range.preset} />
       </div>
 
       {/* KPI cards */}
