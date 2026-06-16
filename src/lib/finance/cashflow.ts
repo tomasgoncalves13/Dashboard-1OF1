@@ -1,4 +1,7 @@
 import { prisma } from "@/lib/prisma";
+import { getPhysicalKpis } from "@/lib/dashboard/kpis";
+import { getAdAccountInsights } from "@/lib/meta/graph";
+import { ymd } from "@/lib/dashboard/range";
 
 export type CashflowEntry = {
   date: Date;
@@ -136,4 +139,102 @@ export async function getMonthlyCashflow(
   }
 
   return result;
+}
+
+export type FinanceBreakdown = {
+  physicalRevenue: number;
+  onlineRevenue: number; // Shopify Payments + Eupago net
+  cashIn: number;
+
+  physicalCost: number; // COGS + club commission
+  onlineOrderCost: number; // COGS + packaging + payment fees + shipping
+  facebookAdsCost: number;
+  monthlyExpensesCost: number; // recurring expenses (Shopify, software, academia, etc)
+  shippingExpensesCost: number; // manual SHIPPING-category expenses
+  influencerCost: number;
+  otherExpensesCost: number; // everything else not covered above
+  cashOut: number;
+
+  netCashflow: number;
+};
+
+/** Full revenue/cost breakdown for Finance — covers physical sales, online sales, and every cost stream. */
+export async function getFinanceBreakdown(storeId: string, from: Date, to: Date): Promise<FinanceBreakdown> {
+  const [
+    physicalKpis,
+    payoutAgg,
+    eupagoAgg,
+    onlineOrderAgg,
+    adsInsight,
+    recurringAgg,
+    shippingAgg,
+    otherAgg,
+    influencerAgg,
+  ] = await Promise.all([
+    getPhysicalKpis(storeId, from, to),
+    prisma.payout.aggregate({
+      where: { storeId, issuedAt: { gte: from, lte: to }, status: { in: ["PAID", "IN_TRANSIT"] } },
+      _sum: { net: true },
+    }),
+    prisma.eupagoPayout.aggregate({
+      where: { storeId, paymentDate: { gte: from, lte: to } },
+      _sum: { netAmount: true },
+    }),
+    prisma.order.aggregate({
+      where: { storeId, processedAt: { gte: from, lte: to }, financialStatus: "PAID" },
+      _sum: { cogsTotal: true, packagingCost: true, paymentFees: true, shippingCost: true },
+    }),
+    getAdAccountInsights(ymd(from), ymd(to)).catch(() => null),
+    prisma.expense.aggregate({
+      where: { storeId, incurredOn: { gte: from, lte: to }, recurring: true },
+      _sum: { amount: true },
+    }),
+    prisma.expense.aggregate({
+      where: { storeId, incurredOn: { gte: from, lte: to }, recurring: false, category: "SHIPPING" },
+      _sum: { amount: true },
+    }),
+    prisma.expense.aggregate({
+      where: { storeId, incurredOn: { gte: from, lte: to }, recurring: false, category: { not: "SHIPPING" } },
+      _sum: { amount: true },
+    }),
+    prisma.influencerPayment.aggregate({
+      where: { influencer: { storeId }, paidAt: { gte: from, lte: to } },
+      _sum: { amount: true },
+    }),
+  ]);
+
+  const physicalRevenue = physicalKpis.revenue;
+  const onlineRevenue = Number(payoutAgg._sum.net ?? 0) + Number(eupagoAgg._sum.netAmount ?? 0);
+  const cashIn = physicalRevenue + onlineRevenue;
+
+  const physicalCost = physicalKpis.cogs + physicalKpis.commission;
+  const onlineOrderCost =
+    Number(onlineOrderAgg._sum.cogsTotal ?? 0) +
+    Number(onlineOrderAgg._sum.packagingCost ?? 0) +
+    Number(onlineOrderAgg._sum.paymentFees ?? 0) +
+    Number(onlineOrderAgg._sum.shippingCost ?? 0);
+  const facebookAdsCost = Number(adsInsight?.spend ?? 0);
+  const monthlyExpensesCost = Number(recurringAgg._sum.amount ?? 0);
+  const shippingExpensesCost = Number(shippingAgg._sum.amount ?? 0);
+  const otherExpensesCost = Number(otherAgg._sum.amount ?? 0);
+  const influencerCost = Number(influencerAgg._sum.amount ?? 0);
+
+  const cashOut =
+    physicalCost + onlineOrderCost + facebookAdsCost + monthlyExpensesCost +
+    shippingExpensesCost + influencerCost + otherExpensesCost;
+
+  return {
+    physicalRevenue,
+    onlineRevenue,
+    cashIn,
+    physicalCost,
+    onlineOrderCost,
+    facebookAdsCost,
+    monthlyExpensesCost,
+    shippingExpensesCost,
+    influencerCost,
+    otherExpensesCost,
+    cashOut,
+    netCashflow: cashIn - cashOut,
+  };
 }

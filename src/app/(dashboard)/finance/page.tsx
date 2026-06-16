@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getSessionUser } from "@/lib/supabase/server";
-import { getCashflowEntries, getMonthlyCashflow } from "@/lib/finance/cashflow";
+import { getCashflowEntries, getMonthlyCashflow, getFinanceBreakdown } from "@/lib/finance/cashflow";
 import { formatMoney } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { resolveRange } from "@/lib/dashboard/range";
@@ -19,14 +19,15 @@ export default async function FinancePage({
   const range = resolveRange(sp);
   const currency = store.currency;
 
-  const [entries, monthly] = await Promise.all([
+  const [entries, monthly, breakdown] = await Promise.all([
     getCashflowEntries(store.id, range.from, range.to),
     getMonthlyCashflow(store.id, 6),
+    getFinanceBreakdown(store.id, range.from, range.to),
   ]);
 
-  const totalIn = entries.filter((e) => e.type === "IN").reduce((s, e) => s + e.net, 0);
-  const totalOut = entries.filter((e) => e.type === "OUT").reduce((s, e) => s + e.amount, 0);
-  const netCashflow = totalIn - totalOut;
+  const totalIn = breakdown.cashIn;
+  const totalOut = breakdown.cashOut;
+  const netCashflow = breakdown.netCashflow;
 
   // Accounting profit for same period (from orders)
   const orderAgg = await prisma.order.aggregate({
@@ -59,14 +60,14 @@ export default async function FinancePage({
           <CardHeader className="pb-2"><CardTitle>Cash in</CardTitle></CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold text-emerald-600">{formatMoney(totalIn, currency)}</div>
-            <p className="text-xs text-muted-foreground mt-1">Shopify + Eupago (net)</p>
+            <p className="text-xs text-muted-foreground mt-1">Vendas físicas + Vendas site</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle>Cash out</CardTitle></CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold text-destructive">{formatMoney(totalOut, currency)}</div>
-            <p className="text-xs text-muted-foreground mt-1">Despesas + influencers</p>
+            <p className="text-xs text-muted-foreground mt-1">Todos os custos do período</p>
           </CardContent>
         </Card>
         <Card>
@@ -88,17 +89,45 @@ export default async function FinancePage({
         </Card>
       </div>
 
-      {/* Cash vs Profit note */}
-      {Math.abs(netCashflow - accountingProfit) > 10 && (
-        <div className="rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/20 dark:border-amber-800 p-4 text-sm">
-          <strong>Diferença cashflow vs lucro: {formatMoney(Math.abs(netCashflow - accountingProfit), currency)}</strong>
-          <p className="text-muted-foreground mt-1 text-xs">
-            Normal — os payouts Shopify têm delay de 2–5 dias úteis.
-            Eupago pode ter janelas de liquidação diferentes.
-            Despesas de stock não se reflectem em lucro contabilístico da mesma forma.
-          </p>
+      {/* Revenue + cost breakdown */}
+      <div>
+        <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">Receitas</h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Vendas físicas</CardTitle></CardHeader>
+            <CardContent>
+              <div className="text-xl font-semibold text-emerald-600">{formatMoney(breakdown.physicalRevenue, currency)}</div>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Vendas site</CardTitle></CardHeader>
+            <CardContent>
+              <div className="text-xl font-semibold text-emerald-600">{formatMoney(breakdown.onlineRevenue, currency)}</div>
+              <p className="text-xs text-muted-foreground mt-1">Shopify + Eupago</p>
+            </CardContent>
+          </Card>
         </div>
-      )}
+      </div>
+
+      <div>
+        <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">Custos</h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { label: "Custo vendas físicas", value: breakdown.physicalCost, sub: "COGS + comissão clubes" },
+            { label: "Custo encomendas site", value: breakdown.onlineOrderCost, sub: "COGS + embalagem + taxas + envio" },
+            { label: "Custo Facebook Ads", value: breakdown.facebookAdsCost },
+            { label: "Custo despesas mensais", value: breakdown.monthlyExpensesCost, sub: "Shopify, software, academia, etc" },
+          ].map((c) => (
+            <Card key={c.label}>
+              <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">{c.label}</CardTitle></CardHeader>
+              <CardContent>
+                <div className="text-xl font-semibold text-destructive">{formatMoney(c.value, currency)}</div>
+                {c.sub && <p className="text-xs text-muted-foreground mt-1">{c.sub}</p>}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
 
       {/* Monthly cashflow chart (simple bars) */}
       <Card>
