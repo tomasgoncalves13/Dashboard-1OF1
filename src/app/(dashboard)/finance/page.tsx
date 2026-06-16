@@ -116,6 +116,7 @@ export default async function FinancePage({
             { label: "Custo vendas físicas", value: breakdown.physicalCost, sub: "COGS + comissão clubes" },
             { label: "Custo encomendas site", value: breakdown.onlineOrderCost, sub: "COGS + embalagem + taxas + envio" },
             { label: "Custo Facebook Ads", value: breakdown.facebookAdsCost },
+            { label: "Custo Google Ads", value: breakdown.googleAdsCost },
             { label: "Custo despesas mensais", value: breakdown.monthlyExpensesCost, sub: "Shopify, software, academia, etc" },
           ].map((c) => (
             <Card key={c.label}>

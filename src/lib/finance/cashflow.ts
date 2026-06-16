@@ -1,6 +1,7 @@
 import { prisma } from "@/lib/prisma";
 import { getPhysicalKpis } from "@/lib/dashboard/kpis";
 import { getAdAccountInsights } from "@/lib/meta/graph";
+import { getAdAccountInsights as getGoogleAdAccountInsights } from "@/lib/google-ads/client";
 import { ymd } from "@/lib/dashboard/range";
 
 export type CashflowEntry = {
@@ -149,6 +150,7 @@ export type FinanceBreakdown = {
   physicalCost: number; // COGS + club commission
   onlineOrderCost: number; // COGS + packaging + payment fees + shipping
   facebookAdsCost: number;
+  googleAdsCost: number;
   monthlyExpensesCost: number; // recurring expenses (Shopify, software, academia, etc)
   shippingExpensesCost: number; // manual SHIPPING-category expenses
   influencerCost: number;
@@ -166,6 +168,7 @@ export async function getFinanceBreakdown(storeId: string, from: Date, to: Date)
     eupagoAgg,
     onlineOrderAgg,
     adsInsight,
+    googleAdsInsight,
     recurringAgg,
     shippingAgg,
     otherAgg,
@@ -185,6 +188,7 @@ export async function getFinanceBreakdown(storeId: string, from: Date, to: Date)
       _sum: { cogsTotal: true, packagingCost: true, paymentFees: true, shippingCost: true },
     }),
     getAdAccountInsights(ymd(from), ymd(to)).catch(() => null),
+    getGoogleAdAccountInsights(ymd(from), ymd(to)).catch(() => null),
     prisma.expense.aggregate({
       where: { storeId, incurredOn: { gte: from, lte: to }, recurring: true },
       _sum: { amount: true },
@@ -214,13 +218,14 @@ export async function getFinanceBreakdown(storeId: string, from: Date, to: Date)
     Number(onlineOrderAgg._sum.paymentFees ?? 0) +
     Number(onlineOrderAgg._sum.shippingCost ?? 0);
   const facebookAdsCost = Number(adsInsight?.spend ?? 0);
+  const googleAdsCost = Number(googleAdsInsight?.spend ?? 0);
   const monthlyExpensesCost = Number(recurringAgg._sum.amount ?? 0);
   const shippingExpensesCost = Number(shippingAgg._sum.amount ?? 0);
   const otherExpensesCost = Number(otherAgg._sum.amount ?? 0);
   const influencerCost = Number(influencerAgg._sum.amount ?? 0);
 
   const cashOut =
-    physicalCost + onlineOrderCost + facebookAdsCost + monthlyExpensesCost +
+    physicalCost + onlineOrderCost + facebookAdsCost + googleAdsCost + monthlyExpensesCost +
     shippingExpensesCost + influencerCost + otherExpensesCost;
 
   return {
@@ -230,6 +235,7 @@ export async function getFinanceBreakdown(storeId: string, from: Date, to: Date)
     physicalCost,
     onlineOrderCost,
     facebookAdsCost,
+    googleAdsCost,
     monthlyExpensesCost,
     shippingExpensesCost,
     influencerCost,
