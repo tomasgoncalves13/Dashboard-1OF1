@@ -5,6 +5,7 @@ import { formatMoney } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { resolveRange } from "@/lib/dashboard/range";
 import { DateRangePicker } from "@/components/dashboard/date-range-picker";
+import { CashflowChart } from "./cashflow-chart";
 
 export default async function FinancePage({
   searchParams,
@@ -40,9 +41,6 @@ export default async function FinancePage({
   });
   const accountingProfit = Number(orderAgg._sum.netProfit ?? 0);
   const accountingRevenue = Number(orderAgg._sum.total ?? 0);
-
-  // Monthly cashflow bars (max for scale)
-  const maxMonthly = Math.max(...monthly.map((m) => Math.max(m.cashIn, m.cashOut)), 1);
 
   return (
     <div className="space-y-6">
@@ -131,44 +129,13 @@ export default async function FinancePage({
         </div>
       </div>
 
-      {/* Monthly cashflow chart (simple bars) */}
+      {/* Monthly cashflow chart */}
       <Card>
         <CardHeader>
           <CardTitle>Cashflow mensal — últimos 6 meses</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="flex items-end gap-4 h-40 pt-4">
-            {monthly.map((m) => {
-              const inH = (m.cashIn / maxMonthly) * 100;
-              const outH = (m.cashOut / maxMonthly) * 100;
-              const [yyyy, mm] = m.month.split("-");
-              const label = new Date(Number(yyyy), Number(mm) - 1).toLocaleString("pt-PT", { month: "short" });
-              return (
-                <div key={m.month} className="flex-1 flex flex-col items-center gap-1">
-                  <div className="w-full flex items-end justify-center gap-0.5 h-28">
-                    <div
-                      className="w-5 rounded-t bg-emerald-500/70"
-                      style={{ height: `${inH}%` }}
-                      title={`Cash in: €${m.cashIn.toFixed(0)}`}
-                    />
-                    <div
-                      className="w-5 rounded-t bg-red-400/70"
-                      style={{ height: `${outH}%` }}
-                      title={`Cash out: €${m.cashOut.toFixed(0)}`}
-                    />
-                  </div>
-                  <span className="text-[10px] text-muted-foreground capitalize">{label}</span>
-                  <span className={`text-[10px] font-medium ${m.net >= 0 ? "text-emerald-600" : "text-destructive"}`}>
-                    {m.net >= 0 ? "+" : ""}{formatMoney(m.net, currency)}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-          <div className="flex items-center gap-4 mt-3 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1"><span className="size-2.5 rounded-sm bg-emerald-500/70" /> Cash in</span>
-            <span className="flex items-center gap-1"><span className="size-2.5 rounded-sm bg-red-400/70" /> Cash out</span>
-          </div>
+          <CashflowChart data={monthly} />
         </CardContent>
       </Card>
 
