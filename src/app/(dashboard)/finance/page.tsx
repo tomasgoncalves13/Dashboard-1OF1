@@ -117,6 +117,7 @@ export default async function FinancePage({
             { label: "Custo encomendas site", value: breakdown.onlineOrderCost, sub: "COGS + embalagem + taxas + envio" },
             { label: "Custo Facebook Ads", value: breakdown.facebookAdsCost },
             { label: "Custo Google Ads", value: breakdown.googleAdsCost },
+            { label: "Custo influencers", value: breakdown.influencerCost },
             { label: "Custo despesas mensais", value: breakdown.monthlyExpensesCost, sub: "Shopify, software, academia, etc" },
           ].map((c) => (
             <Card key={c.label}>
