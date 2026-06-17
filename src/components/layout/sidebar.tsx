@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, ShoppingBag, Package, Warehouse, Users,
   Receipt, Upload, Settings, Sparkles,
-  Calculator, Landmark, Trophy, X, ShoppingCart, Instagram, Facebook, TrendingUp,
+  Calculator, Landmark, Trophy, X, ShoppingCart, Instagram, Facebook, TrendingUp, Music2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -17,6 +17,7 @@ const nav = [
   { href: "/influencers", label: "Influencers", icon: Sparkles },
   { href: "/instagram", label: "Instagram", icon: Instagram },
   { href: "/facebook", label: "Facebook", icon: Facebook },
+  { href: "/tiktok", label: "TikTok", icon: Music2 },
   { href: "/ads", label: "Ads", icon: TrendingUp },
   { href: "/inventory", label: "Inventário", icon: Warehouse },
   { href: "/products", label: "Catálogo", icon: Package },
