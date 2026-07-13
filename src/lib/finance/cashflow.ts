@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/prisma";
-import { getPhysicalKpis } from "@/lib/dashboard/kpis";
+import { getPhysicalKpis, getEupagoNet } from "@/lib/dashboard/kpis";
 import { getAdAccountInsights } from "@/lib/meta/graph";
 import { getAdAccountInsights as getGoogleAdAccountInsights } from "@/lib/google-ads/client";
 import { ymd } from "@/lib/dashboard/range";
@@ -43,20 +43,37 @@ export async function getCashflowEntries(
     });
   }
 
-  // Cash IN: Eupago payouts
+  // Cash IN: Eupago payouts (CSV import), falling back to raw API transactions when no payout covers the period
   const eupagoPayouts = await prisma.eupagoPayout.findMany({
     where: { storeId, paymentDate: { gte: from, lte: to } },
     orderBy: { paymentDate: "asc" },
   });
-  for (const ep of eupagoPayouts) {
-    entries.push({
-      date: ep.paymentDate,
-      type: "IN",
-      source: "Eupago",
-      description: `Transferência ${ep.fileRef}`,
-      amount: Number(ep.grossAmount),
-      net: Number(ep.netAmount),
+  if (eupagoPayouts.length > 0) {
+    for (const ep of eupagoPayouts) {
+      entries.push({
+        date: ep.paymentDate,
+        type: "IN",
+        source: "Eupago",
+        description: `Transferência ${ep.fileRef}`,
+        amount: Number(ep.grossAmount),
+        net: Number(ep.netAmount),
+      });
+    }
+  } else {
+    const eupagoTransactions = await prisma.eupagoTransaction.findMany({
+      where: { storeId, status: "Paga", datePayment: { gte: from, lte: to } },
+      orderBy: { datePayment: "asc" },
     });
+    for (const et of eupagoTransactions) {
+      entries.push({
+        date: et.datePayment,
+        type: "IN",
+        source: "Eupago",
+        description: `Transação ${et.trid}`,
+        amount: Number(et.amount),
+        net: Number(et.net),
+      });
+    }
   }
 
   // Cash OUT: Expenses
@@ -107,15 +124,12 @@ export async function getMonthlyCashflow(
     const from = d;
     const to = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1));
 
-    const [payoutAgg, eupagoAgg, expenseAgg, influencerAgg] = await Promise.all([
+    const [payoutAgg, eupagoNet, expenseAgg, influencerAgg] = await Promise.all([
       prisma.payout.aggregate({
         where: { storeId, issuedAt: { gte: from, lt: to }, status: { in: ["PAID", "IN_TRANSIT"] } },
         _sum: { net: true },
       }),
-      prisma.eupagoPayout.aggregate({
-        where: { storeId, paymentDate: { gte: from, lt: to } },
-        _sum: { netAmount: true },
-      }),
+      getEupagoNet(storeId, from, to),
       prisma.expense.aggregate({
         where: { storeId, incurredOn: { gte: from, lt: to } },
         _sum: { amount: true },
@@ -127,7 +141,7 @@ export async function getMonthlyCashflow(
     ]);
 
     const cashIn =
-      Number(payoutAgg._sum.net ?? 0) + Number(eupagoAgg._sum.netAmount ?? 0);
+      Number(payoutAgg._sum.net ?? 0) + eupagoNet.net;
     const cashOut =
       Number(expenseAgg._sum.amount ?? 0) + Number(influencerAgg._sum.amount ?? 0);
 
@@ -165,7 +179,7 @@ export async function getFinanceBreakdown(storeId: string, from: Date, to: Date)
   const [
     physicalKpis,
     payoutAgg,
-    eupagoAgg,
+    eupagoNet,
     onlineOrderAgg,
     adsInsight,
     googleAdsInsight,
@@ -179,10 +193,7 @@ export async function getFinanceBreakdown(storeId: string, from: Date, to: Date)
       where: { storeId, issuedAt: { gte: from, lte: to }, status: { in: ["PAID", "IN_TRANSIT"] } },
       _sum: { net: true },
     }),
-    prisma.eupagoPayout.aggregate({
-      where: { storeId, paymentDate: { gte: from, lte: to } },
-      _sum: { netAmount: true },
-    }),
+    getEupagoNet(storeId, from, to),
     prisma.order.aggregate({
       where: { storeId, processedAt: { gte: from, lte: to }, financialStatus: "PAID" },
       _sum: { cogsTotal: true, packagingCost: true, paymentFees: true, shippingCost: true },
@@ -208,7 +219,7 @@ export async function getFinanceBreakdown(storeId: string, from: Date, to: Date)
   ]);
 
   const physicalRevenue = physicalKpis.revenue;
-  const onlineRevenue = Number(payoutAgg._sum.net ?? 0) + Number(eupagoAgg._sum.netAmount ?? 0);
+  const onlineRevenue = Number(payoutAgg._sum.net ?? 0) + eupagoNet.net;
   const cashIn = physicalRevenue + onlineRevenue;
 
   const physicalCost = physicalKpis.cogs + physicalKpis.commission;
