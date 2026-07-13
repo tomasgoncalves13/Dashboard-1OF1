@@ -7,6 +7,7 @@ import { fullSync, incrementalSync, syncPayouts } from "@/lib/shopify/sync";
 import { shopifyGraphQL } from "@/lib/shopify/client";
 import { SHOP_QUERY } from "@/lib/shopify/queries";
 import { recalculateAllOrderProfits } from "@/lib/profit/recalculate";
+import { syncEupagoTransactions } from "@/lib/eupago/sync";
 
 async function getOwnedStore() {
   const user = await getSessionUser();
@@ -36,10 +37,12 @@ export async function runShopifyFullSync() {
   });
 
   const result = await fullSync(store.id);
+  const eupago = await syncEupagoTransactions(store.id);
   revalidatePath("/dashboard");
   revalidatePath("/orders");
   revalidatePath("/products");
-  return result;
+  revalidatePath("/finance");
+  return { ...result, ...eupago };
 }
 
 export async function runShopifyRecentSync() {
@@ -47,11 +50,12 @@ export async function runShopifyRecentSync() {
   const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
   const orders = await incrementalSync(store.id, since);
   const payouts = await syncPayouts(store.id);
+  const eupago = await syncEupagoTransactions(store.id);
   revalidatePath("/dashboard");
   revalidatePath("/orders");
   revalidatePath("/finance");
   revalidatePath("/inventory");
-  return { ...orders, ...payouts };
+  return { ...orders, ...payouts, ...eupago };
 }
 
 export async function runProfitRecalculate() {
