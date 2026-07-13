@@ -2,12 +2,13 @@
 
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
-import { runShopifyFullSync, testShopifyConnection, runProfitRecalculate } from "./actions";
+import { runShopifyFullSync, testShopifyConnection, runProfitRecalculate, runShopifyRecentSync } from "./actions";
 import { toast } from "sonner";
 import { Loader2, RefreshCw, PlugZap, Calculator } from "lucide-react";
 
 export function SyncButton() {
   const [isPending, startTransition] = useTransition();
+  const [recentPending, startRecentTransition] = useTransition();
   const [recalcPending, startRecalcTransition] = useTransition();
   const [testing, setTesting] = useState(false);
 
@@ -30,6 +31,17 @@ export function SyncButton() {
     });
   }
 
+  function onRecentSync() {
+    startRecentTransition(async () => {
+      try {
+        const r = await runShopifyRecentSync();
+        toast.success(`Encomendas recentes sincronizadas — ${r.ordersSynced} encomendas`);
+      } catch (e) {
+        toast.error((e as Error).message);
+      }
+    });
+  }
+
   function onRecalculate() {
     startRecalcTransition(async () => {
       try {
@@ -46,7 +58,10 @@ export function SyncButton() {
       <Button variant="outline" onClick={onTest} disabled={testing}>
         {testing ? <Loader2 className="animate-spin" /> : <PlugZap />} Test connection
       </Button>
-      <Button onClick={onSync} disabled={isPending}>
+      <Button onClick={onRecentSync} disabled={recentPending}>
+        {recentPending ? <Loader2 className="animate-spin" /> : <RefreshCw />} Sync encomendas recentes
+      </Button>
+      <Button variant="outline" onClick={onSync} disabled={isPending}>
         {isPending ? <Loader2 className="animate-spin" /> : <RefreshCw />} Run full sync
       </Button>
       <Button variant="outline" onClick={onRecalculate} disabled={recalcPending}>

@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getSessionUser } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
-import { fullSync } from "@/lib/shopify/sync";
+import { fullSync, incrementalSync } from "@/lib/shopify/sync";
 import { shopifyGraphQL } from "@/lib/shopify/client";
 import { SHOP_QUERY } from "@/lib/shopify/queries";
 import { recalculateAllOrderProfits } from "@/lib/profit/recalculate";
@@ -39,6 +39,15 @@ export async function runShopifyFullSync() {
   revalidatePath("/dashboard");
   revalidatePath("/orders");
   revalidatePath("/products");
+  return result;
+}
+
+export async function runShopifyRecentSync() {
+  const store = await getOwnedStore();
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const result = await incrementalSync(store.id, since);
+  revalidatePath("/dashboard");
+  revalidatePath("/orders");
   return result;
 }
 
