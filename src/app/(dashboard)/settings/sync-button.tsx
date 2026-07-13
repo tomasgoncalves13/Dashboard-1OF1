@@ -35,7 +35,7 @@ export function SyncButton() {
     startRecentTransition(async () => {
       try {
         const r = await runShopifyRecentSync();
-        toast.success(`Encomendas recentes sincronizadas — ${r.ordersSynced} encomendas`);
+        toast.success(`Encomendas recentes sincronizadas — ${r.ordersSynced} encomendas, ${r.payoutsSynced ?? 0} payouts`);
       } catch (e) {
         toast.error((e as Error).message);
       }
