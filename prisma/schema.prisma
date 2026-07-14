@@ -77,6 +77,7 @@ model Store {
   clubs               Club[]
   purchaseOrders      PurchaseOrder[]
   inventoryItems      InventoryItem[]
+  grwmScheduledPosts  GrwmScheduledPost[]
 
   @@index([ownerId])
   @@map("stores")
@@ -994,4 +995,30 @@ model AuditLog {
   @@index([entityType, entityId])
   @@index([userId, createdAt])
   @@map("audit_logs")
+}
+
+// ─────────────────────────────────────────────────────────────
+// GRWM SCHEDULED POSTS — Vercel Cron publishes at 17:00 UTC (18:00 Lisbon)
+// ─────────────────────────────────────────────────────────────
+
+model GrwmScheduledPost {
+  id             String    @id @default(cuid())
+  storeId        String
+  scheduledDate  DateTime  @db.Date
+  videoUrl       String
+  caption        String
+  igId           String
+  published      Boolean   @default(false)
+  igMediaId      String?
+  tiktokPublishId String?
+  fbPostId       String?
+  publishedAt    DateTime?
+  errorMsg       String?
+  createdAt      DateTime  @default(now())
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, scheduledDate])
+  @@index([storeId, published])
+  @@map("grwm_scheduled_posts")
 }
