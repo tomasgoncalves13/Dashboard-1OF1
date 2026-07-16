@@ -30,6 +30,7 @@ export async function middleware(request: NextRequest) {
     isAuthRoute ||
     pathname.startsWith("/api/webhooks") ||
     pathname.startsWith("/api/inngest") ||
+    pathname.startsWith("/api/cron") ||
     pathname === "/" ||
     pathname === "/manifest.json" ||
     pathname === "/sw.js";
