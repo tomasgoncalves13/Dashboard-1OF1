@@ -38,11 +38,20 @@ async function api<T = any>(path: string, init?: RequestInit): Promise<T> {
       ...(init?.headers ?? {}),
     },
   });
-  const data = await res.json();
-  if (data.error && data.error.code && data.error.code !== "ok") {
-    throw new Error(data.error.message ?? data.error.code);
+  const text = await res.text();
+  let data: Record<string, unknown>;
+  try {
+    data = JSON.parse(text);
+  } catch {
+    // TikTok returned a non-JSON body (WAF/edge block page, outage, etc.) —
+    // surface the HTTP status and a snippet instead of a raw JSON.parse crash.
+    throw new Error(`TikTok respondeu ${res.status} (não-JSON): ${text.slice(0, 200)}`);
   }
-  return data;
+  const error = data.error as { code?: string; message?: string } | undefined;
+  if (error && error.code && error.code !== "ok") {
+    throw new Error(error.message ?? error.code);
+  }
+  return data as T;
 }
 
 export interface TikTokUserInfo {
@@ -101,20 +110,53 @@ export async function getVideoList(maxCount = 12): Promise<TikTokVideo[]> {
   }));
 }
 
+const MAX_SINGLE_CHUNK_BYTES = 64 * 1024 * 1024;
+
 /**
  * Envia um vídeo para a inbox do TikTok como rascunho — o creator tem de
  * abrir a app TikTok e publicar manualmente. Publicação direta (scope
  * video.publish) exige aprovação prévia da app pela TikTok, nunca concedida.
+ *
+ * Usa FILE_UPLOAD (upload direto dos bytes) em vez de PULL_FROM_URL — este
+ * último exige que o domínio do videoUrl esteja verificado no TikTok
+ * Developer Portal, o que não é possível para um domínio partilhado como o
+ * do Supabase Storage.
  */
 export async function uploadVideoDraft(videoUrl: string): Promise<{ publishId: string }> {
-  const data = await api<{ data: { publish_id: string } }>("/post/publish/inbox/video/init/", {
-    method: "POST",
-    body: JSON.stringify({
-      source_info: {
-        source: "PULL_FROM_URL",
-        video_url: videoUrl,
-      },
-    }),
+  const videoRes = await fetch(videoUrl);
+  if (!videoRes.ok) throw new Error(`Falha ao obter o vídeo (${videoRes.status})`);
+  const buffer = Buffer.from(await videoRes.arrayBuffer());
+  const size = buffer.length;
+  if (size > MAX_SINGLE_CHUNK_BYTES) {
+    throw new Error(`Vídeo demasiado grande para upload num único chunk (${size} bytes)`);
+  }
+
+  const init = await api<{ data: { publish_id: string; upload_url: string } }>(
+    "/post/publish/inbox/video/init/",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        source_info: {
+          source: "FILE_UPLOAD",
+          video_size: size,
+          chunk_size: size,
+          total_chunk_count: 1,
+        },
+      }),
+    },
+  );
+
+  const uploadRes = await fetch(init.data.upload_url, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "video/mp4",
+      "Content-Range": `bytes 0-${size - 1}/${size}`,
+    },
+    body: buffer,
   });
-  return { publishId: data.data.publish_id };
+  if (!uploadRes.ok) {
+    throw new Error(`Upload do vídeo para o TikTok falhou (HTTP ${uploadRes.status})`);
+  }
+
+  return { publishId: init.data.publish_id };
 }

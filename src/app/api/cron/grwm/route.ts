@@ -1,27 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { publishIgMedia, PAGE_ID, systemToken } from "@/lib/meta/graph";
+import { publishIgMedia, systemToken } from "@/lib/meta/graph";
 import { uploadVideoDraft } from "@/lib/tiktok/client";
 
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
 
-async function publishFbVideo(videoUrl: string, description: string): Promise<string> {
-  const token = systemToken();
-  const params = new URLSearchParams({
-    file_url: videoUrl,
-    description,
-    access_token: token,
-  });
-  const res = await fetch(`https://graph.facebook.com/v21.0/${PAGE_ID}/videos`, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: params.toString(),
-  });
-  const json = await res.json() as { id?: string; error?: { message: string } };
-  if (!res.ok || json.error) throw new Error(json.error?.message ?? "Facebook video upload failed");
-  return json.id!;
-}
+// Não publicamos vídeo diretamente na Page do Facebook — a API exige Business
+// Verification, que esta app não tem. O Instagram já faz crosspost automático
+// do Reel para a Page ligada, por isso o conteúdo chega lá de qualquer forma.
 
 export async function GET(req: NextRequest) {
   // Vercel cron authentication
@@ -30,15 +17,17 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // Find today's post (UTC date matches scheduledDate)
+  // Post mais antigo ainda não publicado com data <= hoje: se um dia falhar,
+  // fica em fila e é retentado na corrida seguinte em vez de ser abandonado.
   const today = new Date();
   const todayDate = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
 
   const post = await prisma.grwmScheduledPost.findFirst({
     where: {
-      scheduledDate: todayDate,
+      scheduledDate: { lte: todayDate },
       published: false,
     },
+    orderBy: { scheduledDate: "asc" },
   });
 
   if (!post) {
@@ -46,34 +35,35 @@ export async function GET(req: NextRequest) {
   }
 
   const pageToken = systemToken();
-  const results: Record<string, string | null> = { igMediaId: null, tiktokPublishId: null, fbPostId: null };
+  // Reaproveita IDs de plataformas que já tiveram sucesso numa tentativa
+  // anterior, para não publicar em duplicado ao retentar as que falharam.
+  const results: Record<string, string | null> = {
+    igMediaId: post.igMediaId,
+    tiktokPublishId: post.tiktokPublishId,
+    fbPostId: post.fbPostId,
+  };
   const errors: string[] = [];
 
   // Instagram — publish Reel immediately (no scheduling = no whitelist needed)
-  try {
-    const igMediaId = await publishIgMedia(post.igId, pageToken, {
-      videoUrl: post.videoUrl,
-      caption: post.caption,
-    });
-    results.igMediaId = igMediaId;
-  } catch (e) {
-    errors.push(`Instagram: ${e instanceof Error ? e.message : String(e)}`);
+  if (!results.igMediaId) {
+    try {
+      results.igMediaId = await publishIgMedia(post.igId, pageToken, {
+        videoUrl: post.videoUrl,
+        caption: post.caption,
+      });
+    } catch (e) {
+      errors.push(`Instagram: ${e instanceof Error ? e.message : String(e)}`);
+    }
   }
 
   // TikTok — upload draft to creator inbox
-  try {
-    const r = await uploadVideoDraft(post.videoUrl);
-    results.tiktokPublishId = r.publishId ?? null;
-  } catch (e) {
-    errors.push(`TikTok: ${e instanceof Error ? e.message : String(e)}`);
-  }
-
-  // Facebook — publish video post
-  try {
-    const fbPostId = await publishFbVideo(post.videoUrl, post.caption);
-    results.fbPostId = fbPostId;
-  } catch (e) {
-    errors.push(`Facebook: ${e instanceof Error ? e.message : String(e)}`);
+  if (!results.tiktokPublishId) {
+    try {
+      const r = await uploadVideoDraft(post.videoUrl);
+      results.tiktokPublishId = r.publishId ?? null;
+    } catch (e) {
+      errors.push(`TikTok: ${e instanceof Error ? e.message : String(e)}`);
+    }
   }
 
   const published = results.igMediaId !== null;
@@ -86,7 +76,7 @@ export async function GET(req: NextRequest) {
       tiktokPublishId: results.tiktokPublishId,
       fbPostId: results.fbPostId,
       publishedAt: published ? new Date() : undefined,
-      errorMsg: errors.length > 0 ? errors.join(" | ") : undefined,
+      errorMsg: errors.length > 0 ? errors.join(" | ") : null,
     },
   });
 

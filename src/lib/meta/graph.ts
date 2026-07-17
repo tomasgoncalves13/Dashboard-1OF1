@@ -23,6 +23,18 @@ async function metaPost<T>(path: string, token: string, body: Record<string, str
   return data;
 }
 
+// Uncached GET — used for polling container status, where a stale cached
+// response would make the poll loop see the same status forever.
+async function getFresh<T>(path: string, token: string, params: Record<string, string> = {}): Promise<T> {
+  const url = new URL(`${BASE}${path}`);
+  url.searchParams.set("access_token", token);
+  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+  const res = await fetch(url.toString(), { cache: "no-store" });
+  const data = await res.json();
+  if (data.error) throw new Error(data.error.message);
+  return data;
+}
+
 export function systemToken() {
   const t = process.env.META_PAGE_ACCESS_TOKEN;
   if (!t) throw new Error("META_PAGE_ACCESS_TOKEN não configurado");
@@ -194,6 +206,24 @@ export async function getIgInsights(igId: string, pageToken: string, fromDate?: 
   return data.data;
 }
 
+// Video containers are processed async by Meta (it has to download the file
+// from videoUrl first). Publishing before status_code is FINISHED reliably
+// fails with "Media ID is not available", so poll until it's ready.
+async function waitForIgContainerReady(containerId: string, token: string, timeoutMs = 90_000): Promise<void> {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const { status_code } = await getFresh<{ status_code: string }>(`/${containerId}`, token, {
+      fields: "status_code",
+    });
+    if (status_code === "FINISHED") return;
+    if (status_code === "ERROR" || status_code === "EXPIRED") {
+      throw new Error(`Processamento do vídeo no Instagram falhou (status_code=${status_code})`);
+    }
+    await new Promise((r) => setTimeout(r, 3000));
+  }
+  throw new Error("Timeout à espera do processamento do vídeo no Instagram");
+}
+
 export async function publishIgMedia(
   igId: string,
   pageToken: string,
@@ -205,6 +235,7 @@ export async function publishIgMedia(
   if (params.scheduledTime) { body.published = "false"; body.scheduled_publish_time = params.scheduledTime.toString(); }
   const container = await metaPost<{ id: string }>(`/${igId}/media`, pageToken, body);
   if (params.scheduledTime) return container.id;
+  if (params.videoUrl) await waitForIgContainerReady(container.id, pageToken);
   const result = await metaPost<{ id: string }>(`/${igId}/media_publish`, pageToken, { creation_id: container.id });
   return result.id;
 }
