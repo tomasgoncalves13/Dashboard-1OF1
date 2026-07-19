@@ -55,10 +55,52 @@ interface DaySlot {
   error?: string;
 }
 
+function shuffle<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Interleaves combos so consecutive days don't repeat the same grip (anti-slip
+// sock) color, e.g. Amarela, Verde, Azul, Vermelha, Amarela (other sleeve), ...
+// Randomized each time so the sequence isn't identical on every visit.
+function interleaveCombos(combos: Combo[]): Combo[] {
+  const byColor = new Map<string, Combo[]>();
+  for (const c of combos) {
+    const list = byColor.get(c.gripColor) ?? [];
+    list.push(c);
+    byColor.set(c.gripColor, list);
+  }
+
+  const groups = shuffle([...byColor.entries()]).map(([color, items]) => ({
+    color,
+    queue: shuffle(items),
+  }));
+
+  const result: Combo[] = [];
+  let lastColor: string | null = null;
+
+  while (groups.some((g) => g.queue.length > 0)) {
+    groups.sort((a, b) => b.queue.length - a.queue.length);
+    const pick =
+      groups.find((g) => g.queue.length > 0 && g.color !== lastColor) ??
+      groups.find((g) => g.queue.length > 0);
+    if (!pick) break;
+    result.push(pick.queue.shift()!);
+    lastColor = pick.color;
+  }
+
+  return result;
+}
+
 function buildDefaultSlots(combos: Combo[]): DaySlot[] {
   if (combos.length === 0) return [];
+  const ordered = interleaveCombos(combos);
   return Array.from({ length: 14 }, (_, i) => {
-    const combo = combos[i % combos.length];
+    const combo = ordered[i % ordered.length];
     return {
       comboKey: combo.key,
       videoPath: combo.videos[0]?.fullPath ?? "",
