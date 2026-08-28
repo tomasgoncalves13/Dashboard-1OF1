@@ -1,3 +1,7 @@
+# Copy Bank — Pais
+
+Variações curtas (hook + 3 bullets) por ângulo, prontas a rodar em ads estáticos/carrossel para a persona Pais. Referenciado a partir de `02 - Mapa de Angulos.md`.
+
 🩸 ÂNGULO: OLHEIROS / POTENCIAL DO FILHO
 
 😰 E se o teu filho não for escolhido por causa do equipamento?

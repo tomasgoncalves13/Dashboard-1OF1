@@ -1,3 +1,7 @@
+# Copy Bank — Jogadores
+
+Variações curtas (hook + 3 bullets) por ângulo, prontas a rodar em ads estáticos/carrossel para a persona Jogador Competitivo/Jovens. Referenciado a partir de `02 - Mapa de Angulos.md`.
+
 🩸 ÂNGULO: TAPE / DINHEIRO DEITADO FORA
 
 😤 Ainda a gastar em tape toda a semana?

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Ecommerce intelligence & operations dashboard for **1OF1 Fútbol** — a Shopify-based football merchandise business. Tracks profit, stock, ad spend, influencers, physical sales (clubs), and cashflow in one place.
+Ecommerce intelligence & operations dashboard for **1OF1 Fútbol** — a Shopify-based football merchandise business. Tracks profit, stock, ad spend, influencers, physical sales (clubs), cashflow, and social content scheduling (Instagram/TikTok/Facebook) in one place.
 
 ## Commands
 
@@ -51,6 +51,11 @@ Route groups separate auth from the main shell:
 | `/expenses` | Expenses | Categorised expenses, recurring support |
 | `/finance` | Finance | Cashflow timeline (Shopify payouts + Eupago + expenses) |
 | `/manual-sales` | Manual sales | Legacy; superseded by /clubs for physical sales |
+| `/instagram` | Instagram | IG account insights + Reel scheduling (Meta Graph API) |
+| `/facebook` | Facebook | Page insights + post scheduling (Meta Graph API) |
+| `/tiktok` | TikTok | Draft video uploads (TikTok Content Posting API) |
+| `/grwm` | GRWM Scheduler | Queues GRWM Reels/videos for cross-posting; published daily by cron |
+| `/encomendas` | Purchase orders | Supplier purchase orders (`PurchaseOrder`/`PurchaseOrderItem`), production/transport cost tracking |
 | `/imports` | Imports | Excel/CSV upload wizard |
 | `/settings` | Settings | Shopify sync trigger |
 
@@ -123,6 +128,10 @@ Job definitions: `src/lib/inngest/functions.ts`. Served at `src/app/api/inngest/
 - `getCashflowEntries()` — timeline merging Shopify payouts + Eupago payouts (cash in) + expenses + influencer payments (cash out)
 - `getMonthlyCashflow()` — 6-month bar chart data
 
+### Social content scheduling (GRWM)
+
+Separate from Inngest — uses a **Vercel cron** (`vercel.json`, `0 17 * * *`) hitting `src/app/api/cron/grwm/route.ts`, authenticated via `CRON_SECRET` bearer header. Each run publishes the oldest unpublished `GrwmScheduledPost` with `scheduledDate <= today` (queue semantics: a failed run is retried on the next tick, not skipped). Publishes to Instagram (`src/lib/meta/graph.ts`) and TikTok (`src/lib/tiktok/client.ts`) in parallel per post, tracking `igMediaId`/`tiktokPublishId`/`fbPostId` independently so a partial failure doesn't republish the platforms that already succeeded. Facebook is never posted to directly (no Business Verification) — IG's auto-crosspost to the linked Page covers it. Scheduling itself is done via one-off scripts in `scripts/` (e.g. `schedule-grwm.mjs`, `seed-grwm.mjs`) rather than in-app UI.
+
 ### Analytics snapshot
 
 `src/lib/analytics/snapshot.ts` computes daily rollups covering **both** ecommerce and physical sales. Fields: `revenue`, `orders`, `grossProfit`, `netProfit` (ecommerce) + `physicalRevenue`, `physicalCogs`, `physicalProfit`, `clubCommissions` (physical).
@@ -142,6 +151,9 @@ Job definitions: `src/lib/inngest/functions.ts`. Served at `src/app/api/inngest/
 | `src/lib/analytics/snapshot.ts` | Daily rollup (ecommerce + physical) |
 | `src/lib/dashboard/kpis.ts` | KPI query helpers |
 | `src/lib/shopify/sync/orders.ts` | Order ingestion + profit calculation |
+| `src/lib/meta/graph.ts` | Meta Graph API client (Instagram + Facebook insights, publishing) |
+| `src/lib/tiktok/client.ts` | TikTok Content Posting API client |
+| `src/app/api/cron/grwm/route.ts` | Vercel cron: publishes next queued GRWM post |
 | `src/components/ui/` | shadcn/ui primitives (regenerate via shadcn CLI, don't edit manually) |
 
 ## Environment variables
@@ -154,3 +166,6 @@ See `.env.example`. Critical:
 - `INNGEST_EVENT_KEY` + `INNGEST_SIGNING_KEY` — Inngest auth
 - `EUPAGO_CLIENT_ID` + `EUPAGO_CLIENT_SECRET` — Eupago OAuth (Portuguese MB/MBWay payment provider)
 - `EUPAGO_API_BASE` — defaults to `https://clientes.eupago.pt`
+- `META_APP_ID` / `META_APP_SECRET` / `META_ACCESS_TOKEN` / `META_AD_ACCOUNT_ID` — Meta Graph API (Instagram, Facebook, ads)
+- `TIKTOK_CLIENT_KEY` / `TIKTOK_CLIENT_SECRET` / `TIKTOK_ACCESS_TOKEN` / `TIKTOK_REFRESH_TOKEN` / `TIKTOK_OPEN_ID` — TikTok Content Posting API
+- `CRON_SECRET` — bearer token the Vercel cron sends to `/api/cron/grwm` (not in `.env.example`; must be set manually and match the Vercel cron config)

@@ -32,3 +32,7 @@
 
 - **Feita para usar com meias da 1OF1:** Funciona em conjunto com as meias antiderrapantes para dar ainda mais fixação e estabilidade.
 
+- **Cobertura de impacto:** Por ficar sempre fixa na zona certa, cobre cerca de 97% dos impactos — muito mais do que uma caneleira tradicional que desliza da posição.
+
+- **Envio:** Grátis para todo Portugal, entrega em 2–4 dias úteis.
+

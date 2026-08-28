@@ -1,4 +1,4 @@
-## Meias Antiderrapantes — Características
+# Meias Antiderrapantes — Características
 
 As Meias Antiderrapantes da 1OF1 foram feitas para manter o pé firme dentro da chuteira e dar mais estabilidade em campo.
 
