@@ -15,8 +15,8 @@ const DEFAULTS: Omit<OrderOverheads, "totalPerOrder"> = {
   bubbleMailerCost: 0.69,
   cardCost: 0.01,
   stickerCost: 0.06,
-  shippingDomestic: 2.34,
-  shippingEU: 4.25,
+  shippingDomestic: 5.4,
+  shippingEU: 8.6,
 };
 
 export async function getOrderOverheads(storeId: string): Promise<OrderOverheads> {

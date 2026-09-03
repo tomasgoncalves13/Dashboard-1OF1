@@ -11,7 +11,7 @@ export default async function CostsPage() {
   const store = user ? await prisma.store.findFirst({ where: { ownerId: user.id } }) : null;
   if (!store) return null;
 
-  const [products, overheads] = await Promise.all([
+  const [products, overheads, costSums] = await Promise.all([
     prisma.product.findMany({
       where: { storeId: store.id, status: "ACTIVE" },
       include: {
@@ -23,10 +23,17 @@ export default async function CostsPage() {
       orderBy: { title: "asc" },
     }),
     getOrderOverheads(store.id),
+    prisma.order.aggregate({
+      where: { storeId: store.id },
+      _sum: { shippingCost: true, cogsTotal: true, packagingCost: true },
+    }),
   ]);
 
   const totalOverhead = overheads.totalPerOrder;
   const currency = store.currency;
+  const totalShippingCost = Number(costSums._sum.shippingCost ?? 0);
+  const totalCogs =
+    Number(costSums._sum.cogsTotal ?? 0) + Number(costSums._sum.packagingCost ?? 0);
 
   return (
     <div className="space-y-8">
@@ -36,6 +43,28 @@ export default async function CostsPage() {
           Custos de produto por variante + overhead fixo por encomenda online.
           Alterações disparam recálculo retroativo de todas as encomendas.
         </p>
+      </div>
+
+      {/* Cost totals */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Card>
+          <CardHeader>
+            <CardTitle>Custo total de envios</CardTitle>
+            <CardDescription>Soma do custo de envio de todas as encomendas.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-semibold">{formatMoney(totalShippingCost, currency)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Custo total de produtos (COGS)</CardTitle>
+            <CardDescription>Custo de produto + embalagem (bubble mailer, cartão, autocolante, prenda) de todas as encomendas.</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-semibold">{formatMoney(totalCogs, currency)}</p>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Per-order overheads */}

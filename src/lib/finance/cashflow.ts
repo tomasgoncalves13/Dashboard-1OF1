@@ -163,6 +163,8 @@ export type FinanceBreakdown = {
 
   physicalCost: number; // COGS + club commission
   onlineOrderCost: number; // COGS + packaging + payment fees + shipping
+  onlineShippingCost: number;
+  onlineCogsCost: number; // COGS + packaging (embalagem faz parte do COGS)
   facebookAdsCost: number;
   googleAdsCost: number;
   monthlyExpensesCost: number; // recurring expenses (Shopify, software, academia, etc)
@@ -223,11 +225,11 @@ export async function getFinanceBreakdown(storeId: string, from: Date, to: Date)
   const cashIn = physicalRevenue + onlineRevenue;
 
   const physicalCost = physicalKpis.cogs + physicalKpis.commission;
+  const onlineShippingCost = Number(onlineOrderAgg._sum.shippingCost ?? 0);
+  const onlineCogsCost =
+    Number(onlineOrderAgg._sum.cogsTotal ?? 0) + Number(onlineOrderAgg._sum.packagingCost ?? 0);
   const onlineOrderCost =
-    Number(onlineOrderAgg._sum.cogsTotal ?? 0) +
-    Number(onlineOrderAgg._sum.packagingCost ?? 0) +
-    Number(onlineOrderAgg._sum.paymentFees ?? 0) +
-    Number(onlineOrderAgg._sum.shippingCost ?? 0);
+    onlineCogsCost + Number(onlineOrderAgg._sum.paymentFees ?? 0) + onlineShippingCost;
   const facebookAdsCost = Number(adsInsight?.spend ?? 0);
   const googleAdsCost = Number(googleAdsInsight?.spend ?? 0);
   const monthlyExpensesCost = Number(recurringAgg._sum.amount ?? 0);
@@ -245,6 +247,8 @@ export async function getFinanceBreakdown(storeId: string, from: Date, to: Date)
     cashIn,
     physicalCost,
     onlineOrderCost,
+    onlineShippingCost,
+    onlineCogsCost,
     facebookAdsCost,
     googleAdsCost,
     monthlyExpensesCost,

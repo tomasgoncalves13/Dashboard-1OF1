@@ -152,6 +152,8 @@ export default async function DashboardPage({
           {[
             { label: "Custo vendas físicas", value: financeBreakdown.physicalCost, sub: "COGS + comissão clubes" },
             { label: "Custo encomendas site", value: financeBreakdown.onlineOrderCost, sub: "COGS + embalagem + taxas + envio" },
+            { label: "Custo total de envios", value: financeBreakdown.onlineShippingCost },
+            { label: "Custo total de produtos (COGS)", value: financeBreakdown.onlineCogsCost, sub: "Produto + embalagem" },
             { label: "Custo Facebook Ads", value: financeBreakdown.facebookAdsCost },
             { label: "Custo Google Ads", value: financeBreakdown.googleAdsCost },
             { label: "Custo influencers", value: financeBreakdown.influencerCost },
