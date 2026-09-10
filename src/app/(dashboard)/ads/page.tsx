@@ -60,22 +60,31 @@ export default async function AdsPage({
     error = (e as Error).message;
   }
 
-  // Average (COGS + envio) per encomenda da loja no período, usada para estimar
-  // o custo das encomendas atribuídas às compras vindas do Meta Ads (não há
-  // ligação direta entre uma compra do Meta e a encomenda Shopify correspondente).
+  // Average (COGS + envio) por encomenda, usada para estimar o custo das
+  // encomendas atribuídas às compras vindas do Meta Ads (não há ligação direta
+  // entre uma compra do Meta e a encomenda Shopify correspondente). Calculado
+  // como a média dos custos médios diários (cada dia pesa o mesmo), em vez de
+  // uma média única sobre todas as encomendas do período — assim um dia com
+  // volume ou custos fora do normal não distorce a média tanto.
   const user = await getSessionUser();
   const store = user ? await prisma.store.findFirst({ where: { ownerId: user.id } }) : null;
   let avgOrderCost = 0;
   if (store) {
-    const [agg, ordersCount] = await Promise.all([
-      prisma.order.aggregate({
-        where: { storeId: store.id, processedAt: { gte: range.from, lte: range.to } },
-        _sum: { cogsTotal: true, shippingCost: true },
-      }),
-      prisma.order.count({ where: { storeId: store.id, processedAt: { gte: range.from, lte: range.to } } }),
-    ]);
-    const totalCost = Number(agg._sum.cogsTotal ?? 0) + Number(agg._sum.shippingCost ?? 0);
-    avgOrderCost = ordersCount > 0 ? totalCost / ordersCount : 0;
+    const orders = await prisma.order.findMany({
+      where: { storeId: store.id, processedAt: { gte: range.from, lte: range.to } },
+      select: { processedAt: true, cogsTotal: true, shippingCost: true },
+    });
+    const byDay = new Map<string, { cost: number; count: number }>();
+    for (const o of orders) {
+      const day = ymd(o.processedAt);
+      const cost = Number(o.cogsTotal) + Number(o.shippingCost);
+      const entry = byDay.get(day) ?? { cost: 0, count: 0 };
+      entry.cost += cost;
+      entry.count += 1;
+      byDay.set(day, entry);
+    }
+    const dailyAverages = [...byDay.values()].map((d) => d.cost / d.count);
+    avgOrderCost = dailyAverages.length > 0 ? dailyAverages.reduce((a, b) => a + b, 0) / dailyAverages.length : 0;
   }
 
   if (error) {
