@@ -63,16 +63,23 @@ export default async function AdsPage({
   // Average (COGS + envio) por encomenda, usada para estimar o custo das
   // encomendas atribuídas às compras vindas do Meta Ads (não há ligação direta
   // entre uma compra do Meta e a encomenda Shopify correspondente). Calculado
-  // como a média dos custos médios diários (cada dia pesa o mesmo), em vez de
-  // uma média única sobre todas as encomendas do período — assim um dia com
-  // volume ou custos fora do normal não distorce a média tanto.
+  // como a média dos custos médios diários das encomendas Shopify (cada dia
+  // pesa o mesmo). Usa sempre os últimos 30 dias de encomendas reais — não o
+  // intervalo de datas selecionado nos anúncios — porque um "hoje" ou "7
+  // dias" sem nenhuma encomenda nesse período específico dava 0, mesmo
+  // havendo encomendas recentes com custo conhecido.
   const user = await getSessionUser();
   const store = user ? await prisma.store.findFirst({ where: { ownerId: user.id } }) : null;
   let avgCogsPerOrder = 0;
   let avgShippingPerOrder = 0;
   if (store) {
+    const costWindowTo = new Date();
+    costWindowTo.setHours(23, 59, 59, 999);
+    const costWindowFrom = new Date(costWindowTo);
+    costWindowFrom.setDate(costWindowFrom.getDate() - 29);
+    costWindowFrom.setHours(0, 0, 0, 0);
     const orders = await prisma.order.findMany({
-      where: { storeId: store.id, processedAt: { gte: range.from, lte: range.to } },
+      where: { storeId: store.id, processedAt: { gte: costWindowFrom, lte: costWindowTo } },
       select: { processedAt: true, cogsTotal: true, shippingCost: true },
     });
     const byDay = new Map<string, { cogs: number; shipping: number; count: number }>();
