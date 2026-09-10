@@ -7,6 +7,9 @@ import { Input } from "@/components/ui/input";
 import type { RangePreset } from "@/lib/dashboard/range";
 
 const PRESETS: { value: Exclude<RangePreset, "custom" | "month">; label: string }[] = [
+  { value: "today", label: "Hoje" },
+  { value: "yesterday", label: "Ontem" },
+  { value: "2d", label: "Ontem e hoje" },
   { value: "7d", label: "7 dias" },
   { value: "30d", label: "30 dias" },
   { value: "90d", label: "90 dias" },

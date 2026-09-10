@@ -1,7 +1,7 @@
 // Date-range parsing for the dashboard. Reads URL searchParams and returns a
 // `{ from, to, preset, label }` window. Capped at 365 days.
 
-export type RangePreset = "today" | "yesterday" | "7d" | "30d" | "90d" | "365d" | "month" | "custom";
+export type RangePreset = "today" | "yesterday" | "2d" | "7d" | "30d" | "90d" | "365d" | "month" | "custom";
 
 export type DateRange = {
   from: Date;
@@ -13,6 +13,7 @@ export type DateRange = {
 const PRESET_LABELS: Record<Exclude<RangePreset, "custom" | "month">, string> = {
   today: "Hoje",
   yesterday: "Ontem",
+  "2d": "Ontem e hoje",
   "7d": "Últimos 7 dias",
   "30d": "Últimos 30 dias",
   "90d": "Últimos 90 dias",
@@ -41,8 +42,8 @@ export function resolveRange(searchParams: Record<string, string | string[] | un
     const y = new Date(now); y.setDate(now.getDate() - 1);
     return { preset, from: startOfDay(y), to: endOfDay(y), label: PRESET_LABELS.yesterday };
   }
-  if (preset === "7d" || preset === "30d" || preset === "90d" || preset === "365d") {
-    const days = { "7d": 7, "30d": 30, "90d": 90, "365d": 365 }[preset];
+  if (preset === "2d" || preset === "7d" || preset === "30d" || preset === "90d" || preset === "365d") {
+    const days = { "2d": 2, "7d": 7, "30d": 30, "90d": 90, "365d": 365 }[preset];
     const from = new Date(now); from.setDate(now.getDate() - (days - 1));
     return { preset, from: startOfDay(from), to: endOfDay(now), label: PRESET_LABELS[preset] };
   }
