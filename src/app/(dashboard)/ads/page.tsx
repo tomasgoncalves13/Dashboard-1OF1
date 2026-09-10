@@ -206,13 +206,26 @@ export default async function AdsPage({
                       <th className="text-right px-4 py-3 font-medium">Cliques</th>
                       <th className="text-right px-4 py-3 font-medium">CTR</th>
                       <th className="text-right px-4 py-3 font-medium">CPC</th>
+                      <th className="text-right px-4 py-3 font-medium">CPM</th>
                       <th className="text-right px-4 py-3 font-medium">Alcance</th>
                       <th className="text-right px-4 py-3 font-medium">ROAS</th>
+                      <th className="text-right px-4 py-3 font-medium">Compras</th>
+                      <th className="text-right px-4 py-3 font-medium">Preço médio</th>
+                      <th className="text-right px-4 py-3 font-medium">Custo encomendas</th>
+                      <th className="text-right px-4 py-3 font-medium">Custo total</th>
+                      <th className="text-right px-4 py-3 font-medium">Total ganho</th>
+                      <th className="text-right px-4 py-3 font-medium">Lucro real</th>
                     </tr>
                   </thead>
                   <tbody>
                     {campaigns.map((c, i) => {
                       const r = roas(c);
+                      const cPurchases = purchaseCount(c);
+                      const cRevenue = purchaseValue(c);
+                      const cAvgPurchase = cPurchases > 0 ? cRevenue / cPurchases : 0;
+                      const cCustoEncomendas = avgOrderCost * cPurchases;
+                      const cCustoTotal = Number(c.spend) + cCustoEncomendas;
+                      const cLucroReal = cRevenue - cCustoTotal;
                       return (
                         <tr key={c.campaign_id} className={i % 2 === 0 ? "" : "bg-muted/30"}>
                           <td className="px-4 py-3">
@@ -223,6 +236,7 @@ export default async function AdsPage({
                           <td className="px-4 py-3 text-right text-muted-foreground">{fmtNum(c.clicks)}</td>
                           <td className="px-4 py-3 text-right text-muted-foreground">{fmtPct(c.ctr)}</td>
                           <td className="px-4 py-3 text-right text-muted-foreground">{fmtMoney(c.cpc)}</td>
+                          <td className="px-4 py-3 text-right text-muted-foreground">{fmtMoney(c.cpm)}</td>
                           <td className="px-4 py-3 text-right text-muted-foreground">{fmtNum(c.reach)}</td>
                           <td className="px-4 py-3 text-right">
                             {r ? (
@@ -232,6 +246,14 @@ export default async function AdsPage({
                             ) : (
                               <span className="text-muted-foreground">—</span>
                             )}
+                          </td>
+                          <td className="px-4 py-3 text-right text-muted-foreground">{fmtNum(cPurchases)}</td>
+                          <td className="px-4 py-3 text-right text-muted-foreground">{fmtMoney(cAvgPurchase)}</td>
+                          <td className="px-4 py-3 text-right text-muted-foreground">{fmtMoney(cCustoEncomendas)}</td>
+                          <td className="px-4 py-3 text-right text-muted-foreground">{fmtMoney(cCustoTotal)}</td>
+                          <td className="px-4 py-3 text-right font-medium">{fmtMoney(cRevenue)}</td>
+                          <td className={`px-4 py-3 text-right font-medium ${cLucroReal >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+                            {fmtMoney(cLucroReal)}
                           </td>
                         </tr>
                       );
