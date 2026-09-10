@@ -93,6 +93,24 @@ export const hourlyShopifyPull = inngest.createFunction(
   },
 );
 
+// Daily at midnight (UTC): incremental Shopify pull covering the last 26h,
+// as an extra nightly catch-all on top of the hourly safety net.
+export const midnightShopifyPull = inngest.createFunction(
+  { id: "shopify-midnight-pull" },
+  { cron: "0 0 * * *" },
+  async ({ step }) => {
+    const { prisma } = await import("@/lib/prisma");
+    const since = new Date(Date.now() - 26 * 60 * 60 * 1000).toISOString();
+    const stores = await prisma.store.findMany({
+      where: { integrations: { some: { provider: "SHOPIFY", status: "CONNECTED" } } },
+      select: { id: true },
+    });
+    for (const s of stores) {
+      await step.run(`pull-${s.id}`, () => incrementalSync(s.id, since));
+    }
+  },
+);
+
 export const functions = [
   shopifyFullSync,
   shopifyIncrementalSync,
@@ -101,4 +119,5 @@ export const functions = [
   profitRecalculateAll,
   dailySnapshotCron,
   hourlyShopifyPull,
+  midnightShopifyPull,
 ];
