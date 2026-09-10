@@ -76,13 +76,16 @@ export const dailySnapshotCron = inngest.createFunction(
   },
 );
 
-// Hourly: incremental Shopify pull as safety net for missed webhooks.
+// Hourly: incremental Shopify pull as safety net for missed webhooks. Looks
+// back 48h (not just since the last run) so a gap — a failed run, a deploy,
+// an Inngest hiccup — doesn't let an order fall through permanently; Shopify
+// filters `updated_at` server-side, so the wider window costs nothing extra.
 export const hourlyShopifyPull = inngest.createFunction(
   { id: "shopify-hourly-pull" },
   { cron: "0 * * * *" },
   async ({ step }) => {
     const { prisma } = await import("@/lib/prisma");
-    const since = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+    const since = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
     const stores = await prisma.store.findMany({
       where: { integrations: { some: { provider: "SHOPIFY", status: "CONNECTED" } } },
       select: { id: true },
