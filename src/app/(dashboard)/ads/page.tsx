@@ -132,7 +132,7 @@ export default async function AdsPage({
     { label: "Alcance", value: fmtNum(insight?.reach ?? 0) },
     { label: "ROAS", value: roasVal ? `${roasVal}×` : "—" },
     { label: "Compras", value: fmtNum(purchases) },
-    { label: "Preço médio da compra", value: fmtMoney(avgPurchaseValue) },
+    { label: "AOV", value: fmtMoney(avgPurchaseValue) },
     { label: "Custo de goods (COGS)", value: fmtMoney(custoGoods) },
     { label: "Custo de envios", value: fmtMoney(custoEnvios) },
   ];
@@ -224,7 +224,7 @@ export default async function AdsPage({
                       <th className="text-right px-4 py-3 font-medium">Alcance</th>
                       <th className="text-right px-4 py-3 font-medium">ROAS</th>
                       <th className="text-right px-4 py-3 font-medium">Compras</th>
-                      <th className="text-right px-4 py-3 font-medium">Preço médio</th>
+                      <th className="text-right px-4 py-3 font-medium">AOV</th>
                       <th className="text-right px-4 py-3 font-medium">Custo encomendas</th>
                       <th className="text-right px-4 py-3 font-medium">Custo total</th>
                       <th className="text-right px-4 py-3 font-medium">Total ganho</th>
