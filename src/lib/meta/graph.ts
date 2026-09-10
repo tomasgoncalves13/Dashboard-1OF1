@@ -63,6 +63,8 @@ export interface AdsInsight {
   reach: string;
   frequency: string;
   purchase_roas?: { action_type: string; value: string }[];
+  actions?: { action_type: string; value: string }[];
+  action_values?: { action_type: string; value: string }[];
   date_start: string;
   date_stop: string;
 }
@@ -83,7 +85,7 @@ export interface CampaignInsight {
 
 export async function getAdAccountInsights(since: string, until: string): Promise<AdsInsight | null> {
   const data = await get<{ data: AdsInsight[] }>(`${adAccountPath()}/insights`, adsToken(), {
-    fields: "spend,impressions,clicks,ctr,cpc,cpm,reach,frequency,purchase_roas,date_start,date_stop",
+    fields: "spend,impressions,clicks,ctr,cpc,cpm,reach,frequency,purchase_roas,actions,action_values,date_start,date_stop",
     time_range: JSON.stringify({ since, until }),
     level: "account",
   });

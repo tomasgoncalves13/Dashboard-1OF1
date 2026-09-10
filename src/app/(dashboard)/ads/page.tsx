@@ -4,6 +4,8 @@ import { SpendChart } from "./spend-chart";
 import { DateRangePicker } from "@/components/dashboard/date-range-picker";
 import { resolveRange, ymd } from "@/lib/dashboard/range";
 import { AdsTabs } from "./ads-tabs";
+import { getSessionUser } from "@/lib/supabase/server";
+import { prisma } from "@/lib/prisma";
 
 function fmtMoney(v: string | number) {
   return `€${Number(v).toFixed(2)}`;
@@ -21,6 +23,16 @@ function roas(insight: { purchase_roas?: { action_type: string; value: string }[
   if (!insight?.purchase_roas?.length) return null;
   const r = insight.purchase_roas.find((x) => x.action_type === "omni_purchase");
   return r ? Number(r.value).toFixed(2) : null;
+}
+
+function purchaseCount(insight: { actions?: { action_type: string; value: string }[] } | null) {
+  const a = insight?.actions?.find((x) => x.action_type === "omni_purchase");
+  return a ? Number(a.value) : 0;
+}
+
+function purchaseValue(insight: { action_values?: { action_type: string; value: string }[] } | null) {
+  const a = insight?.action_values?.find((x) => x.action_type === "omni_purchase");
+  return a ? Number(a.value) : 0;
 }
 
 export default async function AdsPage({
@@ -48,6 +60,24 @@ export default async function AdsPage({
     error = (e as Error).message;
   }
 
+  // Average (COGS + envio) per encomenda da loja no período, usada para estimar
+  // o custo das encomendas atribuídas às compras vindas do Meta Ads (não há
+  // ligação direta entre uma compra do Meta e a encomenda Shopify correspondente).
+  const user = await getSessionUser();
+  const store = user ? await prisma.store.findFirst({ where: { ownerId: user.id } }) : null;
+  let avgOrderCost = 0;
+  if (store) {
+    const [agg, ordersCount] = await Promise.all([
+      prisma.order.aggregate({
+        where: { storeId: store.id, processedAt: { gte: range.from, lte: range.to } },
+        _sum: { cogsTotal: true, shippingCost: true },
+      }),
+      prisma.order.count({ where: { storeId: store.id, processedAt: { gte: range.from, lte: range.to } } }),
+    ]);
+    const totalCost = Number(agg._sum.cogsTotal ?? 0) + Number(agg._sum.shippingCost ?? 0);
+    avgOrderCost = ordersCount > 0 ? totalCost / ordersCount : 0;
+  }
+
   if (error) {
     return (
       <div className="space-y-6">
@@ -63,6 +93,14 @@ export default async function AdsPage({
   }
 
   const roasVal = roas(insight);
+  const purchases = purchaseCount(insight);
+  const revenue = purchaseValue(insight);
+  const avgPurchaseValue = purchases > 0 ? revenue / purchases : 0;
+
+  const spend = Number(insight?.spend ?? 0);
+  const custoEncomendas = avgOrderCost * purchases;
+  const custoTotal = spend + custoEncomendas;
+  const lucroReal = revenue - custoTotal;
 
   const chartData = daily.map((d) => ({
     date: d.date_start,
@@ -78,6 +116,15 @@ export default async function AdsPage({
     { label: "CPM", value: fmtMoney(insight?.cpm ?? 0) },
     { label: "Alcance", value: fmtNum(insight?.reach ?? 0) },
     { label: "ROAS", value: roasVal ? `${roasVal}×` : "—" },
+    { label: "Compras", value: fmtNum(purchases) },
+    { label: "Preço médio da compra", value: fmtMoney(avgPurchaseValue) },
+  ];
+
+  const lucroCards = [
+    { label: "Custo de encomendas", value: fmtMoney(custoEncomendas) },
+    { label: "Custo total (ads + encomendas)", value: fmtMoney(custoTotal) },
+    { label: "Total ganho", value: fmtMoney(revenue) },
+    { label: "Lucro real", value: fmtMoney(lucroReal) },
   ];
 
   return (
@@ -102,6 +149,29 @@ export default async function AdsPage({
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      <div>
+        <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
+          Lucro real
+        </h2>
+        <p className="text-xs text-muted-foreground mb-3 -mt-2">
+          Custo de encomendas estimado (COGS + envio médio por encomenda × nº de compras atribuídas ao Meta Ads) — não há ligação direta entre cada compra do Meta e a encomenda Shopify correspondente.
+        </p>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {lucroCards.map((k) => (
+            <Card key={k.label}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">{k.label}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-semibold ${k.label === "Lucro real" ? (lucroReal >= 0 ? "text-emerald-600" : "text-destructive") : ""}`}>
+                  {k.value}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
 
       <Card>
