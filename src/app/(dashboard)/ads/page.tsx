@@ -68,24 +68,28 @@ export default async function AdsPage({
   // volume ou custos fora do normal não distorce a média tanto.
   const user = await getSessionUser();
   const store = user ? await prisma.store.findFirst({ where: { ownerId: user.id } }) : null;
-  let avgOrderCost = 0;
+  let avgCogsPerOrder = 0;
+  let avgShippingPerOrder = 0;
   if (store) {
     const orders = await prisma.order.findMany({
       where: { storeId: store.id, processedAt: { gte: range.from, lte: range.to } },
       select: { processedAt: true, cogsTotal: true, shippingCost: true },
     });
-    const byDay = new Map<string, { cost: number; count: number }>();
+    const byDay = new Map<string, { cogs: number; shipping: number; count: number }>();
     for (const o of orders) {
       const day = ymd(o.processedAt);
-      const cost = Number(o.cogsTotal) + Number(o.shippingCost);
-      const entry = byDay.get(day) ?? { cost: 0, count: 0 };
-      entry.cost += cost;
+      const entry = byDay.get(day) ?? { cogs: 0, shipping: 0, count: 0 };
+      entry.cogs += Number(o.cogsTotal);
+      entry.shipping += Number(o.shippingCost);
       entry.count += 1;
       byDay.set(day, entry);
     }
-    const dailyAverages = [...byDay.values()].map((d) => d.cost / d.count);
-    avgOrderCost = dailyAverages.length > 0 ? dailyAverages.reduce((a, b) => a + b, 0) / dailyAverages.length : 0;
+    const dailyCogsAverages = [...byDay.values()].map((d) => d.cogs / d.count);
+    const dailyShippingAverages = [...byDay.values()].map((d) => d.shipping / d.count);
+    avgCogsPerOrder = dailyCogsAverages.length > 0 ? dailyCogsAverages.reduce((a, b) => a + b, 0) / dailyCogsAverages.length : 0;
+    avgShippingPerOrder = dailyShippingAverages.length > 0 ? dailyShippingAverages.reduce((a, b) => a + b, 0) / dailyShippingAverages.length : 0;
   }
+  const avgOrderCost = avgCogsPerOrder + avgShippingPerOrder;
 
   if (error) {
     return (
@@ -107,6 +111,8 @@ export default async function AdsPage({
   const avgPurchaseValue = purchases > 0 ? revenue / purchases : 0;
 
   const spend = Number(insight?.spend ?? 0);
+  const custoGoods = avgCogsPerOrder * purchases;
+  const custoEnvios = avgShippingPerOrder * purchases;
   const custoEncomendas = avgOrderCost * purchases;
   const custoTotal = spend + custoEncomendas;
   const lucroReal = revenue - custoTotal;
@@ -127,6 +133,8 @@ export default async function AdsPage({
     { label: "ROAS", value: roasVal ? `${roasVal}×` : "—" },
     { label: "Compras", value: fmtNum(purchases) },
     { label: "Preço médio da compra", value: fmtMoney(avgPurchaseValue) },
+    { label: "Custo de goods (COGS)", value: fmtMoney(custoGoods) },
+    { label: "Custo de envios", value: fmtMoney(custoEnvios) },
   ];
 
   const lucroCards = [
@@ -164,9 +172,6 @@ export default async function AdsPage({
         <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
           Lucro real
         </h2>
-        <p className="text-xs text-muted-foreground mb-3 -mt-2">
-          Custo de encomendas estimado (COGS + envio médio por encomenda × nº de compras atribuídas ao Meta Ads) — não há ligação direta entre cada compra do Meta e a encomenda Shopify correspondente.
-        </p>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {lucroCards.map((k) => (
             <Card key={k.label}>
