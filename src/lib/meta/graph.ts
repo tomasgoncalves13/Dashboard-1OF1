@@ -97,7 +97,7 @@ export async function getAdAccountInsights(since: string, until: string): Promis
 
 export async function getAdAccountInsightsDaily(since: string, until: string): Promise<AdsInsight[]> {
   const data = await get<{ data: AdsInsight[] }>(`${adAccountPath()}/insights`, adsToken(), {
-    fields: "spend,impressions,clicks,ctr,cpc,date_start,date_stop",
+    fields: "spend,impressions,clicks,ctr,cpc,actions,action_values,date_start,date_stop",
     time_range: JSON.stringify({ since, until }),
     time_increment: "1",
     level: "account",

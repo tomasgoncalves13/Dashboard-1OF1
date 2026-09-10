@@ -120,6 +120,7 @@ export default async function AdsPage({
   const chartData = daily.map((d) => ({
     date: d.date_start,
     spend: Number(d.spend),
+    revenue: purchaseValue(d),
   }));
 
   const kpis = [

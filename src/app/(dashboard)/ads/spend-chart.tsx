@@ -1,15 +1,21 @@
 "use client";
 
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from "recharts";
+import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from "recharts";
 
 interface DaySpend {
   date: string;
   spend: number;
+  revenue: number;
 }
 
 function fmt(v: number) {
   return `€${v.toFixed(2)}`;
 }
+
+const LABELS: Record<string, string> = {
+  revenue: "Ganho",
+  spend: "Gasto",
+};
 
 export function SpendChart({ data }: { data: DaySpend[] }) {
   if (!data.length) return <p className="text-sm text-muted-foreground text-center py-8">Sem dados</p>;
@@ -28,13 +34,15 @@ export function SpendChart({ data }: { data: DaySpend[] }) {
         />
         <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `€${v}`} width={48} />
         <Tooltip
-          formatter={(v: number) => [fmt(v), "Gasto"]}
+          formatter={(v: number, name: string) => [fmt(v), LABELS[name] ?? name]}
           labelFormatter={(l) => {
             const d = new Date(l);
             return d.toLocaleDateString("pt-PT");
           }}
         />
-        <Bar dataKey="spend" fill="hsl(var(--primary))" radius={[3, 3, 0, 0]} />
+        <Legend formatter={(name) => LABELS[name] ?? name} />
+        <Bar dataKey="revenue" name="revenue" fill="#22c55e" radius={[3, 3, 0, 0]} />
+        <Bar dataKey="spend" name="spend" fill="#ef4444" radius={[3, 3, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
   );

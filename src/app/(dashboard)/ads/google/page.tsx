@@ -61,6 +61,7 @@ export default async function GoogleAdsPage({
   const chartData = daily.map((d) => ({
     date: d.date ?? "",
     spend: d.spend,
+    revenue: d.conversionsValue,
   }));
 
   const kpis = [
