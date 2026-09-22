@@ -106,7 +106,7 @@ export default async function FinancePage({
             <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Pagamentos Shopify</CardTitle></CardHeader>
             <CardContent>
               <div className="text-xl font-semibold text-emerald-600">{formatMoney(breakdown.onlineRevenue, currency)}</div>
-              <p className="text-xs text-muted-foreground mt-1">Shopify + Eupago, já na conta (com delay)</p>
+              <p className="text-xs text-muted-foreground mt-1">Pagamentos Shopify (com delay)</p>
             </CardContent>
           </Card>
         </div>
