@@ -3,6 +3,7 @@ import { getSessionUser } from "@/lib/supabase/server";
 import { formatMoney } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StockAdjustDialog } from "./stock-adjust-dialog";
+import { InventoryTabs } from "./inventory-tabs";
 
 export default async function InventoryPage() {
   const user = await getSessionUser();
@@ -70,6 +71,7 @@ export default async function InventoryPage() {
 
   return (
     <div className="space-y-6">
+      <InventoryTabs />
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Inventário físico</h1>
