@@ -36,3 +36,5 @@
 
 - **Envio:** Grátis para todo Portugal, entrega em 2–4 dias úteis.
 
+- **Tamanhos:** só existem 4 tamanhos reais — S, M, L, XL — cruzando as linhas Adulto e Criança (não são dois eixos de tamanho separados): S = Criança pequeno/MINI, M = Criança médio/MIDI **e também** Adulto pequeno/MINI (mesmo tamanho físico), L = Adulto médio/MIDI, XL = Adulto grande/MAXI. "Criança grande/MAXI" não é um tamanho real (sem stock, descontinuado). O catálogo Shopify tem produtos duplicados (linha simples "Caneleiras Embutidas" vs "Caneleiras Embutidas - Criança", e linha Pack Pro vs Pack Pro Crianças) que representam os mesmos tamanhos físicos — ver `src/lib/catalog/canonical-sizes.ts` no código do dashboard para o mapeamento usado nos relatórios de inventário.
+
