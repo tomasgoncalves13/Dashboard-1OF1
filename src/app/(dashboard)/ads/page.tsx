@@ -82,6 +82,7 @@ export default async function AdsPage({
   let realRevenue = 0;
   let pendingCount = 0;
   let pendingValue = 0;
+  const revByDay = new Map<string, { paid: number; pending: number }>();
   if (store) {
     const orders = await prisma.order.findMany({
       where: { storeId: store.id, processedAt: { gte: range.from, lte: range.to } },
@@ -99,6 +100,19 @@ export default async function AdsPage({
     realRevenue = paidOrders.reduce((sum, o) => sum + Number(o.total), 0);
     pendingCount = pendingOrders.length;
     pendingValue = pendingOrders.reduce((sum, o) => sum + Number(o.total), 0);
+
+    for (const o of paidOrders) {
+      const day = ymd(o.processedAt);
+      const entry = revByDay.get(day) ?? { paid: 0, pending: 0 };
+      entry.paid += Number(o.total);
+      revByDay.set(day, entry);
+    }
+    for (const o of pendingOrders) {
+      const day = ymd(o.processedAt);
+      const entry = revByDay.get(day) ?? { paid: 0, pending: 0 };
+      entry.pending += Number(o.total);
+      revByDay.set(day, entry);
+    }
 
     const byDay = new Map<string, { cogs: number; shipping: number; count: number }>();
     for (const o of paidOrders) {
@@ -145,14 +159,18 @@ export default async function AdsPage({
   const custoTotal = spend + custoEncomendas;
   const lucroReal = revenue - custoTotal;
 
+  // % do ganho potencial (pago + pendente) que ainda está pendente — usado
+  // para o indicador amarelo no card "Total ganho".
+  const pendingPct = revenue + pendingValue > 0 ? (pendingValue / (revenue + pendingValue)) * 100 : 0;
+
   const chartData = daily.map((d) => ({
     date: d.date_start,
     spend: Number(d.spend),
-    revenue: purchaseValue(d),
+    revenue: revByDay.get(d.date_start)?.paid ?? 0,
+    pending: revByDay.get(d.date_start)?.pending ?? 0,
   }));
 
   const kpis = [
-    { label: "Pagamentos pendentes", value: `${fmtNum(pendingCount)} · ${fmtMoney(pendingValue)}` },
     { label: "Gasto", value: fmtMoney(insight?.spend ?? 0) },
     { label: "Impressões", value: fmtNum(insight?.impressions ?? 0) },
     { label: "Cliques", value: fmtNum(insight?.clicks ?? 0) },
@@ -165,6 +183,7 @@ export default async function AdsPage({
     { label: "AOV", value: fmtMoney(avgPurchaseValue) },
     { label: "Custo de goods (COGS)", value: fmtMoney(custoGoods) },
     { label: "Custo de envios", value: fmtMoney(custoEnvios) },
+    { label: "Pagamentos pendentes", value: `${fmtNum(pendingCount)} · ${fmtMoney(pendingValue)}` },
   ];
 
   const lucroCards = [
@@ -221,6 +240,15 @@ export default async function AdsPage({
                 </CardHeader>
                 <CardContent>
                   <div className={`text-2xl font-semibold ${colorClass}`}>{k.value}</div>
+                  {k.label === "Total ganho" && pendingValue > 0 && (
+                    <>
+                      <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden flex">
+                        <div className="h-full bg-emerald-600" style={{ width: `${100 - pendingPct}%` }} />
+                        <div className="h-full bg-yellow-500" style={{ width: `${pendingPct}%` }} />
+                      </div>
+                      <p className="text-xs text-yellow-600 mt-1">{pendingPct.toFixed(0)}% ainda pendente</p>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             );

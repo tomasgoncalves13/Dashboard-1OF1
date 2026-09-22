@@ -6,6 +6,7 @@ interface DaySpend {
   date: string;
   spend: number;
   revenue: number;
+  pending?: number;
 }
 
 function fmt(v: number) {
@@ -14,6 +15,7 @@ function fmt(v: number) {
 
 const LABELS: Record<string, string> = {
   revenue: "Ganho",
+  pending: "Pendente",
   spend: "Gasto",
 };
 
@@ -41,7 +43,8 @@ export function SpendChart({ data }: { data: DaySpend[] }) {
           }}
         />
         <Legend formatter={(name) => LABELS[name] ?? name} />
-        <Bar dataKey="revenue" name="revenue" fill="#22c55e" radius={[3, 3, 0, 0]} />
+        <Bar dataKey="revenue" name="revenue" stackId="ganho" fill="#22c55e" radius={[0, 0, 0, 0]} />
+        <Bar dataKey="pending" name="pending" stackId="ganho" fill="#eab308" radius={[3, 3, 0, 0]} />
         <Bar dataKey="spend" name="spend" fill="#ef4444" radius={[3, 3, 0, 0]} />
       </BarChart>
     </ResponsiveContainer>
