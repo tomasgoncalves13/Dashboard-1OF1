@@ -20,6 +20,17 @@ export const GROUP_ORDER = [
   "Outros",
 ];
 
+// Rótulo mostrado na UI para cada grupo — deixa o tamanho explícito para não
+// haver dúvida sobre qual é qual (36-40 = Criança, 40-48 = Adulto).
+export const GROUP_LABELS: Record<string, string> = {
+  "Grip Socks": "Grip Socks (40-48)",
+  "Grip Socks Criança": "Grip Socks Criança (36-40)",
+};
+
+export function groupLabel(group: string): string {
+  return GROUP_LABELS[group] ?? group;
+}
+
 const FAMILY_PREFIX: Record<string, string> = {
   "Built-In Shin Pads": "Built-In Shin Pad ",
   "Mini Shin Pads": "Mini Shin Pad ",

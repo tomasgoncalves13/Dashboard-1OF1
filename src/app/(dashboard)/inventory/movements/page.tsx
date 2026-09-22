@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DateRangePicker } from "@/components/dashboard/date-range-picker";
 import { resolveRange } from "@/lib/dashboard/range";
 import { InventoryTabs } from "../inventory-tabs";
-import { groupOf, shortName, GROUP_ORDER, type InventoryItemLite } from "@/lib/inventory/grouping";
+import { groupOf, shortName, GROUP_ORDER, groupLabel, type InventoryItemLite } from "@/lib/inventory/grouping";
 
 type ItemAgg = {
   itemId: string;
@@ -127,7 +127,7 @@ export default async function InventoryMovementsPage({
             <Card key={family}>
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-baseline">
-                  <CardTitle className="text-foreground text-xl">{family}</CardTitle>
+                  <CardTitle className="text-foreground text-xl">{groupLabel(family)}</CardTitle>
                   <div className="text-base font-semibold text-destructive tabular-nums">-{famTotal}</div>
                 </div>
               </CardHeader>

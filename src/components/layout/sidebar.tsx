@@ -20,7 +20,7 @@ const nav = [
   { href: "/tiktok", label: "TikTok", icon: Music2 },
   { href: "/grwm", label: "GRWM Scheduler", icon: Video },
   { href: "/ads", label: "Ads", icon: TrendingUp },
-  { href: "/inventory", label: "Inventário", icon: Warehouse },
+  { href: "/inventory/movements", label: "Inventário", icon: Warehouse, match: "/inventory" },
   { href: "/products", label: "Catálogo", icon: Package },
   { href: "/customers", label: "Clientes", icon: Users },
   { href: "/costs", label: "Custos", icon: Calculator },
@@ -34,8 +34,9 @@ function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
   const pathname = usePathname();
   return (
     <nav className="flex-1 px-3 space-y-0.5 overflow-y-auto">
-      {nav.map(({ href, label, icon: Icon }) => {
-        const active = pathname === href || pathname.startsWith(href + "/");
+      {nav.map(({ href, label, icon: Icon, match }) => {
+        const base = match ?? href;
+        const active = pathname === base || pathname.startsWith(base + "/");
         return (
           <Link
             key={href}

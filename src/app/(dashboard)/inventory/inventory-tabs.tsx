@@ -5,8 +5,8 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { cn } from "@/lib/utils";
 
 const TABS = [
-  { href: "/inventory", label: "Inventário físico" },
   { href: "/inventory/movements", label: "Movimentos de Inventário" },
+  { href: "/inventory", label: "Inventário físico" },
 ];
 
 export function InventoryTabs() {

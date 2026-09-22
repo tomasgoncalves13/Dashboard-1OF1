@@ -4,7 +4,7 @@ import { formatMoney } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StockAdjustDialog } from "./stock-adjust-dialog";
 import { InventoryTabs } from "./inventory-tabs";
-import { groupOf, shortName, GROUP_ORDER } from "@/lib/inventory/grouping";
+import { groupOf, shortName, GROUP_ORDER, groupLabel } from "@/lib/inventory/grouping";
 
 export default async function InventoryPage() {
   const user = await getSessionUser();
@@ -81,7 +81,7 @@ export default async function InventoryPage() {
               <Card key={family}>
                 <CardHeader className="pb-2">
                   <div className="flex justify-between items-baseline">
-                    <CardTitle className="text-foreground">{family}</CardTitle>
+                    <CardTitle className="text-foreground">{groupLabel(family)}</CardTitle>
                     <div className="text-sm text-muted-foreground tabular-nums">
                       {totalFam} un · {formatMoney(valFam, currency)}
                     </div>
