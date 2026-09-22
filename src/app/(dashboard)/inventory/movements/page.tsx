@@ -10,11 +10,18 @@ type ItemAgg = {
   itemId: string;
   item: InventoryItemLite;
   stockOnHand: number;
+  reorderPoint: number | null;
   site: number;
   physical: number;
   outro: number;
   bySource: Map<string, number>;
 };
+
+function stockColor(stockOnHand: number, reorderPoint: number | null) {
+  if (stockOnHand <= 0) return "text-destructive border-destructive/30 bg-destructive/10";
+  if (reorderPoint !== null && stockOnHand <= reorderPoint) return "text-amber-600 border-amber-500/30 bg-amber-500/10";
+  return "text-emerald-600 border-emerald-500/30 bg-emerald-500/10";
+}
 
 export default async function InventoryMovementsPage({
   searchParams,
@@ -30,7 +37,7 @@ export default async function InventoryMovementsPage({
 
   const items = await prisma.inventoryItem.findMany({
     where: { storeId: store.id },
-    select: { id: true, name: true, family: true, stockOnHand: true },
+    select: { id: true, name: true, family: true, stockOnHand: true, reorderPoint: true },
   });
   const itemById = new Map(items.map((i) => [i.id, i]));
 
@@ -64,17 +71,24 @@ export default async function InventoryMovementsPage({
     : [];
   const saleById = new Map(sales.map((s) => [s.id, s]));
 
-  const agg = new Map<string, ItemAgg>();
-  const getEntry = (itemId: string) => {
-    let entry = agg.get(itemId);
-    if (!entry) {
-      const item = itemById.get(itemId);
-      if (!item) return null;
-      entry = { itemId, item, stockOnHand: item.stockOnHand, site: 0, physical: 0, outro: 0, bySource: new Map() };
-      agg.set(itemId, entry);
-    }
-    return entry;
-  };
+  // Começa com TODOS os itens a 0 — mesmo o que não teve nenhuma saída no
+  // período deve aparecer (com "-0"), não só os que tiveram movimento.
+  const agg = new Map<string, ItemAgg>(
+    items.map((item) => [
+      item.id,
+      {
+        itemId: item.id,
+        item,
+        stockOnHand: item.stockOnHand,
+        reorderPoint: item.reorderPoint,
+        site: 0,
+        physical: 0,
+        outro: 0,
+        bySource: new Map(),
+      },
+    ]),
+  );
+  const getEntry = (itemId: string) => agg.get(itemId) ?? null;
 
   for (const m of movements) {
     if (!m.inventoryItemId) continue;
@@ -98,7 +112,7 @@ export default async function InventoryMovementsPage({
     .map((family) => ({
       family,
       entries: [...agg.values()]
-        .filter((e) => groupOf(e.item) === family && e.site + e.physical + e.outro > 0)
+        .filter((e) => groupOf(e.item) === family)
         .sort((a, b) => b.site + b.physical + b.outro - (a.site + a.physical + a.outro)),
     }))
     .filter((g) => g.entries.length > 0);
@@ -128,7 +142,9 @@ export default async function InventoryMovementsPage({
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-baseline">
                   <CardTitle className="text-foreground text-xl">{groupLabel(family)}</CardTitle>
-                  <div className="text-base font-semibold text-destructive tabular-nums">-{famTotal}</div>
+                  <div className={`text-base font-semibold tabular-nums ${famTotal > 0 ? "text-destructive" : "text-muted-foreground/50"}`}>
+                    -{famTotal}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -141,27 +157,37 @@ export default async function InventoryMovementsPage({
                       className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-lg border bg-muted/20 px-3 py-2.5"
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <span className="text-2xl font-bold text-destructive tabular-nums leading-none shrink-0">
+                        <span
+                          className={`text-2xl font-bold tabular-nums leading-none shrink-0 ${
+                            total > 0 ? "text-destructive" : "text-muted-foreground/50"
+                          }`}
+                        >
                           -{total}
                         </span>
                         <span className="text-base font-semibold truncate">{shortName(e.item)}</span>
-                        <span className="text-xs font-medium text-muted-foreground tabular-nums bg-background border rounded-full px-2 py-1 shrink-0">
+                        <span
+                          className={`text-xs font-medium tabular-nums border rounded-full px-2 py-1 shrink-0 ${stockColor(e.stockOnHand, e.reorderPoint)}`}
+                        >
                           {e.stockOnHand} em stock
                         </span>
                       </div>
-                      <div className="text-xs text-muted-foreground text-right leading-relaxed">
-                        <span className="font-medium text-foreground">Site {e.site}</span>
-                        {e.physical > 0 && (
-                          <>
-                            {" · "}
-                            <span className="font-medium text-foreground">Clubes {e.physical}</span>
-                            {sources.length > 0 && (
-                              <span className="text-muted-foreground"> ({sources.map(([name, qty]) => `${name} ${qty}`).join(" · ")})</span>
-                            )}
-                          </>
-                        )}
-                        {e.outro > 0 && <> · Outro {e.outro}</>}
-                      </div>
+                      {total > 0 ? (
+                        <div className="text-xs text-muted-foreground text-right leading-relaxed">
+                          <span className="font-medium text-foreground">Site {e.site}</span>
+                          {e.physical > 0 && (
+                            <>
+                              {" · "}
+                              <span className="font-medium text-foreground">Clubes {e.physical}</span>
+                              {sources.length > 0 && (
+                                <span className="text-muted-foreground"> ({sources.map(([name, qty]) => `${name} ${qty}`).join(" · ")})</span>
+                              )}
+                            </>
+                          )}
+                          {e.outro > 0 && <> · Outro {e.outro}</>}
+                        </div>
+                      ) : (
+                        <div className="text-xs text-muted-foreground/50">Sem vendas no período</div>
+                      )}
                     </div>
                   );
                 })}
