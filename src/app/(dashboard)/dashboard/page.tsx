@@ -97,7 +97,7 @@ export default async function DashboardPage({
           <CardHeader className="pb-2"><CardTitle>Cash in</CardTitle></CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold text-emerald-600">{formatMoney(totalIn, currency)}</div>
-            <p className="text-xs text-muted-foreground mt-1">Vendas físicas + Vendas site</p>
+            <p className="text-xs text-muted-foreground mt-1">Vendas físicas + Vendas site (pagas)</p>
           </CardContent>
         </Card>
         <Card>
@@ -108,11 +108,12 @@ export default async function DashboardPage({
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle>Net cashflow</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle>Lucro</CardTitle></CardHeader>
           <CardContent>
             <div className={`text-2xl font-semibold ${netCashflow >= 0 ? "text-emerald-600" : "text-destructive"}`}>
               {formatMoney(netCashflow, currency)}
             </div>
+            <p className="text-xs text-muted-foreground mt-1">Cash in (vendas pagas) − Cash out</p>
           </CardContent>
         </Card>
         <Card>
@@ -139,8 +140,22 @@ export default async function DashboardPage({
           <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Vendas site</CardTitle></CardHeader>
             <CardContent>
+              <div className="text-xl font-semibold text-emerald-600">{formatMoney(financeBreakdown.onlinePaidOrdersRevenue, currency)}</div>
+              <p className="text-xs text-muted-foreground mt-1">Encomendas Shopify pagas</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Pagamentos Shopify</CardTitle></CardHeader>
+            <CardContent>
               <div className="text-xl font-semibold text-emerald-600">{formatMoney(financeBreakdown.onlineRevenue, currency)}</div>
-              <p className="text-xs text-muted-foreground mt-1">Shopify + Eupago</p>
+              <p className="text-xs text-muted-foreground mt-1">Shopify + Eupago, já na conta (com delay)</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Dinheiro que entrou</CardTitle></CardHeader>
+            <CardContent>
+              <div className="text-xl font-semibold text-emerald-600">{formatMoney(financeBreakdown.cashIn, currency)}</div>
+              <p className="text-xs text-muted-foreground mt-1">Vendas site pagas + Vendas físicas</p>
             </CardContent>
           </Card>
         </div>

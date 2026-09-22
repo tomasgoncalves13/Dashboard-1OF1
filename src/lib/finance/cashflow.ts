@@ -158,8 +158,9 @@ export async function getMonthlyCashflow(
 
 export type FinanceBreakdown = {
   physicalRevenue: number;
-  onlineRevenue: number; // Shopify Payments + Eupago net
-  cashIn: number;
+  onlineRevenue: number; // Shopify Payments + Eupago net (dinheiro já liquidado no banco)
+  onlinePaidOrdersRevenue: number; // total das encomendas Shopify com financialStatus PAID (accrual, sem delay de liquidação)
+  cashIn: number; // physicalRevenue + onlinePaidOrdersRevenue
 
   physicalCost: number; // COGS + club commission
   onlineOrderCost: number; // COGS + packaging + payment fees + shipping
@@ -198,7 +199,7 @@ export async function getFinanceBreakdown(storeId: string, from: Date, to: Date)
     getEupagoNet(storeId, from, to),
     prisma.order.aggregate({
       where: { storeId, processedAt: { gte: from, lte: to }, financialStatus: "PAID" },
-      _sum: { cogsTotal: true, packagingCost: true, paymentFees: true, shippingCost: true },
+      _sum: { cogsTotal: true, packagingCost: true, paymentFees: true, shippingCost: true, total: true },
     }),
     getAdAccountInsights(ymd(from), ymd(to)).catch(() => null),
     getGoogleAdAccountInsights(ymd(from), ymd(to)).catch(() => null),
@@ -222,7 +223,8 @@ export async function getFinanceBreakdown(storeId: string, from: Date, to: Date)
 
   const physicalRevenue = physicalKpis.revenue;
   const onlineRevenue = Number(payoutAgg._sum.net ?? 0) + eupagoNet.net;
-  const cashIn = physicalRevenue + onlineRevenue;
+  const onlinePaidOrdersRevenue = Number(onlineOrderAgg._sum.total ?? 0);
+  const cashIn = physicalRevenue + onlinePaidOrdersRevenue;
 
   const physicalCost = physicalKpis.cogs + physicalKpis.commission;
   const onlineShippingCost = Number(onlineOrderAgg._sum.shippingCost ?? 0);
@@ -244,6 +246,7 @@ export async function getFinanceBreakdown(storeId: string, from: Date, to: Date)
   return {
     physicalRevenue,
     onlineRevenue,
+    onlinePaidOrdersRevenue,
     cashIn,
     physicalCost,
     onlineOrderCost,
