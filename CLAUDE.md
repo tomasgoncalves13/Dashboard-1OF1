@@ -6,6 +6,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Ecommerce intelligence & operations dashboard for **1OF1 Fútbol** — a Shopify-based football merchandise business. Tracks profit, stock, ad spend, influencers, physical sales (clubs), cashflow, and social content scheduling (Instagram/TikTok/Facebook) in one place.
 
+## Meta Ads knowledge base (`Facebook Ads/`)
+
+Separate from `business-context/` (which is brand/product/persona background only). `Facebook Ads/` is a living, evolving knowledge base for running Meta ad campaigns for the brand:
+- `Facebook Ads/01 - Estrategia e Analise.md` — current campaign structure, decisions made (and why), backlog of things to test, and a dated results log.
+- `Facebook Ads/Copys por Formato/` — one file per creative format (e.g. GRWM video, static images), each with ready-to-use copy per angle.
+
+When working on ads for this brand:
+- **Read this folder first** before giving ad strategy/copy advice — don't repeat analysis already done.
+- **Be critical, not agreeable** — question weak copy, flag policy/legal risk (e.g. unauthorized use of real athletes' names, fabricated stats), and push back on angles that don't match the creative.
+- **After giving new advice, decisions, or copy, update the relevant file** in `Facebook Ads/` so the next session starts from the improved state instead of redoing the same reasoning. Add real results to the log in `01 - Estrategia e Analise.md` whenever the user shares performance data, so recommendations keep getting sharper over time instead of resetting each session.
+- Keep `Facebook Ads/` separate from `business-context/` — don't move ad-strategy content back into business-context.
+
+## Business context knowledge base (`business-context/`)
+
+This is the standing reference for what the brand *is* — personas, sales angles, product characteristics, brand values, copy banks. It's not ad-campaign execution (that's `Facebook Ads/`, see above).
+
+- Whenever a conversation surfaces something new and durable about the business — a new persona insight, a pain/desire not yet captured, a product fact, a brand-voice preference, a lesson about what resonates with customers — **add it to the relevant file in `business-context/`** (or propose a new file if nothing fits), not just answer in chat and lose it.
+- Goal: every session should make this knowledge base a little more accurate, so future conversations start smarter instead of re-deriving the same understanding of the business from scratch.
+- Don't dump ad-specific tactics/results here — those belong in `Facebook Ads/`. This folder is for durable "what is true about this brand and its customers," not "what we tested last week."
+
 ## Commands
 
 ```bash
