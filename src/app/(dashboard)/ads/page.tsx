@@ -183,11 +183,13 @@ export default async function AdsPage({
     { label: "Custo de envios", value: fmtMoney(custoEnvios) },
   ];
 
+  const profitMarginPct = revenue > 0 ? (lucroReal / revenue) * 100 : 0;
+
   const lucroCards = [
     { label: "Custo de encomendas", value: fmtMoney(custoEncomendas) },
     { label: "Custo total (ads + encomendas)", value: fmtMoney(custoTotal) },
     { label: "Total ganho", value: fmtMoney(revenue) },
-    { label: "Lucro real", value: fmtMoney(lucroReal) },
+    { label: "Lucro real", value: `${fmtMoney(lucroReal)} (${profitMarginPct.toFixed(0)}%)` },
   ];
 
   return (
