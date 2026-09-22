@@ -111,6 +111,7 @@ Every query must be scoped to `storeId` — retrieve it via `getSessionUser()` f
 - Commission is computed at month level (not per-sale) in `getMonthlyClubSummaries()`
 - Physical sales have NO bubble/card/sticker/freeGift costs
 - **⚠️ Meias Antiderrapantes (grip socks) vendidas a clubes são SEMPRE tamanho Criança (EU 36-40 / `Grip Sock <Cor> (Kids)`) — nunca Adulto/EU 40-48, sem exceções.** Ao escrever qualquer script ou registar qualquer venda física para um clube, usa sempre a variante EU 36-40 para meias. Este erro já aconteceu 2× (scripts que escolheram a variante Adulto por engano) e foi corrigido retroativamente na BD — não repetir.
+- **⚠️ Caneleiras Embutidas vendidas a clubes NUNCA são tamanho XL (`Built-In Shin Pad XL`).** A distribuição real de tamanhos em vendas a clubes tende a ser S/M/L. Antes de escrever um script de venda a um clube com caneleiras, confirma a distribuição de tamanhos com o dono do negócio em vez de adivinhar — já houve pelo menos 1 venda (Rio Tinto) corrigida retroativamente por ter sido registada com XL indevidamente.
 
 **Commission tiers (progressive, like tax brackets):**
 ```
