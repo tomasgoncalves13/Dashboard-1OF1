@@ -62,7 +62,7 @@ export default async function FinancePage({
             <div className={`text-2xl font-semibold ${netCashflow >= 0 ? "text-emerald-600" : "text-destructive"}`}>
               {formatMoney(netCashflow, currency)}
             </div>
-            <p className="text-xs text-muted-foreground mt-1">Cash in (vendas pagas) − Cash out</p>
+            <p className="text-xs text-muted-foreground mt-1">Cash in − Cash out</p>
           </CardContent>
         </Card>
         <Card>
