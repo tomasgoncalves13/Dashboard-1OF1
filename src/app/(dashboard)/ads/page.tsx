@@ -80,7 +80,6 @@ export default async function AdsPage({
   let avgShippingPerOrder = 0;
   let realPurchases = 0;
   let realRevenue = 0;
-  let pendingCount = 0;
   let pendingValue = 0;
   const revByDay = new Map<string, { paid: number; pending: number }>();
   if (store) {
@@ -98,7 +97,6 @@ export default async function AdsPage({
 
     realPurchases = paidOrders.length;
     realRevenue = paidOrders.reduce((sum, o) => sum + Number(o.total), 0);
-    pendingCount = pendingOrders.length;
     pendingValue = pendingOrders.reduce((sum, o) => sum + Number(o.total), 0);
 
     for (const o of paidOrders) {
@@ -183,7 +181,6 @@ export default async function AdsPage({
     { label: "AOV", value: fmtMoney(avgPurchaseValue) },
     { label: "Custo de goods (COGS)", value: fmtMoney(custoGoods) },
     { label: "Custo de envios", value: fmtMoney(custoEnvios) },
-    { label: "Pagamentos pendentes", value: `${fmtNum(pendingCount)} · ${fmtMoney(pendingValue)}` },
   ];
 
   const lucroCards = [
@@ -207,8 +204,7 @@ export default async function AdsPage({
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((k) => {
           let colorClass = "";
-          if (k.label === "Pagamentos pendentes") colorClass = pendingCount > 0 ? "text-yellow-600" : "";
-          else if (["Gasto", "Custo de goods (COGS)", "Custo de envios"].includes(k.label)) colorClass = "text-destructive";
+          if (["Gasto", "Custo de goods (COGS)", "Custo de envios"].includes(k.label)) colorClass = "text-destructive";
           else if (k.label === "ROAS") colorClass = roasColor(roasVal);
           return (
             <Card key={k.label}>
@@ -246,7 +242,7 @@ export default async function AdsPage({
                         <div className="h-full bg-emerald-600" style={{ width: `${100 - pendingPct}%` }} />
                         <div className="h-full bg-yellow-500" style={{ width: `${pendingPct}%` }} />
                       </div>
-                      <p className="text-xs text-yellow-600 mt-1">{pendingPct.toFixed(0)}% ainda pendente</p>
+                      <p className="text-xs text-yellow-600 mt-1">{fmtMoney(pendingValue)} pendente ({pendingPct.toFixed(0)}%)</p>
                     </>
                   )}
                 </CardContent>
