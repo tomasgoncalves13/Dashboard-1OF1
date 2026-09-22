@@ -9,6 +9,7 @@ import { groupOf, shortName, GROUP_ORDER, type InventoryItemLite } from "@/lib/i
 type ItemAgg = {
   itemId: string;
   item: InventoryItemLite;
+  stockOnHand: number;
   site: number;
   physical: number;
   outro: number;
@@ -29,7 +30,7 @@ export default async function InventoryMovementsPage({
 
   const items = await prisma.inventoryItem.findMany({
     where: { storeId: store.id },
-    select: { id: true, name: true, family: true },
+    select: { id: true, name: true, family: true, stockOnHand: true },
   });
   const itemById = new Map(items.map((i) => [i.id, i]));
 
@@ -69,7 +70,7 @@ export default async function InventoryMovementsPage({
     if (!entry) {
       const item = itemById.get(itemId);
       if (!item) return null;
-      entry = { itemId, item, site: 0, physical: 0, outro: 0, bySource: new Map() };
+      entry = { itemId, item, stockOnHand: item.stockOnHand, site: 0, physical: 0, outro: 0, bySource: new Map() };
       agg.set(itemId, entry);
     }
     return entry;
@@ -135,22 +136,31 @@ export default async function InventoryMovementsPage({
                   const total = e.site + e.physical + e.outro;
                   const sources = [...e.bySource.entries()].sort((a, b) => b[1] - a[1]);
                   return (
-                    <div key={e.itemId} className="flex flex-col gap-0.5 border-b last:border-0 pb-3 last:pb-0">
-                      <div className="flex justify-between items-baseline">
-                        <span className="text-sm">{shortName(e.item)}</span>
-                        <span className="text-sm font-semibold text-destructive tabular-nums">-{total}</span>
+                    <div
+                      key={e.itemId}
+                      className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1 rounded-lg border bg-muted/20 px-3 py-2.5"
+                    >
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="text-2xl font-bold text-destructive tabular-nums leading-none shrink-0">
+                          -{total}
+                        </span>
+                        <span className="text-xs font-medium text-muted-foreground tabular-nums bg-background border rounded-full px-2 py-1 shrink-0">
+                          {e.stockOnHand} em stock
+                        </span>
+                        <span className="text-sm font-medium truncate">{shortName(e.item)}</span>
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        Site: {e.site}
+                      <div className="text-xs text-muted-foreground text-right leading-relaxed">
+                        <span className="font-medium text-foreground">Site {e.site}</span>
                         {e.physical > 0 && (
                           <>
-                            {" "}· Físico: {e.physical}
+                            {" · "}
+                            <span className="font-medium text-foreground">Clubes {e.physical}</span>
                             {sources.length > 0 && (
-                              <> ({sources.map(([name, qty]) => `${name} ${qty}`).join(" · ")})</>
+                              <span className="text-muted-foreground"> ({sources.map(([name, qty]) => `${name} ${qty}`).join(" · ")})</span>
                             )}
                           </>
                         )}
-                        {e.outro > 0 && <> · Outro: {e.outro}</>}
+                        {e.outro > 0 && <> · Outro {e.outro}</>}
                       </div>
                     </div>
                   );
