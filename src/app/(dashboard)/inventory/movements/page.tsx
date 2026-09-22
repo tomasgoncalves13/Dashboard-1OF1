@@ -127,8 +127,8 @@ export default async function InventoryMovementsPage({
             <Card key={family}>
               <CardHeader className="pb-2">
                 <div className="flex justify-between items-baseline">
-                  <CardTitle className="text-foreground">{family}</CardTitle>
-                  <div className="text-sm font-medium text-destructive tabular-nums">-{famTotal}</div>
+                  <CardTitle className="text-foreground text-xl">{family}</CardTitle>
+                  <div className="text-base font-semibold text-destructive tabular-nums">-{famTotal}</div>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -144,10 +144,10 @@ export default async function InventoryMovementsPage({
                         <span className="text-2xl font-bold text-destructive tabular-nums leading-none shrink-0">
                           -{total}
                         </span>
+                        <span className="text-base font-semibold truncate">{shortName(e.item)}</span>
                         <span className="text-xs font-medium text-muted-foreground tabular-nums bg-background border rounded-full px-2 py-1 shrink-0">
                           {e.stockOnHand} em stock
                         </span>
-                        <span className="text-sm font-medium truncate">{shortName(e.item)}</span>
                       </div>
                       <div className="text-xs text-muted-foreground text-right leading-relaxed">
                         <span className="font-medium text-foreground">Site {e.site}</span>
