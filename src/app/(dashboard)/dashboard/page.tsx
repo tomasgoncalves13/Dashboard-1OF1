@@ -145,17 +145,17 @@ export default async function DashboardPage({
             </CardContent>
           </Card>
           <Card>
+            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Dinheiro que entrou</CardTitle></CardHeader>
+            <CardContent>
+              <div className="text-xl font-semibold text-emerald-600">{formatMoney(financeBreakdown.onlineRevenue + financeBreakdown.physicalRevenue, currency)}</div>
+              <p className="text-xs text-muted-foreground mt-1">Pagamentos Shopify + Vendas físicas</p>
+            </CardContent>
+          </Card>
+          <Card>
             <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Pagamentos Shopify</CardTitle></CardHeader>
             <CardContent>
               <div className="text-xl font-semibold text-emerald-600">{formatMoney(financeBreakdown.onlineRevenue, currency)}</div>
               <p className="text-xs text-muted-foreground mt-1">Shopify + Eupago, já na conta (com delay)</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Dinheiro que entrou</CardTitle></CardHeader>
-            <CardContent>
-              <div className="text-xl font-semibold text-emerald-600">{formatMoney(financeBreakdown.cashIn, currency)}</div>
-              <p className="text-xs text-muted-foreground mt-1">Vendas site pagas + Vendas físicas</p>
             </CardContent>
           </Card>
         </div>
