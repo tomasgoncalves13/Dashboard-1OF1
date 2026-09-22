@@ -16,6 +16,7 @@ import {
   type PhysicalKpiSet,
   type MonthlyPnLRow,
 } from "@/lib/dashboard/kpis";
+import { getCustomerMetrics } from "@/lib/dashboard/customers";
 import { DateRangePicker } from "@/components/dashboard/date-range-picker";
 import { getMonthlyCashflow, getFinanceBreakdown } from "@/lib/finance/cashflow";
 import { CashflowChart } from "../finance/cashflow-chart";
@@ -50,7 +51,7 @@ export default async function DashboardPage({
   const sp = await searchParams;
   const range = resolveRange(sp);
 
-  const [paid, all, daily, money, gateways, physical, monthlyPnL, monthlyCashflow, financeBreakdown] = await Promise.all([
+  const [paid, all, daily, money, gateways, physical, monthlyPnL, monthlyCashflow, financeBreakdown, customers] = await Promise.all([
     getKpis(store.id, range.from, range.to, { paidOnly: true }),
     getKpis(store.id, range.from, range.to, { paidOnly: false }),
     getDailyRevenue(store.id, range.from, range.to, { paidOnly: true }),
@@ -60,7 +61,13 @@ export default async function DashboardPage({
     getMonthlyPnL(store.id, 6),
     getMonthlyCashflow(store.id, 6),
     getFinanceBreakdown(store.id, range.from, range.to),
+    getCustomerMetrics(store.id, range.from, range.to),
   ]);
+
+  // CPA combinado = gasto total em ads (Facebook + Google) ÷ clientes novos.
+  const totalAdSpend = financeBreakdown.facebookAdsCost + financeBreakdown.googleAdsCost;
+  const cpa = customers.newCustomers > 0 ? totalAdSpend / customers.newCustomers : null;
+  const ltvCpa = cpa && cpa > 0 ? customers.ltvProfit / cpa : null;
 
   const currency = store.currency;
   const totalRevenue = paid.revenue + physical.revenue;
@@ -225,6 +232,47 @@ export default async function DashboardPage({
       <div>
         <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">Ecommerce (Shopify)</h2>
         <KpiGrid kpis={paid} currency={currency} />
+      </div>
+
+      <div>
+        <h2 className="text-sm font-semibold text-muted-foreground mb-3 uppercase tracking-wide">Clientes</h2>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            {
+              label: "Clientes novos",
+              value: formatNumber(customers.newCustomers),
+              sub: `+ ${customers.returningOrders} encomendas de clientes recorrentes`,
+              color: "",
+            },
+            {
+              label: "CPA",
+              value: cpa === null ? "—" : formatMoney(cpa, currency),
+              sub: `Ads (FB + Google) ${formatMoney(totalAdSpend, currency)} ÷ clientes novos`,
+              color: cpa === null ? "" : cpa <= customers.ltvProfit ? "text-emerald-600" : "text-destructive",
+            },
+            {
+              label: "LTV (lucro)",
+              value: formatMoney(customers.ltvProfit, currency),
+              sub: `Receita ${formatMoney(customers.ltvRevenue, currency)} · ${customers.repeatRate.toFixed(0)}% repetem · all-time`,
+              color: "text-emerald-600",
+            },
+            {
+              label: "LTV : CPA",
+              value: ltvCpa === null ? "—" : `${ltvCpa.toFixed(2)}×`,
+              sub: "≥ 1× paga-se · ≥ 3× saudável",
+              color:
+                ltvCpa === null ? "" : ltvCpa >= 3 ? "text-emerald-600" : ltvCpa >= 1 ? "text-yellow-600" : "text-destructive",
+            },
+          ].map((k) => (
+            <Card key={k.label}>
+              <CardHeader className="pb-2"><CardTitle>{k.label}</CardTitle></CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-semibold tracking-tight ${k.color}`}>{k.value}</div>
+                <p className="text-xs text-muted-foreground mt-1">{k.sub}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
 
       <Card>

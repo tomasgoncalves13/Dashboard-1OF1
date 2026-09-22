@@ -1,12 +1,13 @@
 "use client";
 
-import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from "recharts";
+import { ComposedChart, Bar, Line, ReferenceLine, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, CartesianGrid } from "recharts";
 
 interface DaySpend {
   date: string;
   spend: number;
   revenue: number;
   pending?: number;
+  profit?: number;
 }
 
 function fmt(v: number) {
@@ -17,13 +18,14 @@ const LABELS: Record<string, string> = {
   revenue: "Ganho",
   pending: "Pendente",
   spend: "Gasto",
+  profit: "Lucro",
 };
 
 export function SpendChart({ data }: { data: DaySpend[] }) {
   if (!data.length) return <p className="text-sm text-muted-foreground text-center py-8">Sem dados</p>;
   return (
     <ResponsiveContainer width="100%" height={220}>
-      <BarChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
+      <ComposedChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
         <XAxis
           dataKey="date"
@@ -46,7 +48,9 @@ export function SpendChart({ data }: { data: DaySpend[] }) {
         <Bar dataKey="revenue" name="revenue" stackId="ganho" fill="#22c55e" radius={[0, 0, 0, 0]} />
         <Bar dataKey="pending" name="pending" stackId="ganho" fill="#eab308" radius={[3, 3, 0, 0]} />
         <Bar dataKey="spend" name="spend" fill="#ef4444" radius={[3, 3, 0, 0]} />
-      </BarChart>
+        <ReferenceLine y={0} className="stroke-muted-foreground" />
+        <Line dataKey="profit" name="profit" type="monotone" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
+      </ComposedChart>
     </ResponsiveContainer>
   );
 }

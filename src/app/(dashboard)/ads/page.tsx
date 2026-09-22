@@ -6,6 +6,7 @@ import { resolveRange, ymd } from "@/lib/dashboard/range";
 import { AdsTabs } from "./ads-tabs";
 import { getSessionUser } from "@/lib/supabase/server";
 import { prisma } from "@/lib/prisma";
+import { getCustomerMetrics, type CustomerMetrics } from "@/lib/dashboard/customers";
 
 function fmtMoney(v: string | number) {
   return `€${Number(v).toFixed(2)}`;
@@ -81,8 +82,10 @@ export default async function AdsPage({
   let realPurchases = 0;
   let realRevenue = 0;
   let pendingValue = 0;
-  const revByDay = new Map<string, { paid: number; pending: number }>();
+  const revByDay = new Map<string, { paid: number; pending: number; paidCount: number }>();
+  let customerMetrics: CustomerMetrics | null = null;
   if (store) {
+    customerMetrics = await getCustomerMetrics(store.id, range.from, range.to);
     const orders = await prisma.order.findMany({
       where: { storeId: store.id, processedAt: { gte: range.from, lte: range.to } },
       select: { processedAt: true, cogsTotal: true, shippingCost: true, total: true, financialStatus: true },
@@ -101,13 +104,14 @@ export default async function AdsPage({
 
     for (const o of paidOrders) {
       const day = ymd(o.processedAt);
-      const entry = revByDay.get(day) ?? { paid: 0, pending: 0 };
+      const entry = revByDay.get(day) ?? { paid: 0, pending: 0, paidCount: 0 };
       entry.paid += Number(o.total);
+      entry.paidCount += 1;
       revByDay.set(day, entry);
     }
     for (const o of pendingOrders) {
       const day = ymd(o.processedAt);
-      const entry = revByDay.get(day) ?? { paid: 0, pending: 0 };
+      const entry = revByDay.get(day) ?? { paid: 0, pending: 0, paidCount: 0 };
       entry.pending += Number(o.total);
       revByDay.set(day, entry);
     }
@@ -161,12 +165,21 @@ export default async function AdsPage({
   // para o indicador amarelo no card "Total ganho".
   const pendingPct = revenue + pendingValue > 0 ? (pendingValue / (revenue + pendingValue)) * 100 : 0;
 
-  const chartData = daily.map((d) => ({
-    date: d.date_start,
-    spend: Number(d.spend),
-    revenue: revByDay.get(d.date_start)?.paid ?? 0,
-    pending: revByDay.get(d.date_start)?.pending ?? 0,
-  }));
+  // Lucro diário usa a mesma fórmula do card "Lucro real" (ganho pago − gasto
+  // − custo médio por encomenda × encomendas pagas), para a soma dos dias
+  // bater com o card.
+  const chartData = daily.map((d) => {
+    const dayRev = revByDay.get(d.date_start);
+    const daySpend = Number(d.spend);
+    const dayPaid = dayRev?.paid ?? 0;
+    return {
+      date: d.date_start,
+      spend: daySpend,
+      revenue: dayPaid,
+      pending: dayRev?.pending ?? 0,
+      profit: dayPaid - daySpend - avgOrderCost * (dayRev?.paidCount ?? 0),
+    };
+  });
 
   const kpis = [
     { label: "Gasto", value: fmtMoney(insight?.spend ?? 0) },
@@ -184,6 +197,14 @@ export default async function AdsPage({
   ];
 
   const profitMarginPct = revenue > 0 ? (lucroReal / revenue) * 100 : 0;
+
+  // CPA = gasto Meta ÷ clientes novos (1ª encomenda paga no intervalo).
+  // Clientes que já tinham comprado não contam. Não há atribuição por
+  // cliente, por isso conta todos os clientes novos do site, não só os do Meta.
+  const newCustomers = customerMetrics?.newCustomers ?? 0;
+  const cpa = newCustomers > 0 ? spend / newCustomers : null;
+  const ltvProfit = customerMetrics?.ltvProfit ?? 0;
+  const ltvCpa = cpa && cpa > 0 ? ltvProfit / cpa : null;
 
   const lucroCards = [
     { label: "Custo de encomendas", value: fmtMoney(custoEncomendas) },
@@ -253,6 +274,53 @@ export default async function AdsPage({
           })}
         </div>
       </div>
+
+      {customerMetrics && (
+        <div>
+          <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
+            Aquisição de clientes
+          </h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[
+              {
+                label: "Clientes novos",
+                value: fmtNum(newCustomers),
+                sub: `+ ${customerMetrics.returningOrders} encomendas de clientes recorrentes`,
+                color: "",
+              },
+              {
+                label: "CPA",
+                value: cpa === null ? "—" : fmtMoney(cpa),
+                sub: "Gasto ÷ clientes novos",
+                color: cpa === null ? "" : cpa <= ltvProfit ? "text-emerald-600" : "text-destructive",
+              },
+              {
+                label: "LTV (lucro)",
+                value: fmtMoney(ltvProfit),
+                sub: `Receita ${fmtMoney(customerMetrics.ltvRevenue)} · ${customerMetrics.repeatRate.toFixed(0)}% repetem · all-time`,
+                color: "text-emerald-600",
+              },
+              {
+                label: "LTV : CPA",
+                value: ltvCpa === null ? "—" : `${ltvCpa.toFixed(2)}×`,
+                sub: "≥ 1× paga-se · ≥ 3× saudável",
+                color:
+                  ltvCpa === null ? "" : ltvCpa >= 3 ? "text-emerald-600" : ltvCpa >= 1 ? "text-yellow-600" : "text-destructive",
+              },
+            ].map((k) => (
+              <Card key={k.label}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">{k.label}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className={`text-2xl font-semibold ${k.color}`}>{k.value}</div>
+                  <p className="text-xs text-muted-foreground mt-1">{k.sub}</p>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      )}
 
       <Card>
         <CardHeader className="pb-2">

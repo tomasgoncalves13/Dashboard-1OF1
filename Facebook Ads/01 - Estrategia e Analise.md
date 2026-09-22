@@ -27,6 +27,13 @@ Vídeos silenciosos só a mostrar as caneleiras a serem calçadas, um por cor:
 - **Vídeos GRWM = copy de jogador apenas.** Vídeo é só produto (sem contexto de pai/filho), por isso copy de pais fica reservado para a futura campanha de imagens onde a imagem mostra literalmente essa cena (pai a assistir, filho a jogar). Copy e imagem desalinhados tendem a baixar CTR/relevância.
 - Cada cor de vídeo GRWM vai receber um ângulo de jogador diferente (ver `Copys por Formato/GRWM - Video Produto.md`) para começar a isolar qual ângulo puxa mais, sem mexer no vídeo.
 
+## Economia por cliente (LTV vs CPA)
+
+Visível no dashboard (`/ads` → "Aquisição de clientes" e `/dashboard` → "Clientes"). Cliente novo = 1ª encomenda paga desse cliente em todo o histórico; CPA = gasto ÷ clientes novos (quem já tinha comprado não conta).
+
+**Leitura a 22 Set 2026:** LTV ≈ **€33 receita / €24 lucro** por cliente (lucro depois de COGS, envio, embalagem e taxas, antes de ads). Só **~4% dos clientes voltam a comprar**, e nos últimos 30 dias 0 das 47 encomendas pagas foram de clientes que já tinham comprado → na prática o LTV ≈ o lucro da 1ª encomenda.
+**Implicação:** o CPA máximo para não perder dinheiro é **~€24**. Não contar com recompra para "pagar" um CPA alto: cada cliente tem de ser rentável logo na 1ª encomenda. Subir o AOV (packs/kits) ou a recompra (email pós-compra) é o que sobe este teto.
+
 ## Próxima campanha (planeada)
 
 Campanha separada com **imagens estáticas**, cada imagem já ligada a um ângulo específico (ex: imagem de caneleira a escorregar → ângulo "Jogas em Desvantagem" / "Não Saem do Sítio"; imagem de pai/filho → ângulo "Pai Protetor" ou "Olheiros"). Aqui sim entra copy de pais, porque a imagem justifica o angle. Ver `Copys por Formato/Imagens - Angulos Especificos.md` (a preencher quando as imagens estiverem escolhidas).
