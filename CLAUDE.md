@@ -110,6 +110,7 @@ Every query must be scoped to `storeId` — retrieve it via `getSessionUser()` f
 - Commission = progressive tier (calcClubCommission in `src/lib/clubs/commission.ts`)
 - Commission is computed at month level (not per-sale) in `getMonthlyClubSummaries()`
 - Physical sales have NO bubble/card/sticker/freeGift costs
+- **⚠️ Meias Antiderrapantes (grip socks) vendidas a clubes são SEMPRE tamanho Criança (EU 36-40 / `Grip Sock <Cor> (Kids)`) — nunca Adulto/EU 40-48, sem exceções.** Ao escrever qualquer script ou registar qualquer venda física para um clube, usa sempre a variante EU 36-40 para meias. Este erro já aconteceu 2× (scripts que escolheram a variante Adulto por engano) e foi corrigido retroativamente na BD — não repetir.
 
 **Commission tiers (progressive, like tax brackets):**
 ```
