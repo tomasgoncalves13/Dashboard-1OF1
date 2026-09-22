@@ -70,17 +70,6 @@ export default async function DashboardPage({
   const totalOut = financeBreakdown.cashOut;
   const netCashflow = financeBreakdown.netCashflow;
 
-  const orderAgg = await prisma.order.aggregate({
-    where: {
-      storeId: store.id,
-      processedAt: { gte: range.from, lte: range.to },
-      financialStatus: "PAID",
-    },
-    _sum: { netProfit: true, total: true },
-  });
-  const accountingProfit = Number(orderAgg._sum.netProfit ?? 0);
-  const accountingRevenue = Number(orderAgg._sum.total ?? 0);
-
   return (
     <div className="space-y-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
@@ -117,11 +106,13 @@ export default async function DashboardPage({
           </CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle>Lucro contabilístico</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle>Lucro Site</CardTitle></CardHeader>
           <CardContent>
-            <div className="text-2xl font-semibold">{formatMoney(accountingProfit, currency)}</div>
+            <div className={`text-2xl font-semibold ${financeBreakdown.onlineNetProfit >= 0 ? "text-emerald-600" : "text-destructive"}`}>
+              {formatMoney(financeBreakdown.onlineNetProfit, currency)}
+            </div>
             <p className="text-xs text-muted-foreground mt-1">
-              vs revenue {formatMoney(accountingRevenue, currency)}
+              vs vendas site {formatMoney(financeBreakdown.onlinePaidOrdersRevenue, currency)}
             </p>
           </CardContent>
         </Card>

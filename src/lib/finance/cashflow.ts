@@ -175,6 +175,9 @@ export type FinanceBreakdown = {
   cashOut: number;
 
   netCashflow: number;
+
+  monthlyExpensesCostExAcademia: number; // monthlyExpensesCost sem a despesa "Academia Ecommerce"
+  onlineNetProfit: number; // Lucro Site — vendas site pagas menos custos de site, ads e despesas mensais (sem Academia)
 };
 
 /** Full revenue/cost breakdown for Finance — covers physical sales, online sales, and every cost stream. */
@@ -187,6 +190,7 @@ export async function getFinanceBreakdown(storeId: string, from: Date, to: Date)
     adsInsight,
     googleAdsInsight,
     recurringAgg,
+    academiaAgg,
     shippingAgg,
     otherAgg,
     influencerAgg,
@@ -205,6 +209,10 @@ export async function getFinanceBreakdown(storeId: string, from: Date, to: Date)
     getGoogleAdAccountInsights(ymd(from), ymd(to)).catch(() => null),
     prisma.expense.aggregate({
       where: { storeId, incurredOn: { gte: from, lte: to }, recurring: true },
+      _sum: { amount: true },
+    }),
+    prisma.expense.aggregate({
+      where: { storeId, incurredOn: { gte: from, lte: to }, recurring: true, vendor: "Academia Ecommerce" },
       _sum: { amount: true },
     }),
     prisma.expense.aggregate({
@@ -235,6 +243,8 @@ export async function getFinanceBreakdown(storeId: string, from: Date, to: Date)
   const facebookAdsCost = Number(adsInsight?.spend ?? 0);
   const googleAdsCost = Number(googleAdsInsight?.spend ?? 0);
   const monthlyExpensesCost = Number(recurringAgg._sum.amount ?? 0);
+  const academiaCost = Number(academiaAgg._sum.amount ?? 0);
+  const monthlyExpensesCostExAcademia = monthlyExpensesCost - academiaCost;
   const shippingExpensesCost = Number(shippingAgg._sum.amount ?? 0);
   const otherExpensesCost = Number(otherAgg._sum.amount ?? 0);
   const influencerCost = Number(influencerAgg._sum.amount ?? 0);
@@ -242,6 +252,9 @@ export async function getFinanceBreakdown(storeId: string, from: Date, to: Date)
   const cashOut =
     physicalCost + onlineOrderCost + facebookAdsCost + googleAdsCost + monthlyExpensesCost +
     shippingExpensesCost + influencerCost + otherExpensesCost;
+
+  const onlineNetProfit =
+    onlinePaidOrdersRevenue - onlineOrderCost - facebookAdsCost - googleAdsCost - monthlyExpensesCostExAcademia;
 
   return {
     physicalRevenue,
@@ -260,5 +273,7 @@ export async function getFinanceBreakdown(storeId: string, from: Date, to: Date)
     otherExpensesCost,
     cashOut,
     netCashflow: cashIn - cashOut,
+    monthlyExpensesCostExAcademia,
+    onlineNetProfit,
   };
 }
