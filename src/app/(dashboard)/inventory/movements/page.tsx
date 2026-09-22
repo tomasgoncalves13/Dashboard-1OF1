@@ -41,6 +41,10 @@ export default async function InventoryMovementsPage({
   });
   const itemById = new Map(items.map((i) => [i.id, i]));
 
+  const siteOrderCount = await prisma.order.count({
+    where: { storeId: store.id, processedAt: { gte: range.from, lte: range.to } },
+  });
+
   // Só o consumo real por item físico (StockMovement), não as unidades de
   // produto/variante vendidas — um "Pack Pro" vende 1 variante mas consome
   // 1 caneleira + 6 meias + 2 sock sleeves via BOM (VariantComponent), e é
@@ -117,6 +121,9 @@ export default async function InventoryMovementsPage({
     }))
     .filter((g) => g.entries.length > 0);
 
+  const totalUnits = [...agg.values()].reduce((s, e) => s + e.site + e.physical + e.outro, 0);
+  const totalClubUnits = [...agg.values()].reduce((s, e) => s + e.physical, 0);
+
   return (
     <div className="space-y-6">
       <InventoryTabs />
@@ -124,7 +131,12 @@ export default async function InventoryMovementsPage({
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Movimentos de Inventário</h1>
           <p className="text-sm text-muted-foreground">
-            Consumo real de stock por item físico (já decompõe packs/bundles no que realmente saiu) · {range.label}
+            <span className="font-medium text-foreground">{totalUnits} produtos saíram</span>
+            {" · "}
+            <span className="font-medium text-foreground">{siteOrderCount} encomendas no site</span>
+            {" · "}
+            <span className="font-medium text-foreground">{totalClubUnits} produtos vendidos em clubes</span>
+            {" · "}{range.label}
           </p>
         </div>
         <DateRangePicker active={range.preset} />
@@ -137,13 +149,24 @@ export default async function InventoryMovementsPage({
       ) : (
         byFamily.map(({ family, entries }) => {
           const famTotal = entries.reduce((s, e) => s + e.site + e.physical + e.outro, 0);
+          const famSite = entries.reduce((s, e) => s + e.site, 0);
+          const famPhysical = entries.reduce((s, e) => s + e.physical, 0);
           return (
             <Card key={family}>
               <CardHeader className="pb-2">
-                <div className="flex justify-between items-baseline">
+                <div className="flex justify-between items-center gap-4">
                   <CardTitle className="text-foreground text-xl">{groupLabel(family)}</CardTitle>
-                  <div className={`text-base font-semibold tabular-nums ${famTotal > 0 ? "text-destructive" : "text-muted-foreground/50"}`}>
-                    -{famTotal}
+                  <div className="flex items-baseline gap-3">
+                    {famTotal > 0 && (
+                      <span className="text-xs text-muted-foreground">
+                        Site {famSite} · Clubes {famPhysical}
+                      </span>
+                    )}
+                    <span
+                      className={`text-2xl font-bold tabular-nums leading-none ${famTotal > 0 ? "text-destructive" : "text-muted-foreground/50"}`}
+                    >
+                      -{famTotal}
+                    </span>
                   </div>
                 </div>
               </CardHeader>
