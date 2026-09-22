@@ -4,6 +4,7 @@ import { formatMoney } from "@/lib/utils";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StockAdjustDialog } from "./stock-adjust-dialog";
 import { InventoryTabs } from "./inventory-tabs";
+import { groupOf, shortName, GROUP_ORDER } from "@/lib/inventory/grouping";
 
 export default async function InventoryPage() {
   const user = await getSessionUser();
@@ -22,21 +23,6 @@ export default async function InventoryPage() {
   const currency = store.currency;
 
   // Group for display — split Grip Socks & Sock Sleeves by adult/kids
-  const groupOf = (i: (typeof items)[number]) => {
-    if (i.family === "Grip Socks") return i.name.includes("(Kids)") ? "Grip Socks Criança" : "Grip Socks";
-    if (i.family === "Sock Sleeves") return i.name.includes("(Kids)") ? "Sock Sleeves Criança" : "Sock Sleeves";
-    return i.family;
-  };
-  const GROUP_ORDER = [
-    "Built-In Shin Pads",
-    "Grip Socks",
-    "Grip Socks Criança",
-    "Sock Sleeves",
-    "Sock Sleeves Criança",
-    "Mini Shin Pads",
-    "Airflow",
-    "Outros",
-  ];
   const byFamily = GROUP_ORDER
     .map((group) => ({
       family: group,
@@ -45,22 +31,6 @@ export default async function InventoryPage() {
         .sort((a, b) => b.stockOnHand - a.stockOnHand),
     }))
     .filter((g) => g.items.length > 0);
-
-  // Short row label — drop the family prefix (already shown as box title) and adult/kids suffix
-  const FAMILY_PREFIX: Record<string, string> = {
-    "Built-In Shin Pads": "Built-In Shin Pad ",
-    "Mini Shin Pads": "Mini Shin Pad ",
-    "Airflow": "Airflow ",
-    "Grip Socks": "Grip Sock ",
-    "Sock Sleeves": "Sock Sleeve ",
-  };
-  const shortName = (i: (typeof items)[number]) => {
-    let n = i.name;
-    const pre = FAMILY_PREFIX[i.family];
-    if (pre && n.startsWith(pre)) n = n.slice(pre.length);
-    n = n.replace(/\s*\((Adulto|Kids)\)\s*$/, "").trim();
-    return n || i.name;
-  };
 
   const recentMovements = await prisma.stockMovement.findMany({
     where: { storeId: store.id, inventoryItemId: { not: null } },

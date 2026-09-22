@@ -4,30 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { DateRangePicker } from "@/components/dashboard/date-range-picker";
 import { resolveRange } from "@/lib/dashboard/range";
 import { InventoryTabs } from "../inventory-tabs";
-import { canonicalizeVariant } from "@/lib/catalog/canonical-sizes";
+import { groupOf, shortName, GROUP_ORDER, type InventoryItemLite } from "@/lib/inventory/grouping";
 
-type VariantAgg = {
-  variantKey: string;
-  productKey: string;
-  productLabel: string;
-  variantLabel: string;
+type ItemAgg = {
+  itemId: string;
+  item: InventoryItemLite;
   site: number;
   physical: number;
+  outro: number;
   bySource: Map<string, number>;
 };
-
-function resolveKeys(productHandle: string | null, productTitle: string, variantTitle: string, variantId: string) {
-  const canon = canonicalizeVariant(productHandle, variantTitle);
-  if (canon) {
-    return {
-      productKey: canon.productKey,
-      productLabel: canon.productLabel,
-      variantKey: canon.variantKey,
-      variantLabel: canon.variantLabel,
-    };
-  }
-  return { productKey: productTitle, productLabel: productTitle, variantKey: variantId, variantLabel: variantTitle };
-}
 
 export default async function InventoryMovementsPage({
   searchParams,
@@ -41,71 +27,80 @@ export default async function InventoryMovementsPage({
   const store = user ? await prisma.store.findFirst({ where: { ownerId: user.id } }) : null;
   if (!store) return null;
 
-  const [orderItems, manualSaleItems] = await Promise.all([
-    prisma.orderItem.findMany({
-      where: {
-        variantId: { not: null },
-        order: { storeId: store.id, processedAt: { gte: range.from, lte: range.to } },
-      },
-      select: {
-        quantity: true,
-        variantId: true,
-        variant: { select: { title: true, product: { select: { title: true, handle: true } } } },
-      },
-    }),
-    prisma.manualSaleItem.findMany({
-      where: { sale: { storeId: store.id, soldAt: { gte: range.from, lte: range.to } } },
-      select: {
-        quantity: true,
-        variantId: true,
-        variant: { select: { title: true, product: { select: { title: true, handle: true } } } },
-        sale: { select: { channel: true, club: { select: { name: true } } } },
-      },
-    }),
-  ]);
+  const items = await prisma.inventoryItem.findMany({
+    where: { storeId: store.id },
+    select: { id: true, name: true, family: true },
+  });
+  const itemById = new Map(items.map((i) => [i.id, i]));
 
-  const byVariant = new Map<string, VariantAgg>();
-  const getEntry = (productHandle: string | null, productTitle: string, variantTitle: string, variantId: string) => {
-    const keys = resolveKeys(productHandle, productTitle, variantTitle, variantId);
-    let entry = byVariant.get(keys.variantKey);
+  // Só o consumo real por item físico (StockMovement), não as unidades de
+  // produto/variante vendidas — um "Pack Pro" vende 1 variante mas consome
+  // 1 caneleira + 6 meias + 2 sock sleeves via BOM (VariantComponent), e é
+  // esse consumo real que interessa aqui.
+  const movements = await prisma.stockMovement.findMany({
+    where: {
+      storeId: store.id,
+      inventoryItemId: { not: null },
+      createdAt: { gte: range.from, lte: range.to },
+      quantity: { lt: 0 },
+    },
+    select: { inventoryItemId: true, type: true, quantity: true, reference: true },
+  });
+
+  const manualSaleIds = [
+    ...new Set(
+      movements
+        .filter((m) => m.type === "CLUB_SALE" || m.type === "MANUAL_SALE")
+        .map((m) => m.reference)
+        .filter((r): r is string => !!r),
+    ),
+  ];
+  const sales = manualSaleIds.length
+    ? await prisma.manualSale.findMany({
+        where: { id: { in: manualSaleIds } },
+        select: { id: true, channel: true, club: { select: { name: true } } },
+      })
+    : [];
+  const saleById = new Map(sales.map((s) => [s.id, s]));
+
+  const agg = new Map<string, ItemAgg>();
+  const getEntry = (itemId: string) => {
+    let entry = agg.get(itemId);
     if (!entry) {
-      entry = { ...keys, site: 0, physical: 0, bySource: new Map() };
-      byVariant.set(keys.variantKey, entry);
+      const item = itemById.get(itemId);
+      if (!item) return null;
+      entry = { itemId, item, site: 0, physical: 0, outro: 0, bySource: new Map() };
+      agg.set(itemId, entry);
     }
     return entry;
   };
 
-  for (const oi of orderItems) {
-    if (!oi.variantId || !oi.variant) continue;
-    const entry = getEntry(oi.variant.product.handle, oi.variant.product.title, oi.variant.title, oi.variantId);
-    entry.site += oi.quantity;
+  for (const m of movements) {
+    if (!m.inventoryItemId) continue;
+    const entry = getEntry(m.inventoryItemId);
+    if (!entry) continue;
+    const qty = -m.quantity; // unidades que saíram (positivo)
+
+    if (m.type === "SHOPIFY_SALE") {
+      entry.site += qty;
+    } else if (m.type === "CLUB_SALE" || m.type === "MANUAL_SALE") {
+      entry.physical += qty;
+      const sale = m.reference ? saleById.get(m.reference) : null;
+      const source = sale?.channel === "CLUB" ? (sale.club?.name ?? "Clube") : "Venda normal";
+      entry.bySource.set(source, (entry.bySource.get(source) ?? 0) + qty);
+    } else {
+      entry.outro += qty;
+    }
   }
 
-  for (const msi of manualSaleItems) {
-    if (!msi.variant) continue;
-    const entry = getEntry(msi.variant.product.handle, msi.variant.product.title, msi.variant.title, msi.variantId);
-    entry.physical += msi.quantity;
-    const source = msi.sale.channel === "CLUB" ? (msi.sale.club?.name ?? "Clube") : "Venda normal";
-    entry.bySource.set(source, (entry.bySource.get(source) ?? 0) + msi.quantity);
-  }
-
-  const byProduct = new Map<string, { productLabel: string; variants: VariantAgg[] }>();
-  for (const entry of byVariant.values()) {
-    const total = entry.site + entry.physical;
-    if (total <= 0) continue;
-    const group = byProduct.get(entry.productKey) ?? { productLabel: entry.productLabel, variants: [] };
-    group.variants.push(entry);
-    byProduct.set(entry.productKey, group);
-  }
-
-  const products = [...byProduct.entries()]
-    .map(([productKey, { productLabel, variants }]) => ({
-      productKey,
-      productLabel,
-      variants: variants.sort((a, b) => (b.site + b.physical) - (a.site + a.physical)),
-      total: variants.reduce((s, v) => s + v.site + v.physical, 0),
+  const byFamily = GROUP_ORDER
+    .map((family) => ({
+      family,
+      entries: [...agg.values()]
+        .filter((e) => groupOf(e.item) === family && e.site + e.physical + e.outro > 0)
+        .sort((a, b) => b.site + b.physical + b.outro - (a.site + a.physical + a.outro)),
     }))
-    .sort((a, b) => b.total - a.total);
+    .filter((g) => g.entries.length > 0);
 
   return (
     <div className="space-y-6">
@@ -114,52 +109,56 @@ export default async function InventoryMovementsPage({
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Movimentos de Inventário</h1>
           <p className="text-sm text-muted-foreground">
-            Unidades que saíram por produto/variante · {range.label}
+            Consumo real de stock por item físico (já decompõe packs/bundles no que realmente saiu) · {range.label}
           </p>
         </div>
         <DateRangePicker active={range.preset} />
       </div>
 
-      {products.length === 0 ? (
+      {byFamily.length === 0 ? (
         <Card className="p-12 text-center text-sm text-muted-foreground">
           Sem movimentos de saída no período selecionado.
         </Card>
       ) : (
-        products.map(({ productKey, productLabel, variants, total }) => (
-          <Card key={productKey}>
-            <CardHeader className="pb-2">
-              <div className="flex justify-between items-baseline">
-                <CardTitle className="text-foreground">{productLabel}</CardTitle>
-                <div className="text-sm font-medium text-destructive tabular-nums">-{total}</div>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {variants.map((v) => {
-                const vTotal = v.site + v.physical;
-                const sources = [...v.bySource.entries()].sort((a, b) => b[1] - a[1]);
-                return (
-                  <div key={v.variantKey} className="flex flex-col gap-0.5 border-b last:border-0 pb-3 last:pb-0">
-                    <div className="flex justify-between items-baseline">
-                      <span className="text-sm">{v.variantLabel}</span>
-                      <span className="text-sm font-semibold text-destructive tabular-nums">-{vTotal}</span>
+        byFamily.map(({ family, entries }) => {
+          const famTotal = entries.reduce((s, e) => s + e.site + e.physical + e.outro, 0);
+          return (
+            <Card key={family}>
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-baseline">
+                  <CardTitle className="text-foreground">{family}</CardTitle>
+                  <div className="text-sm font-medium text-destructive tabular-nums">-{famTotal}</div>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {entries.map((e) => {
+                  const total = e.site + e.physical + e.outro;
+                  const sources = [...e.bySource.entries()].sort((a, b) => b[1] - a[1]);
+                  return (
+                    <div key={e.itemId} className="flex flex-col gap-0.5 border-b last:border-0 pb-3 last:pb-0">
+                      <div className="flex justify-between items-baseline">
+                        <span className="text-sm">{shortName(e.item)}</span>
+                        <span className="text-sm font-semibold text-destructive tabular-nums">-{total}</span>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        Site: {e.site}
+                        {e.physical > 0 && (
+                          <>
+                            {" "}· Físico: {e.physical}
+                            {sources.length > 0 && (
+                              <> ({sources.map(([name, qty]) => `${name} ${qty}`).join(" · ")})</>
+                            )}
+                          </>
+                        )}
+                        {e.outro > 0 && <> · Outro: {e.outro}</>}
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      Site: {v.site}
-                      {v.physical > 0 && (
-                        <>
-                          {" "}· Físico: {v.physical}
-                          {sources.length > 0 && (
-                            <> ({sources.map(([name, qty]) => `${name} ${qty}`).join(" · ")})</>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-        ))
+                  );
+                })}
+              </CardContent>
+            </Card>
+          );
+        })
       )}
     </div>
   );

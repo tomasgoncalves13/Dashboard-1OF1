@@ -20,5 +20,5 @@ As Meias Antiderrapantes da 1OF1 foram feitas para manter o pé firme dentro da 
 
 - **Leves e elásticas:** sem volume extra dentro da chuteira.
 
-- **Tamanhos:** só existem 2 tamanhos reais — EU 36-40 (Criança) e EU 40-48 (Adulto). O catálogo Shopify tem 3 produtos duplicados com o mesmo nome ("grip-socks", "pro-grip-socks", "kids-pro-grip-socks") que representam o mesmo item físico nesses 2 tamanhos — ver `src/lib/catalog/canonical-sizes.ts` no código do dashboard para o mapeamento usado nos relatórios de inventário.
+- **Tamanhos:** só existem 2 tamanhos reais — EU 36-40 (Criança) e EU 40-48 (Adulto). O catálogo Shopify tem 3 produtos vendáveis duplicados com o mesmo nome ("grip-socks", "pro-grip-socks", "kids-pro-grip-socks"), mas no armazém real (`InventoryItem` no dashboard) já só existem os itens canónicos "Grip Sock \<Cor\> (Adulto)" e "Grip Sock \<Cor\> (Kids)" — é essa a fonte de verdade para stock e relatórios de inventário, não o produto Shopify vendido. Um "Pack Pro" também consome 6 destes por unidade vendida (via bill-of-materials), não é um item à parte.
 
