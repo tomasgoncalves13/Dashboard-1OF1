@@ -19,6 +19,14 @@ function fmtNum(v: string | number) {
   return Number(v).toLocaleString("pt-PT");
 }
 
+function roasColor(r: number | string | null) {
+  if (r === null) return "text-muted-foreground";
+  const n = Number(r);
+  if (n >= 2) return "text-emerald-600";
+  if (n >= 1) return "text-yellow-600";
+  return "text-destructive";
+}
+
 function roas(insight: { purchase_roas?: { action_type: string; value: string }[] } | null) {
   if (!insight?.purchase_roas?.length) return null;
   const r = insight.purchase_roas.find((x) => x.action_type === "omni_purchase");
@@ -70,13 +78,30 @@ export default async function AdsPage({
   const store = user ? await prisma.store.findFirst({ where: { ownerId: user.id } }) : null;
   let avgCogsPerOrder = 0;
   let avgShippingPerOrder = 0;
+  let realPurchases = 0;
+  let realRevenue = 0;
+  let pendingCount = 0;
+  let pendingValue = 0;
   if (store) {
     const orders = await prisma.order.findMany({
       where: { storeId: store.id, processedAt: { gte: range.from, lte: range.to } },
-      select: { processedAt: true, cogsTotal: true, shippingCost: true },
+      select: { processedAt: true, cogsTotal: true, shippingCost: true, total: true, financialStatus: true },
     });
+
+    // Só encomendas PAGAS contam para as métricas "reais" (Compras, Total
+    // ganho, AOV, ROAS, Lucro real) — o pixel do Meta regista a compra no
+    // checkout, mesmo quando o método de pagamento (ex.: Multibanco/
+    // transferência) fica "pagamento pendente" e nunca chega a ser pago.
+    const paidOrders = orders.filter((o) => o.financialStatus === "PAID");
+    const pendingOrders = orders.filter((o) => o.financialStatus === "PENDING");
+
+    realPurchases = paidOrders.length;
+    realRevenue = paidOrders.reduce((sum, o) => sum + Number(o.total), 0);
+    pendingCount = pendingOrders.length;
+    pendingValue = pendingOrders.reduce((sum, o) => sum + Number(o.total), 0);
+
     const byDay = new Map<string, { cogs: number; shipping: number; count: number }>();
-    for (const o of orders) {
+    for (const o of paidOrders) {
       const day = ymd(o.processedAt);
       const entry = byDay.get(day) ?? { cogs: 0, shipping: 0, count: 0 };
       entry.cogs += Number(o.cogsTotal);
@@ -105,12 +130,15 @@ export default async function AdsPage({
     );
   }
 
-  const roasVal = roas(insight);
-  const purchases = purchaseCount(insight);
-  const revenue = purchaseValue(insight);
+  // Compras/Total ganho/AOV/ROAS/Lucro real usam encomendas Shopify pagas
+  // (não os números de "purchase" do pixel do Meta, que disparam no checkout
+  // independentemente de o pagamento ter sido concluído).
+  const purchases = realPurchases;
+  const revenue = realRevenue;
   const avgPurchaseValue = purchases > 0 ? revenue / purchases : 0;
 
   const spend = Number(insight?.spend ?? 0);
+  const roasVal = spend > 0 && revenue > 0 ? (revenue / spend).toFixed(2) : null;
   const custoGoods = avgCogsPerOrder * purchases;
   const custoEnvios = avgShippingPerOrder * purchases;
   const custoEncomendas = avgOrderCost * purchases;
@@ -124,6 +152,7 @@ export default async function AdsPage({
   }));
 
   const kpis = [
+    { label: "Pagamentos pendentes", value: `${fmtNum(pendingCount)} · ${fmtMoney(pendingValue)}` },
     { label: "Gasto", value: fmtMoney(insight?.spend ?? 0) },
     { label: "Impressões", value: fmtNum(insight?.impressions ?? 0) },
     { label: "Cliques", value: fmtNum(insight?.clicks ?? 0) },
@@ -157,16 +186,22 @@ export default async function AdsPage({
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {kpis.map((k) => (
-          <Card key={k.label}>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium text-muted-foreground">{k.label}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-semibold">{k.value}</div>
-            </CardContent>
-          </Card>
-        ))}
+        {kpis.map((k) => {
+          let colorClass = "";
+          if (k.label === "Pagamentos pendentes") colorClass = pendingCount > 0 ? "text-yellow-600" : "";
+          else if (["Gasto", "Custo de goods (COGS)", "Custo de envios"].includes(k.label)) colorClass = "text-destructive";
+          else if (k.label === "ROAS") colorClass = roasColor(roasVal);
+          return (
+            <Card key={k.label}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium text-muted-foreground">{k.label}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className={`text-2xl font-semibold ${colorClass}`}>{k.value}</div>
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
 
       <div>
@@ -174,18 +209,22 @@ export default async function AdsPage({
           Lucro real
         </h2>
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {lucroCards.map((k) => (
-            <Card key={k.label}>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">{k.label}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className={`text-2xl font-semibold ${k.label === "Lucro real" ? (lucroReal >= 0 ? "text-emerald-600" : "text-destructive") : ""}`}>
-                  {k.value}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {lucroCards.map((k) => {
+            let colorClass = "";
+            if (k.label === "Lucro real") colorClass = lucroReal >= 0 ? "text-emerald-600" : "text-destructive";
+            else if (k.label === "Total ganho") colorClass = "text-emerald-600";
+            else colorClass = "text-destructive"; // Custo de encomendas, Custo total
+            return (
+              <Card key={k.label}>
+                <CardHeader className="pb-2">
+                  <CardTitle className="text-sm font-medium text-muted-foreground">{k.label}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className={`text-2xl font-semibold ${colorClass}`}>{k.value}</div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       </div>
 
@@ -246,7 +285,7 @@ export default async function AdsPage({
                           <td className="px-4 py-3">
                             <div className="font-medium truncate max-w-[200px]">{c.campaign_name}</div>
                           </td>
-                          <td className="px-4 py-3 text-right font-medium">{fmtMoney(c.spend)}</td>
+                          <td className="px-4 py-3 text-right font-medium text-destructive">{fmtMoney(c.spend)}</td>
                           <td className="px-4 py-3 text-right text-muted-foreground">{fmtNum(c.impressions)}</td>
                           <td className="px-4 py-3 text-right text-muted-foreground">{fmtNum(c.clicks)}</td>
                           <td className="px-4 py-3 text-right text-muted-foreground">{fmtPct(c.ctr)}</td>
@@ -255,18 +294,16 @@ export default async function AdsPage({
                           <td className="px-4 py-3 text-right text-muted-foreground">{fmtNum(c.reach)}</td>
                           <td className="px-4 py-3 text-right">
                             {r ? (
-                              <span className={`font-medium ${Number(r) >= 2 ? "text-emerald-600" : Number(r) >= 1 ? "text-yellow-600" : "text-destructive"}`}>
-                                {r}×
-                              </span>
+                              <span className={`font-medium ${roasColor(r)}`}>{r}×</span>
                             ) : (
                               <span className="text-muted-foreground">—</span>
                             )}
                           </td>
                           <td className="px-4 py-3 text-right text-muted-foreground">{fmtNum(cPurchases)}</td>
                           <td className="px-4 py-3 text-right text-muted-foreground">{fmtMoney(cAvgPurchase)}</td>
-                          <td className="px-4 py-3 text-right text-muted-foreground">{fmtMoney(cCustoEncomendas)}</td>
-                          <td className="px-4 py-3 text-right text-muted-foreground">{fmtMoney(cCustoTotal)}</td>
-                          <td className="px-4 py-3 text-right font-medium">{fmtMoney(cRevenue)}</td>
+                          <td className="px-4 py-3 text-right text-destructive">{fmtMoney(cCustoEncomendas)}</td>
+                          <td className="px-4 py-3 text-right text-destructive">{fmtMoney(cCustoTotal)}</td>
+                          <td className="px-4 py-3 text-right font-medium text-emerald-600">{fmtMoney(cRevenue)}</td>
                           <td className={`px-4 py-3 text-right font-medium ${cLucroReal >= 0 ? "text-emerald-600" : "text-destructive"}`}>
                             {fmtMoney(cLucroReal)}
                           </td>

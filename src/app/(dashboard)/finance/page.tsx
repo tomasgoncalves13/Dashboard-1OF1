@@ -99,7 +99,7 @@ export default async function FinancePage({
             <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Dinheiro que entrou</CardTitle></CardHeader>
             <CardContent>
               <div className="text-xl font-semibold text-emerald-600">{formatMoney(breakdown.onlineRevenue + breakdown.physicalRevenue, currency)}</div>
-              <p className="text-xs text-muted-foreground mt-1">Pagamentos Shopify + Vendas físicas</p>
+              <p className="text-xs text-muted-foreground mt-1">Lucro: {formatMoney(netCashflow, currency)}</p>
             </CardContent>
           </Card>
           <Card>
