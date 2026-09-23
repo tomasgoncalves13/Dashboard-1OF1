@@ -26,6 +26,10 @@ This is the standing reference for what the brand *is* — personas, sales angle
 - Goal: every session should make this knowledge base a little more accurate, so future conversations start smarter instead of re-deriving the same understanding of the business from scratch.
 - Don't dump ad-specific tactics/results here — those belong in `Facebook Ads/`. This folder is for durable "what is true about this brand and its customers," not "what we tested last week."
 
+## Workflow
+
+**Depois de cada alteração de código: faz sempre commit e deploy logo a seguir**, sem perguntar. Deploy = `git push origin main` (o Vercel faz deploy automático do `main`). Corre `npm run typecheck` antes do commit.
+
 ## Commands
 
 ```bash

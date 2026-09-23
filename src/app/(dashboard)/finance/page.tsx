@@ -29,6 +29,8 @@ export default async function FinancePage({
   const totalIn = breakdown.cashIn;
   const totalOut = breakdown.cashOut;
   const netCashflow = breakdown.netCashflow;
+  // Lucro sobre o dinheiro que efetivamente entrou (payouts Shopify + vendas físicas) − cash out.
+  const moneyInProfit = breakdown.onlineRevenue + breakdown.physicalRevenue - totalOut;
 
   return (
     <div className="space-y-6">
@@ -99,7 +101,7 @@ export default async function FinancePage({
             <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Dinheiro que entrou</CardTitle></CardHeader>
             <CardContent>
               <div className="text-xl font-semibold text-emerald-600">{formatMoney(breakdown.onlineRevenue + breakdown.physicalRevenue, currency)}</div>
-              <p className="text-xs text-muted-foreground mt-1">Lucro: {formatMoney(netCashflow, currency)}</p>
+              <p className={`text-xs mt-1 ${moneyInProfit >= 0 ? "text-emerald-600" : "text-destructive"}`}>Lucro: {formatMoney(moneyInProfit, currency)}</p>
             </CardContent>
           </Card>
           <Card>

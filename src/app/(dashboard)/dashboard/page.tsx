@@ -76,6 +76,8 @@ export default async function DashboardPage({
   const totalIn = financeBreakdown.cashIn;
   const totalOut = financeBreakdown.cashOut;
   const netCashflow = financeBreakdown.netCashflow;
+  // Lucro sobre o dinheiro que efetivamente entrou (payouts Shopify + vendas físicas) − cash out.
+  const moneyInProfit = financeBreakdown.onlineRevenue + financeBreakdown.physicalRevenue - totalOut;
 
   return (
     <div className="space-y-6">
@@ -146,7 +148,7 @@ export default async function DashboardPage({
             <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground">Dinheiro que entrou</CardTitle></CardHeader>
             <CardContent>
               <div className="text-xl font-semibold text-emerald-600">{formatMoney(financeBreakdown.onlineRevenue + financeBreakdown.physicalRevenue, currency)}</div>
-              <p className="text-xs text-muted-foreground mt-1">Lucro: {formatMoney(netCashflow, currency)}</p>
+              <p className={`text-xs mt-1 ${moneyInProfit >= 0 ? "text-emerald-600" : "text-destructive"}`}>Lucro: {formatMoney(moneyInProfit, currency)}</p>
             </CardContent>
           </Card>
           <Card>
