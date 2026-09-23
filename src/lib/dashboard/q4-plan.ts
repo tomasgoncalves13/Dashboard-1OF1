@@ -13,10 +13,10 @@ type Phase = { id: string; nome: string; from: string; to: string; f: number; ao
 export const Q4_PHASES: Phase[] = [
   { id: "out", nome: "Escalar a época", from: "2026-10-01", to: "2026-10-31", f: 1.0, aov: 44, m: 0.73 },
   { id: "prebf", nome: "Aquecimento BF", from: "2026-11-01", to: "2026-11-19", f: 1.1, aov: 44, m: 0.73 },
-  { id: "bw", nome: "Black Week", from: "2026-11-20", to: "2026-12-01", f: 0.8, aov: 48, m: 0.6 },
+  { id: "bw", nome: "Black Week", from: "2026-11-20", to: "2026-12-01", f: 0.8, aov: 48, m: 0.7 },
   { id: "natal", nome: "Natal", from: "2026-12-02", to: "2026-12-18", f: 0.9, aov: 46, m: 0.7 },
   { id: "pos", nome: "Natal → Ano Novo", from: "2026-12-19", to: "2027-01-01", f: 1.3, aov: 44, m: 0.73 },
-  { id: "saldos", nome: "Saldos + 2.ª volta", from: "2027-01-02", to: "2027-01-31", f: 1.0, aov: 40, m: 0.62 },
+  { id: "saldos", nome: "Saldos + 2.ª volta", from: "2027-01-02", to: "2027-01-31", f: 1.0, aov: 42, m: 0.72 },
 ];
 
 const BASE_BUDGETS: Record<string, number> = { out: 80, prebf: 120, bw: 300, natal: 200, pos: 60, saldos: 120 };
