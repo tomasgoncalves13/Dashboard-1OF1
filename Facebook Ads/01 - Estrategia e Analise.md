@@ -34,6 +34,13 @@ Visível no dashboard (`/ads` → "Aquisição de clientes" e `/dashboard` → "
 **Leitura a 22 Set 2026:** LTV ≈ **€33 receita / €24 lucro** por cliente (lucro depois de COGS, envio, embalagem e taxas, antes de ads). Só **~4% dos clientes voltam a comprar**, e nos últimos 30 dias 0 das 47 encomendas pagas foram de clientes que já tinham comprado → na prática o LTV ≈ o lucro da 1ª encomenda.
 **Implicação:** o CPA máximo para não perder dinheiro é **~€24**. Não contar com recompra para "pagar" um CPA alto: cada cliente tem de ser rentável logo na 1ª encomenda. Subir o AOV (packs/kits) ou a recompra (email pós-compra) é o que sobe este teto.
 
+## Objetivo Q4 2026 / Black Friday (definido a 23 Set 2026)
+
+**Ponto de partida (dados reais):** melhor mês de sempre = Dez 2025 (€2.2k online). Set 2026 ≈ €1.9k online (42 encomendas) + €0.5k clubes, com €30/dia de ads. AOV ≈ €44, lucro antes de ads ≈ €32/encomenda, CPA ≈ €14.
+**O dono propôs €150k até ao fim do ano.** Reality check: seriam ~3.400 encomendas (~50k€/mês, ~20× o melhor mês de sempre), ~€50k+ de ads mesmo com o CPA de hoje, e o CPA sobe sempre que se escala muito e com o leilão caro do BF → lucro perto de zero. Também seria preciso ~10k meias e ~7k caneleiras em stock.
+**Meta recomendada: ~€25-30k no Q4** (Out ~€5k, Nov ~€12-15k com BF, Dez ~€10k), ou seja ~10× o ritmo atual. Escalar o budget +20-30% a cada 3-4 dias **enquanto o CPA estiver < €20** (o teto de break-even é ~€24), até ~€100-150/dia no BF.
+**Stock:** a este ritmo, as caneleiras Built-In (970 un., ~67/mês hoje) são o gargalo e acabam por volta de dezembro. Encomendar caneleiras e meias pretas **até ~início de outubro** para chegarem antes do BF (27 Nov).
+
 ## Próxima campanha (planeada)
 
 Campanha separada com **imagens estáticas**, cada imagem já ligada a um ângulo específico (ex: imagem de caneleira a escorregar → ângulo "Jogas em Desvantagem" / "Não Saem do Sítio"; imagem de pai/filho → ângulo "Pai Protetor" ou "Olheiros"). Aqui sim entra copy de pais, porque a imagem justifica o angle. Ver `Copys por Formato/Imagens - Angulos Especificos.md` (a preencher quando as imagens estiverem escolhidas).
