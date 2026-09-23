@@ -138,6 +138,7 @@ First 100€ → 25%, next 200€ → 30%, above 300€ → 35%. Rio Tinto has `
 - Every inventory change writes a `StockMovement` (signed quantity + type + reference)
 - `registerPhysicalSale()` in `src/lib/clubs/service.ts` auto-decrements stock and writes movements
 - Manual adjustments via `/inventory` → `adjustStock()` Server Action
+- **Caneleiras Embutidas: variante à venda → tamanho físico (BOM)**: Criança Pequeno / "- Criança" MINI → **S**; Adulto Pequeno, Criança Médio / "- Criança" MIDI → **M**; Adulto Médio, Criança Grande → **L**; Adulto Grande → **XL**. O nome da variante NÃO é o tamanho físico (ex: "Adulto Pequeno" gasta um M). ⚠️ As variantes "Pack Pro - Caneleiras Embutidas · Criança (7-12) / MAXI / *" não têm BOM: se venderem, não descontam stock.
 
 ### Token security
 
