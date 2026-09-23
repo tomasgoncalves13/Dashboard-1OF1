@@ -17,6 +17,7 @@ import {
   type MonthlyPnLRow,
 } from "@/lib/dashboard/kpis";
 import { getCustomerMetrics } from "@/lib/dashboard/customers";
+import { getQ4Tracking, FULL_GAS_MAX_CPO, CONSERVATIVE_MIN_CPO, type Q4Tracking } from "@/lib/dashboard/q4-plan";
 import { DateRangePicker } from "@/components/dashboard/date-range-picker";
 import { getMonthlyCashflow, getFinanceBreakdown } from "@/lib/finance/cashflow";
 import { CashflowChart } from "../finance/cashflow-chart";
@@ -51,7 +52,7 @@ export default async function DashboardPage({
   const sp = await searchParams;
   const range = resolveRange(sp);
 
-  const [paid, all, daily, money, gateways, physical, monthlyPnL, monthlyCashflow, financeBreakdown, customers] = await Promise.all([
+  const [paid, all, daily, money, gateways, physical, monthlyPnL, monthlyCashflow, financeBreakdown, customers, q4] = await Promise.all([
     getKpis(store.id, range.from, range.to, { paidOnly: true }),
     getKpis(store.id, range.from, range.to, { paidOnly: false }),
     getDailyRevenue(store.id, range.from, range.to, { paidOnly: true }),
@@ -62,6 +63,7 @@ export default async function DashboardPage({
     getMonthlyCashflow(store.id, 6),
     getFinanceBreakdown(store.id, range.from, range.to),
     getCustomerMetrics(store.id, range.from, range.to),
+    getQ4Tracking(store.id),
   ]);
 
   // CPA combinado = gasto total em ads (Facebook + Google) ÷ clientes novos.
@@ -88,6 +90,8 @@ export default async function DashboardPage({
         </div>
         <DateRangePicker active={range.preset} />
       </div>
+
+      <Q4PlanCard q4={q4} currency={currency} />
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -314,6 +318,102 @@ export default async function DashboardPage({
         <KpiGrid kpis={all} currency={currency} muted />
       </div>
     </div>
+  );
+}
+
+const VERDICT = {
+  full: { label: "Ritmo full gas", sub: "Na Black Week, ir a ~€700/dia", color: "text-emerald-600" },
+  base: { label: "Otimista-realista", sub: "Na Black Week, ~€300/dia", color: "text-yellow-600" },
+  cons: { label: "Conservador", sub: "Na Black Week, ~€150/dia; trocar criativos", color: "text-destructive" },
+} as const;
+
+function Q4PlanCard({ q4, currency }: { q4: Q4Tracking; currency: string }) {
+  const v = q4.verdict ? VERDICT[q4.verdict] : null;
+  const fmtDay = (s: string) => new Date(`${s}T00:00:00Z`).toLocaleDateString("pt-PT", { day: "numeric", month: "short", timeZone: "UTC" });
+  const pct = (real: number, plan: number) => (plan > 0 ? (real / plan) * 100 : null);
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Real vs Plano Q4 · cenário otimista-realista</CardTitle>
+        <p className="text-xs text-muted-foreground">
+          Custo por encomenda = gasto em ads (FB + Google) ÷ todas as encomendas pagas. Decisão a meio de outubro, com €80–100/dia:
+          ≤ {formatMoney(FULL_GAS_MAX_CPO, currency)} full gas · até {formatMoney(CONSERVATIVE_MIN_CPO, currency)} otimista-realista · acima disso conservador.
+          O plano assume criativos 20% melhores que os de teste (9–22 Set: {formatMoney(16.4, currency)}/encomenda a {formatMoney(48, currency)}/dia).{" "}
+          <a className="underline" href="https://claude.ai/artifact/Dq1WuXHPqd5PhgR69oCuu6" target="_blank" rel="noreferrer">Abrir o plano</a>
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <p className="text-xs text-muted-foreground">Custo por encomenda · últimos 7 dias</p>
+            <div className={`text-2xl font-semibold ${v?.color ?? ""}`}>
+              {q4.last7.costPerOrder === null ? "—" : formatMoney(q4.last7.costPerOrder, currency)}
+            </div>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Estás no cenário</p>
+            <div className={`text-2xl font-semibold ${v?.color ?? ""}`}>{v?.label ?? "—"}</div>
+            {v && <p className="text-xs text-muted-foreground">{v.sub}</p>}
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Ads/dia · últimos 7 dias</p>
+            <div className="text-2xl font-semibold">{formatMoney(q4.last7.spend / 7, currency)}</div>
+          </div>
+          <div>
+            <p className="text-xs text-muted-foreground">Encomendas/dia · últimos 7 dias</p>
+            <div className="text-2xl font-semibold">{(q4.last7.orders / 7).toFixed(1)}</div>
+            <p className="text-xs text-muted-foreground">{formatMoney(q4.last7.revenue, currency)} em 7 dias</p>
+          </div>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-xs text-muted-foreground border-b">
+              <tr>
+                <th className="text-left font-medium py-2">Fase</th>
+                <th className="text-right font-medium py-2">Faturação real / plano até hoje</th>
+                <th className="text-right font-medium py-2">Plano da fase</th>
+                <th className="text-right font-medium py-2">Ads real / plano</th>
+                <th className="text-right font-medium py-2">Custo/enc. real / plano</th>
+              </tr>
+            </thead>
+            <tbody>
+              {q4.phases.map((p) => {
+                const future = p.status === "future";
+                const hit = pct(p.real.revenue, p.planToDate.revenue);
+                const realCpo = p.real.orders > 0 ? p.real.spend / p.real.orders : null;
+                const planCpo = p.planFull.spend / p.planFull.orders;
+                return (
+                  <tr key={p.id} className={`border-b last:border-0 ${future ? "text-muted-foreground" : ""}`}>
+                    <td className="py-2">
+                      <span className="font-medium">{p.nome}</span>
+                      <span className="text-xs text-muted-foreground ml-2">{fmtDay(p.from)} – {fmtDay(p.to)}</span>
+                      {p.status === "current" && <span className="ml-2 text-[10px] rounded bg-primary/10 px-1.5 py-0.5">agora</span>}
+                    </td>
+                    <td className="py-2 text-right tabular-nums">
+                      {future ? "—" : (
+                        <>
+                          {formatMoney(p.real.revenue, currency)} / {formatMoney(p.planToDate.revenue, currency)}
+                          {hit !== null && (
+                            <span className={`ml-1 text-xs ${hit >= 100 ? "text-emerald-600" : "text-destructive"}`}>({hit.toFixed(0)}%)</span>
+                          )}
+                        </>
+                      )}
+                    </td>
+                    <td className="py-2 text-right tabular-nums">{formatMoney(p.planFull.revenue, currency)}</td>
+                    <td className="py-2 text-right tabular-nums">
+                      {future ? "—" : `${formatMoney(p.real.spend, currency)} / ${formatMoney(p.planToDate.spend, currency)}`}
+                    </td>
+                    <td className="py-2 text-right tabular-nums">
+                      {future || realCpo === null ? "—" : formatMoney(realCpo, currency)} / {formatMoney(planCpo, currency)}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
