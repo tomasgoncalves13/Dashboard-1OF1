@@ -105,6 +105,13 @@ Every query must be scoped to `storeId` — retrieve it via `getSessionUser()` f
 - grossProfit = revenueNet − COGS
 - netProfit = grossProfit − packagingCost − paymentFees − attributedAdSpend − influencerCost − otherCosts
 
+**⚠️ Política de envio (regra fixa do negócio, confirmada pelo dono a 23 Set 2026; usar SEMPRE em contas de margem, ofertas e planos):**
+- Encomendas **abaixo de €40**: o cliente paga **€4,95** de envio.
+- A partir de **€40**: envio **grátis** para o cliente. A regra é permanente, também na Black Friday e nas promoções.
+- O envio custa **sempre €5,40** à empresa, por encomenda, seja qual for o valor.
+- Por isso: encomenda < €40 → o envio custa-nos só €0,45 líquidos; encomenda ≥ €40 → custa-nos €5,40 inteiros. Nas ofertas, chegar aos €40 elimina o envio pago pelo cliente.
+- (O `OrderCostConfig` também tem `shippingEU` = €8,60 para envios fora de Portugal; os €5,40 são os envios nacionais, que são quase todos.)
+
 **`OrderCostConfig`** (one per store, configurable in `/costs`): freeGiftCost (0.88€), bubbleMailerCost (0.69€), cardCost (0.01€), stickerCost (0.06€). Changing config triggers `profit/recalculate.all` Inngest job to retroactively update all orders.
 
 **Physical sales (clubs + self):**
