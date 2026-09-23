@@ -21,5 +21,8 @@
 **Lema de Balneário:**
 > *"Feita para jogadores que recusam ser comuns."*
 
+**Preço (decisão do dono, Set 2026):**
+Os preços **nunca baixam**, nem na Black Friday. Descontos em % desvalorizam uma marca que se posiciona como premium e exclusiva. As promoções fazem-se **dando produto** (ex: "Compra 2, Leva 3", oferta extra), nunca cortando o preço.
+
 **O Inimigo Público:**
 Equipamento fuleiro/genérico. Caneleiras de plataforma baratas que resvalam e fita adesiva que magoa. O nosso foco opõe-se frontalmente à normalização do "barato".
