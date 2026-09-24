@@ -95,7 +95,12 @@ function Overview({ months, currency, withAcademia }: { months: MonthSummary[]; 
   const totalCash = sum(cash);
   const stockBought = sum((m) => m.stockPurchases);
   const stockUsed = sum((m) => m.cogs + m.physicalCogs);
-  const academiaNote = withAcademia ? "Com a Academia Ecommerce." : "Sem a Academia Ecommerce.";
+  const academiaTotal = sum((m) => m.academia);
+  const academiaNote = withAcademia ? (
+    <>Com os {formatMoney(academiaTotal, currency)} pagos na Academia Ecommerce.</>
+  ) : (
+    <>Sem os <span className="font-semibold text-destructive">{formatMoney(academiaTotal, currency)}</span> pagos na Academia Ecommerce.</>
+  );
 
   let cumProfit = 0;
   let cumCash = 0;
