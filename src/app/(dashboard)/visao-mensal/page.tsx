@@ -22,6 +22,7 @@ export default async function VisaoMensalPage() {
 
   const totalProfit = sum(monthProfit);
   const totalCash = sum(monthCash);
+  const academia = sum((m) => m.academia);
   const stockBought = sum((m) => m.stockPurchases);
   const stockUsed = sum((m) => m.cogs + m.physicalCogs);
 
@@ -48,14 +49,16 @@ export default async function VisaoMensalPage() {
           <CardHeader className="pb-2"><CardTitle>Lucro acumulado</CardTitle></CardHeader>
           <CardContent>
             <div className="text-2xl">{signed(totalProfit)}</div>
-            <p className="text-xs text-muted-foreground mt-1">Conta só o custo das peças que já se venderam</p>
+            <p className="text-xs text-muted-foreground mt-1">Conta só o custo das peças que já se venderam. Sem a Academia Ecommerce.</p>
+            <p className="text-xs mt-1">Com a Academia ({formatMoney(academia, store.currency)}): {signed(totalProfit - academia)}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle>Dinheiro real acumulado</CardTitle></CardHeader>
           <CardContent>
             <div className="text-2xl">{signed(totalCash)}</div>
-            <p className="text-xs text-muted-foreground mt-1">Conta todo o stock comprado, vendido ou não</p>
+            <p className="text-xs text-muted-foreground mt-1">Conta todo o stock comprado, vendido ou não. Sem a Academia Ecommerce.</p>
+            <p className="text-xs mt-1">Com a Academia ({formatMoney(academia, store.currency)}): {signed(totalCash - academia)}</p>
           </CardContent>
         </Card>
         <Card>
@@ -82,7 +85,7 @@ export default async function VisaoMensalPage() {
           <CardDescription>
             Site = encomendas pagas (inclui reembolsadas, como o Shopify; sem PENDING/expiradas). Custo encomendas = produto + embalagem + oferta +
             comissões de pagamento + envio que pagamos. Físicas = vendas a clubes e em mão, menos custo do produto e comissão do clube.
-            Despesas fixas = subscrições e software. Outras = despesas pontuais (patente, shooting, etiquetas…) e Academia Ecommerce.
+            Despesas fixas = subscrições e software. Outras = despesas pontuais (patente, shooting, etiquetas…). A Academia Ecommerce não entra na tabela, só nos cards de cima.
             Dinheiro real = lucro, mas trocando o custo das peças vendidas pelo stock comprado nesse mês. Não inclui IVA.
           </CardDescription>
         </CardHeader>

@@ -20,12 +20,13 @@ export type MonthSummary = {
   physicalCogs: number;
   physicalCommission: number; // comissões dos clubes (por mês e por clube, por escalões)
   fixedExpenses: number; // despesas recorrentes, sem a Academia Ecommerce
-  otherExpenses: number; // despesas pontuais + Academia Ecommerce
+  otherExpenses: number; // despesas pontuais (sem a Academia)
+  academia: number; // Academia Ecommerce: fora do lucro do mês, só aparece à parte nos cards
   stockPurchases: number; // encomendas a fornecedores (/encomendas), no mês do pagamento
   products: { title: string; qty: number; revenue: number; variants: { title: string; qty: number; revenue: number }[] }[];
 };
 
-// Lucro do mês = vendas − custo das peças vendidas − custos das encomendas − ads − despesas.
+// Lucro do mês = vendas − custo das peças vendidas − custos das encomendas − ads − despesas (sem a Academia).
 export const monthProfit = (m: MonthSummary) =>
   m.gross - m.refunds - m.orderCosts - m.adSpend - m.fixedExpenses - m.otherExpenses +
   m.physicalRevenue - m.physicalCogs - m.physicalCommission;
@@ -35,7 +36,7 @@ export const monthCash = (m: MonthSummary) => monthProfit(m) + m.cogs + m.physic
 
 const emptyMonth = (month: string) => ({
   month, orders: 0, gross: 0, shipping: 0, discounts: 0, refunds: 0, over40: 0, cogs: 0, orderCosts: 0, adSpend: 0, metaPurchases: 0,
-  physicalRevenue: 0, physicalCogs: 0, physicalCommission: 0, fixedExpenses: 0, otherExpenses: 0, stockPurchases: 0,
+  physicalRevenue: 0, physicalCogs: 0, physicalCommission: 0, fixedExpenses: 0, otherExpenses: 0, academia: 0, stockPurchases: 0,
   products: [], map: new Map<string, { qty: number; revenue: number; v: Map<string, { qty: number; revenue: number }> }>(),
 });
 
@@ -100,7 +101,8 @@ export async function getMonthlyOverview(storeId: string): Promise<MonthSummary[
   }
   for (const e of expenses) {
     const m = get(e.incurredOn.toISOString().slice(0, 7));
-    if (e.recurring && e.vendor !== "Academia Ecommerce") m.fixedExpenses += Number(e.amount);
+    if (e.vendor === "Academia Ecommerce") m.academia += Number(e.amount);
+    else if (e.recurring) m.fixedExpenses += Number(e.amount);
     else m.otherExpenses += Number(e.amount);
   }
   for (const po of purchases) get(po.date.toISOString().slice(0, 7)).stockPurchases += Number(po.totalCost);
