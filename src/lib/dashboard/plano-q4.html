@@ -493,10 +493,11 @@ PHASES.forEach((p,pi)=>{
   ws.forEach((w,i)=>days.push({t:a+i*DAY,pi,w:w/mean}));
 });
 
-const INV_DEFAULT={basis:"max",offer:"1",safety:10,arrival:"2026-11-10",mailers:200,mailerRate:1.1,giftKids:35,minSleeve:25,floorRate:2};
+const INV_DEFAULT={basis:"max",offer:"1",safety:10,arrival:"2026-12-01",mailers:200,mailerRate:1.1,giftKids:35,minSleeve:25,floorRate:2};
 const SHIP_INIT={pay:"2026-09-28",sample:1,prod:3,sleeveReady:1,air:2,train:5,ratio:3};
 let state={sc:"base",creative:-20,b:{...PRESETS.base.b},tab:"plano",inv:{...INV_DEFAULT},ship:{...SHIP_INIT},clubsOn:true,clubs:CLUBS_INIT.map(c=>({...c}))};
 try{const s=JSON.parse(localStorage.getItem("plano-q4-v2")||"null"); if(s&&s.b) state={...state,...s,inv:{...INV_DEFAULT,...(s.inv||{})},ship:{...SHIP_INIT,...(s.ship||{})},clubs:CLUBS_INIT.map(c=>({...c,...((s.clubs||[]).find(x=>x.id===c.id)||{})}))};}catch(e){}
+if(state.inv.arrival==="2026-11-10") state.inv.arrival=INV_DEFAULT.arrival; // antigo defeito (avião); a encomenda chega a 1 Dez
 if(["#plano","#inventario","#envio"].includes(location.hash)) state.tab=location.hash.slice(1);
 const save=()=>{try{localStorage.setItem("plano-q4-v2",JSON.stringify(state))}catch(e){}};
 
