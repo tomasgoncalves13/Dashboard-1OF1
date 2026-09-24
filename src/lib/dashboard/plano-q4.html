@@ -166,7 +166,23 @@ table.inv{min-width:1180px}
     <button type="button" role="tab" id="tab-btn-plano" aria-controls="tab-plano" data-tab="plano">Plano</button>
     <button type="button" role="tab" id="tab-btn-inventario" aria-controls="tab-inventario" data-tab="inventario">Inventário por variante</button>
     <button type="button" role="tab" id="tab-btn-envio" aria-controls="tab-envio" data-tab="envio">Opções de envio</button>
+    <button type="button" role="tab" id="tab-btn-mensal" aria-controls="tab-mensal" data-tab="mensal">Visão mensal</button>
   </nav>
+
+  <div class="tabpanel" id="tab-mensal" role="tabpanel" aria-labelledby="tab-btn-mensal" hidden>
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Visão mensal</h2>
+        <span class="muted" style="font-size:13px">Encomendas do site pagas desde o início (inclui as reembolsadas, como o Shopify). Não inclui as PENDING/expiradas nem as vendas a clubes. Para confirmar: Shopify → Analytics → Relatórios → Vendas ao longo do tempo, por mês.</span>
+      </div>
+      <div class="scroll"><table class="inv" id="month-table" style="min-width:760px"></table></div>
+      <p class="muted" style="font-size:13px">Faturação = total cobrado ao cliente (produtos + envio, depois de descontos). Líquido = faturação − reembolsos. Clica num mês para ver os produtos e as variantes.</p>
+    </section>
+    <section class="panel">
+      <h2>Produtos e variantes por mês</h2>
+      <div id="month-detail"></div>
+    </section>
+  </div>
 
   <div class="tabpanel" id="tab-plano" role="tabpanel" aria-labelledby="tab-btn-plano">
   <section class="kpis" id="kpis" aria-label="Resumo"></section>
@@ -497,7 +513,7 @@ let state={sc:"real",creative:-30,b:{...PRESETS.real.b},tab:"plano",inv:{...INV_
 try{const s=JSON.parse(localStorage.getItem("plano-q4-v2")||"null"); if(s&&s.b) state={...state,...s,inv:{...INV_DEFAULT,...(s.inv||{})},ship:{...SHIP_INIT,...(s.ship||{})},clubs:CLUBS_INIT.map(c=>({...c,...((s.clubs||[]).find(x=>x.id===c.id)||{})}))};}catch(e){}
 if(state.sc==="custom"&&Object.keys(PRESETS.real.b).every(k=>state.b[k]===PRESETS.real.b[k])) state.sc="real";
 if(state.inv.arrival==="2026-11-10") state.inv.arrival=INV_DEFAULT.arrival; // antigo defeito (avião); a encomenda chega a 1 Dez
-if(["#plano","#inventario","#envio"].includes(location.hash)) state.tab=location.hash.slice(1);
+if(["#plano","#inventario","#envio","#mensal"].includes(location.hash)) state.tab=location.hash.slice(1);
 const save=()=>{try{localStorage.setItem("plano-q4-v2",JSON.stringify(state))}catch(e){}};
 
 function costFor(p,budget,creative){
@@ -852,7 +868,25 @@ function renderInvControls(){
 }
 function renderTabs(){
   document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===state.tab)));
-  ["plano","inventario","envio"].forEach(t=>document.getElementById("tab-"+t).hidden=state.tab!==t);
+  ["plano","inventario","envio","mensal"].forEach(t=>document.getElementById("tab-"+t).hidden=state.tab!==t);
+}
+
+function renderMonthly(){
+  const ms=(LIVE&&LIVE.months)||[];
+  const e2=v=>"€"+v.toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2});
+  const lbl=k=>{const [y,m]=k.split("-");return MESES[Number(m)-1]+" "+y;};
+  if(!ms.length){document.getElementById("month-table").innerHTML=`<tbody><tr><td class="muted">Sem dados (só aparecem dentro da app).</td></tr></tbody>`;return;}
+  const tot=ms.reduce((a,m)=>({orders:a.orders+m.orders,gross:a.gross+m.gross,shipping:a.shipping+m.shipping,discounts:a.discounts+m.discounts,refunds:a.refunds+m.refunds,over40:a.over40+m.over40}),{orders:0,gross:0,shipping:0,discounts:0,refunds:0,over40:0});
+  const units=m=>m.products.reduce((a,p)=>a+p.qty,0);
+  const row=(l,m,u)=>`<td>${l}</td><td>${m.orders}</td><td>${e2(m.gross)}</td><td>${e2(m.discounts)}</td><td>${e2(m.shipping)}</td><td>${m.refunds?e2(m.refunds):"—"}</td><td><b>${e2(m.gross-m.refunds)}</b></td><td>${e2(m.orders?m.gross/m.orders:0)}</td><td>${m.orders?Math.round(m.over40/m.orders*100):0}%</td><td>${u}</td>`;
+  document.getElementById("month-table").innerHTML=`<thead><tr><th>Mês</th><th>Encomendas</th><th>Faturação</th><th>Descontos</th><th>Envio cobrado</th><th>Reembolsos</th><th>Líquido</th><th>Ticket médio</th><th>≥ €40</th><th>Unidades</th></tr></thead><tbody>
+    ${ms.map(m=>`<tr>${row(`<a href="#m-${m.month}">${lbl(m.month)}</a>`,m,units(m))}</tr>`).join("")}</tbody>
+    <tfoot><tr>${row("Total",tot,ms.reduce((a,m)=>a+units(m),0))}</tr></tfoot>`;
+  document.getElementById("month-detail").innerHTML=ms.slice().reverse().map(m=>`<details id="m-${m.month}" style="margin-bottom:8px"><summary><b>${lbl(m.month)}</b> <span class="muted">· ${m.orders} encomendas · ${e2(m.gross)} · ${units(m)} unidades</span></summary>
+    <div class="scroll"><table class="inv" style="margin-top:8px"><thead><tr><th>Produto / variante</th><th>Unidades</th><th>Receita</th></tr></thead><tbody>
+    ${m.products.map(p=>`<tr class="fam"><td>${p.title}</td><td>${p.qty}</td><td>${e2(p.revenue)}</td></tr>`+p.variants.map(v=>`<tr><td style="padding-left:22px">${v.title}</td><td>${v.qty}</td><td>${e2(v.revenue)}</td></tr>`).join("")).join("")}
+    </tbody></table></div></details>`).join("");
+  document.querySelectorAll('#month-table a').forEach(a=>a.addEventListener("click",()=>{const d=document.querySelector(a.getAttribute("href"));if(d)d.open=true;}));
 }
 
 function update(focusId){
@@ -861,7 +895,7 @@ function update(focusId){
   const c=state.creative;
   document.getElementById("creative-lbl").textContent=c===0?"iguais":(c<0?`${-c}% mais baratos por encomenda`:`${c}% mais caros por encomenda`);
   document.getElementById("creative").value=c;
-  renderKpis(s); renderChart(s); renderPhases(s); renderCompare(); renderInvControls(); renderInventory(s); renderShipControls(); renderShipping(); renderStartCompare(); renderTabs();
+  renderKpis(s); renderChart(s); renderPhases(s); renderCompare(); renderInvControls(); renderInventory(s); renderShipControls(); renderShipping(); renderStartCompare(); renderMonthly(); renderTabs();
   if(focusId){const el=document.getElementById(focusId); if(el) el.focus();}
   save();
 }

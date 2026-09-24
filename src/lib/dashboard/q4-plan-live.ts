@@ -10,7 +10,62 @@ export type Q4PlanLive = {
   sampleOrders: number;
   ordersPerDay: number;
   items: Record<string, { stock: number; site: number; club: number }>;
+  months: MonthSummary[];
 };
+
+// Visão mensal desde o início: encomendas do site pagas (inclui as reembolsadas, como o Shopify conta).
+type MonthSummary = {
+  month: string; // "2026-09"
+  orders: number;
+  gross: number; // total cobrado, com envio
+  shipping: number;
+  discounts: number;
+  refunds: number;
+  over40: number; // encomendas com subtotal ≥ €40
+  products: { title: string; qty: number; revenue: number; variants: { title: string; qty: number; revenue: number }[] }[];
+};
+
+async function getMonths(storeId: string): Promise<MonthSummary[]> {
+  const orders = await prisma.order.findMany({
+    where: { storeId, channel: "SHOPIFY", financialStatus: { in: ["PAID", "PARTIALLY_REFUNDED", "REFUNDED"] }, cancelledAt: null },
+    select: {
+      processedAt: true, total: true, subtotal: true, shippingCharged: true, discountTotal: true, refundedTotal: true,
+      items: { select: { title: true, quantity: true, totalRevenue: true, variant: { select: { title: true, product: { select: { title: true } } } } } },
+    },
+    orderBy: { processedAt: "asc" },
+  });
+  const monthOf = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Lisbon", year: "numeric", month: "2-digit" });
+  const byMonth = new Map<string, MonthSummary & { map: Map<string, { qty: number; revenue: number; v: Map<string, { qty: number; revenue: number }> }> }>();
+  for (const o of orders) {
+    const key = monthOf.format(o.processedAt).slice(0, 7);
+    let m = byMonth.get(key);
+    if (!m) byMonth.set(key, (m = { month: key, orders: 0, gross: 0, shipping: 0, discounts: 0, refunds: 0, over40: 0, products: [], map: new Map() }));
+    m.orders++;
+    m.gross += Number(o.total);
+    m.shipping += Number(o.shippingCharged);
+    m.discounts += Number(o.discountTotal);
+    m.refunds += Number(o.refundedTotal);
+    if (Number(o.subtotal) >= 40) m.over40++;
+    for (const it of o.items) {
+      const pt = it.variant?.product.title ?? it.title;
+      const vt = it.variant?.title ?? "—";
+      let p = m.map.get(pt);
+      if (!p) m.map.set(pt, (p = { qty: 0, revenue: 0, v: new Map() }));
+      p.qty += it.quantity;
+      p.revenue += Number(it.totalRevenue);
+      const v = p.v.get(vt) ?? { qty: 0, revenue: 0 };
+      v.qty += it.quantity;
+      v.revenue += Number(it.totalRevenue);
+      p.v.set(vt, v);
+    }
+  }
+  return [...byMonth.values()].map(({ map, ...m }) => ({
+    ...m,
+    products: [...map.entries()]
+      .map(([title, p]) => ({ title, qty: p.qty, revenue: p.revenue, variants: [...p.v.entries()].map(([t, v]) => ({ title: t, ...v })).sort((a, b) => b.qty - a.qty) }))
+      .sort((a, b) => b.qty - a.qty),
+  }));
+}
 
 export async function getQ4PlanLive(storeId: string): Promise<Q4PlanLive> {
   const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Lisbon" }).format(new Date());
@@ -27,7 +82,7 @@ export async function getQ4PlanLive(storeId: string): Promise<Q4PlanLive> {
   });
   const orderIds = orders.map((o) => o.shopifyId).filter((id): id is string => !!id);
 
-  const [items, site, club] = await Promise.all([
+  const [items, site, club, months] = await Promise.all([
     prisma.inventoryItem.findMany({ where: { storeId }, select: { id: true, code: true, stockOnHand: true } }),
     prisma.stockMovement.groupBy({
       by: ["inventoryItemId"],
@@ -39,6 +94,7 @@ export async function getQ4PlanLive(storeId: string): Promise<Q4PlanLive> {
       where: { storeId, type: "CLUB_SALE", inventoryItemId: { not: null } },
       _sum: { quantity: true },
     }),
+    getMonths(storeId),
   ]);
 
   const sold = (rows: typeof site, id: string) => -(rows.find((r) => r.inventoryItemId === id)?._sum.quantity ?? 0);
@@ -51,5 +107,6 @@ export async function getQ4PlanLive(storeId: string): Promise<Q4PlanLive> {
     items: Object.fromEntries(
       items.map((i) => [i.code, { stock: i.stockOnHand, site: sold(site, i.id), club: sold(club, i.id) }]),
     ),
+    months,
   };
 }
