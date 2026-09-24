@@ -523,6 +523,9 @@ function renderKpis(s){
     ["Faturação Out–Jan",eurK(s.tot.rev),"com os Saldos"],
     ["Gasto em ads",eurK(s.tot.spend),"Out–Jan"],
     ["Lucro depois de ads",eurK(s.tot.profit),"antes de despesas fixas",s.tot.profit>=0?"pos":"neg"],
+    // IVA 23% (ainda não se paga): os preços ficam iguais, por isso o IVA sai de dentro da faturação (23/123).
+    // Pior caso: não conta IVA dedutível nas compras.
+    ["Lucro com IVA",eurK(s.tot.profit-s.tot.rev*23/123),"se pagarmos IVA de 23%: −"+eurK(s.tot.rev*23/123),s.tot.profit-s.tot.rev*23/123>=0?"pos":"neg"],
     ["Encomendas",Math.round(s.tot.orders).toLocaleString("pt-PT"),"~"+(s.tot.orders/days.length).toFixed(1)+"/dia em média"],
     ["ROAS",roas.toFixed(2)+"×","faturação ÷ ads"]
   ];

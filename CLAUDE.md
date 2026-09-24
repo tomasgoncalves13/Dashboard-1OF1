@@ -113,6 +113,8 @@ Every query must be scoped to `storeId` — retrieve it via `getSessionUser()` f
 - Por isso: encomenda < €40 → o envio custa-nos só €0,45 líquidos; encomenda ≥ €40 → custa-nos €5,40 inteiros. Nas ofertas, chegar aos €40 elimina o envio pago pelo cliente.
 - (O `OrderCostConfig` também tem `shippingEU` = €8,60 para envios fora de Portugal; os €5,40 são os envios nacionais, que são quase todos.)
 
+**IVA (dono, 24 Set 2026):** hoje a empresa **ainda não paga IVA**, mas vai ter de passar a pagar **23%**. Os preços de venda mantêm-se, por isso o IVA sai de dentro da faturação: IVA = faturação × 23/123 (~18,7%). O simulador `/plano-q4` tem o card "Lucro com IVA" (pior caso, sem IVA dedutível nas compras). Em contas de margem e ofertas, mostrar sempre também a versão com IVA.
+
 **`OrderCostConfig`** (one per store, configurable in `/costs`): freeGiftCost (0.88€), bubbleMailerCost (0.69€), cardCost (0.01€), stickerCost (0.06€). Changing config triggers `profit/recalculate.all` Inngest job to retroactively update all orders.
 
 **Physical sales (clubs + self):**
