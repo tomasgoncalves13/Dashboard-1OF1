@@ -1,0 +1,880 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>Plano Q4 1OF1 Fútbol</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Barlow:wght@400;500;600&display=swap">
+<style>
+:root{
+  --bg:#F3F5F2; --surface:#FFFFFF; --surface-2:#E9EEE9; --ink:#14201A; --muted:#5B6A61; --line:#D5DDD6;
+  --accent:#1E7A4C; --accent-soft:#D6EBDF; --spend:#3F6488; --event:#B7791F; --bad:#B93A33; --good:#1E7A4C; --warn:#B7791F;
+  --band:#E4EAE4;
+  --display:"Barlow Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0E1411; --surface:#161E19; --surface-2:#1D2721; --ink:#E4ECE6; --muted:#93A399; --line:#2A362F;
+    --accent:#4DBF86; --accent-soft:#1D3A2B; --spend:#7FA6CC; --event:#E0A445; --bad:#E0736B; --good:#4DBF86; --warn:#E0A445;
+    --band:#141B17;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0E1411; --surface:#161E19; --surface-2:#1D2721; --ink:#E4ECE6; --muted:#93A399; --line:#2A362F;
+  --accent:#4DBF86; --accent-soft:#1D3A2B; --spend:#7FA6CC; --event:#E0A445; --bad:#E0736B; --good:#4DBF86; --warn:#E0A445;
+  --band:#141B17;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;padding-inline:16px;padding-block:28px 64px}
+.wrap{max-width:1120px;margin:0 auto;display:grid;gap:28px}
+h1,h2,h3{font-family:var(--display);font-weight:700;letter-spacing:.01em;margin:0;text-wrap:balance}
+h1{font-size:clamp(34px,5vw,52px);line-height:1}
+h2{font-size:26px;line-height:1.1}
+h3{font-size:19px}
+.eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:600}
+.num{font-variant-numeric:tabular-nums}
+p{margin:0}
+.muted{color:var(--muted)}
+header{display:grid;gap:10px}
+header p{max-width:70ch}
+.start{display:flex;flex-wrap:wrap;gap:8px 20px;padding:12px 16px;background:var(--surface-2);border-radius:6px;font-size:14px}
+.start b{font-variant-numeric:tabular-nums}
+
+.controls{display:flex;flex-wrap:wrap;gap:16px 28px;align-items:end}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden;background:var(--surface)}
+.seg button{font:600 14px var(--body);color:var(--ink);background:transparent;border:0;padding:9px 14px;cursor:pointer;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
+:root[data-theme="dark"] .seg button[aria-pressed="true"]{color:#0E1411}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .seg button[aria-pressed="true"]{color:#0E1411}}
+.ctl{display:grid;gap:6px}
+.ctl label{font-size:12px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:600}
+input[type=range]{width:240px;max-width:100%;accent-color:var(--accent)}
+button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:6px;overflow:hidden}
+.kpi{background:var(--surface);padding:14px 16px;display:grid;gap:2px;align-content:start}
+.kpi .v{font-family:var(--display);font-size:32px;font-weight:700;line-height:1.05;font-variant-numeric:tabular-nums}
+.kpi .s{font-size:13px;color:var(--muted)}
+
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:18px;display:grid;gap:14px}
+.panel-head{display:flex;flex-wrap:wrap;justify-content:space-between;gap:8px 16px;align-items:baseline}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted)}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-1px;margin-right:6px}
+.chart{position:relative}
+.chart svg{width:100%;height:auto;display:block}
+.tip{position:absolute;pointer-events:none;background:var(--ink);color:var(--bg);font-size:13px;padding:6px 9px;border-radius:4px;white-space:nowrap;transform:translate(-50%,-100%);font-variant-numeric:tabular-nums}
+
+.scroll{overflow-x:auto}
+table{border-collapse:collapse;width:100%;min-width:820px;font-size:14px}
+th,td{padding:9px 10px;text-align:right;border-bottom:1px solid var(--line);font-variant-numeric:tabular-nums;vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+th:first-child,td:first-child{text-align:left}
+tfoot td{font-weight:600;border-bottom:0}
+.phase-name{font-weight:600}
+.phase-sub{font-size:13px;color:var(--muted)}
+td input{width:76px;font:inherit;text-align:right;padding:4px 6px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--ink)}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:1px 7px;border-radius:99px}
+.pill.ok{background:var(--accent-soft);color:var(--good)}
+.pill.no{background:color-mix(in srgb,var(--bad) 16%,transparent);color:var(--bad)}
+.pos{color:var(--good)} .neg{color:var(--bad)} .warnc{color:var(--warn);font-weight:600}
+
+.compare{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}
+.sc{border:1px solid var(--line);border-radius:6px;padding:14px;display:grid;gap:6px;background:var(--surface)}
+.sc.on{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent)}
+.sc .row{display:flex;justify-content:space-between;font-size:14px;font-variant-numeric:tabular-nums}
+.callout{border-left:3px solid var(--event);padding:12px 16px;background:var(--surface);border-radius:0 6px 6px 0;display:grid;gap:6px}
+
+.stock{display:grid;gap:14px}
+.srow{display:grid;grid-template-columns:150px 1fr 170px;gap:12px;align-items:center}
+.bar{position:relative;height:22px;background:var(--surface-2);border-radius:4px;overflow:hidden}
+.bar span{position:absolute;top:0;bottom:0}
+.bar .have{background:var(--accent)}
+.bar .inc{background:color-mix(in srgb,var(--accent) 45%,transparent)}
+.bar .need{border-right:3px solid var(--ink);background:transparent}
+.srow .meta{font-size:13px;text-align:right}
+@media (max-width:640px){.srow{grid-template-columns:1fr}.srow .meta{text-align:left}}
+
+.timeline{display:grid;gap:0}
+.tl{display:grid;grid-template-columns:150px 1fr;gap:16px;padding:14px 0;border-top:1px solid var(--line)}
+.tl:first-child{border-top:0}
+.tl .when{font-family:var(--display);font-size:20px;font-weight:700;line-height:1.1}
+.tl .when small{display:block;font-family:var(--body);font-size:13px;font-weight:500;color:var(--muted)}
+.tl ul{margin:0;padding-left:18px;display:grid;gap:4px}
+.tl li.hot::marker{color:var(--event)}
+.tl li.hot{font-weight:600}
+@media (max-width:640px){.tl{grid-template-columns:1fr;gap:6px}}
+.notes{font-size:14px;color:var(--muted);display:grid;gap:6px}
+.notes ul{margin:0;padding-left:18px;display:grid;gap:4px}
+
+.tabs{display:flex;gap:4px;border-bottom:1px solid var(--line)}
+.tabs button{font:600 16px var(--display);letter-spacing:.04em;text-transform:uppercase;color:var(--muted);background:transparent;border:0;border-bottom:3px solid transparent;padding:10px 14px;margin-bottom:-1px;cursor:pointer}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.tabpanel{display:grid;gap:28px}
+.invctl{display:flex;flex-wrap:wrap;gap:14px 24px;align-items:end}
+.invctl .ctl input,.invctl .ctl select{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:4px;background:var(--surface);color:var(--ink)}
+.invctl .ctl input[type=number]{width:90px}
+table.inv{min-width:900px}
+table.inv td:first-child{white-space:nowrap}
+table.inv tr.fam td{background:var(--surface-2);font-weight:600}
+table.inv td.zero{color:var(--muted)}
+table.inv .g{border-left:2px solid var(--line)}
+table.inv th.gh{text-align:center;color:var(--ink);font-size:13px}
+table.inv{min-width:1180px}
+.flag{display:inline-block;font-size:12px;font-weight:600;padding:1px 7px;border-radius:99px;white-space:nowrap}
+.flag.bad{background:color-mix(in srgb,var(--bad) 16%,transparent);color:var(--bad)}
+.flag.warn{background:color-mix(in srgb,var(--warn) 18%,transparent);color:var(--warn)}
+.flag.ok{background:var(--accent-soft);color:var(--good)}
+.shop{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.shop .sc ul{margin:0;padding-left:18px;font-size:14px;font-variant-numeric:tabular-nums}
+.copy{font:600 13px var(--body);padding:6px 10px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--ink);cursor:pointer;justify-self:start}
+</style>
+
+<div class="wrap">
+  <header>
+    <span class="eyebrow">1OF1 Fútbol · Out 2026 → Jan 2027</span>
+    <h1>Plano Q4: da época em curso até aos Saldos</h1>
+    <p class="muted">Simulador com base nos dados reais do dashboard (23 Set 2026). Escolhe um cenário, ajusta o budget diário de cada fase e vê faturação, lucro e stock a mexer. Os números são estimativas: o custo por encomenda sobe à medida que escalas o budget.</p>
+    <div class="start">
+      <span><b>Desde que os ads arrancaram (9–22 Set, 14 dias):</b></span>
+      <span><b>€674</b> em ads (<b>€48/dia</b>)</span>
+      <span><b>41 encomendas</b> · <b>€1.786</b></span>
+      <span>Custo por encomenda <b>€16,4</b> · ROAS <b>2,65</b></span>
+      <span>Lucro depois de ads <b>~€605</b></span>
+      <span>Antes dos ads: ~1 encomenda a cada 2–3 dias</span>
+    </div>
+    <p class="muted">Estes 14 dias foram de <b>testes</b> (vários criativos, muitos já cortados) e mesmo assim deram lucro. O plano assume por defeito que os criativos novos ficam <b>20% mais eficientes</b> que os de teste. Muda isso no controlo abaixo.</p>
+  </header>
+
+  <section class="controls" aria-label="Cenário">
+    <div class="ctl">
+      <label id="lbl-sc">Cenário</label>
+      <div class="seg" role="group" aria-labelledby="lbl-sc" id="scenarios">
+        <button type="button" data-sc="cons" id="sc-cons">Conservador</button>
+        <button type="button" data-sc="base" id="sc-base">Otimista-realista</button>
+        <button type="button" data-sc="full" id="sc-full">Full gas</button>
+      </div>
+    </div>
+    <div class="ctl">
+      <label for="creative">Criativos novos vs. os de teste: <span id="creative-lbl" class="num"></span></label>
+      <input type="range" id="creative" min="-40" max="20" step="5" value="-20">
+    </div>
+  </section>
+
+  <nav class="tabs" role="tablist" aria-label="Secções">
+    <button type="button" role="tab" id="tab-btn-plano" aria-controls="tab-plano" data-tab="plano">Plano</button>
+    <button type="button" role="tab" id="tab-btn-inventario" aria-controls="tab-inventario" data-tab="inventario">Inventário por variante</button>
+    <button type="button" role="tab" id="tab-btn-envio" aria-controls="tab-envio" data-tab="envio">Opções de envio</button>
+  </nav>
+
+  <div class="tabpanel" id="tab-plano" role="tabpanel" aria-labelledby="tab-btn-plano">
+  <section class="kpis" id="kpis" aria-label="Resumo"></section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Vendas por dia</h2>
+      <div class="legend">
+        <span><i style="background:var(--accent)"></i>Faturação</span>
+        <span><i style="background:var(--spend)"></i>Gasto em ads</span>
+        <span><i style="background:var(--event)"></i>Datas-chave</span>
+      </div>
+    </div>
+    <div class="chart" id="chart"></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head">
+      <h2>Fases</h2>
+      <span class="muted" style="font-size:13px">Edita o budget/dia. "Break-even" = custo máximo por encomenda antes de perder dinheiro nessa fase.</span>
+    </div>
+    <div class="scroll"><table id="phases"></table></div>
+  </section>
+
+  <section class="panel">
+    <h2>Quanto mais budget, menos lucro por euro</h2>
+    <div class="compare" id="compare"></div>
+    <div class="callout" id="goal150"></div>
+  </section>
+
+  <section class="panel">
+    <h2>O que fazer e quando</h2>
+    <div class="timeline">
+      <div class="tl"><div class="when">Até 3 Out<small>esta semana e a próxima</small></div><ul>
+        <li class="hot">Fechar a encomenda de caneleiras Built-In (Zhejiang Fele) e de meias/sleeves (betopmax), com chegada até ~10 Nov. Perguntar se há envio aéreo.</li>
+        <li>Enviar produto a 10–15 influencers já, para ter o conteúdo pronto antes da Black Week.</li>
+        <li>Pop-up de email na loja ("acesso antecipado à Black Friday") para começar a lista.</li>
+      </ul></div>
+      <div class="tl"><div class="when">Outubro<small>época a todo o gás</small></div><ul>
+        <li>Lançar 3–4 criativos novos por semana (imagens, influencers, GRWM). Cortar ao dia 3–4 os que não geram carrinhos.</li>
+        <li>Subir o budget +20–30% a cada 3–4 dias <b>só enquanto o custo por encomenda estiver abaixo de ~€20</b>.</li>
+        <li>Fechar a oferta da Black Week sem baixar preços (ex: "Compra 2, Leva 3"). Passar os €40 dá envio grátis, e isso também é argumento de venda.</li>
+      </ul></div>
+      <div class="tl"><div class="when">1–19 Nov<small>aquecimento</small></div><ul>
+        <li>As pessoas começam a esperar pela BF: é normal o custo por encomenda subir um pouco.</li>
+        <li>Guardar os melhores criativos, preparar versões "Black Week" e fazer crescer o público de retargeting.</li>
+        <li>Confirmar que o stock chegou. Se não, preparar a oferta à volta do que existe.</li>
+      </ul></div>
+      <div class="tl"><div class="when">20 Nov – 1 Dez<small>Black Week</small></div><ul>
+        <li>20 Nov: acesso antecipado para a lista de email.</li>
+        <li class="hot">27 Nov Black Friday: o dia mais forte. Budget no máximo, retargeting a todo o gás.</li>
+        <li class="hot">30 Nov Cyber Monday: última chamada, com uma oferta extra só nesse dia.</li>
+      </ul></div>
+      <div class="tl"><div class="when">2–18 Dez<small>Natal</small></div><ul>
+        <li>Ângulo "presente para o jogador", com o pack e o cartão-oferta.</li>
+        <li class="hot">Confirmar com os CTT o último dia de envio para chegar antes do Natal (aqui assumido 18 Dez) e anunciá-lo nos ads.</li>
+      </ul></div>
+      <div class="tl"><div class="when">19 Dez – 1 Jan<small>Natal → Ano Novo</small></div><ul>
+        <li>Baixar o budget. Vender cartão-oferta digital para quem se atrasou.</li>
+        <li>Preparar os criativos dos Saldos.</li>
+      </ul></div>
+      <div class="tl"><div class="when">2–31 Jan<small>Saldos + 2.ª volta</small></div><ul>
+        <li>Saldos e regresso aos treinos. Bom momento para escoar as cores paradas (vermelho, amarelo, verde).</li>
+        <li>Email para quem comprou no Natal: a recompra hoje é só ~4%, e é aqui que se pode subir.</li>
+      </ul></div>
+    </div>
+  </section>
+
+  <section class="notes">
+    <h3 style="color:var(--ink)">Como o modelo funciona</h3>
+    <ul>
+      <li>Custo por encomenda = gasto em ads ÷ todas as encomendas (inclui orgânico). Calibrado com os dados reais de 9–22 Set: €16,4 a €48/dia.</li>
+      <li>Regra para a Black Week (medir a meio de outubro, a €80–100/dia): custo por encomenda <b>≤ €14 → full gas</b>, €14–18 → otimista-realista, <b>&gt; €18 → conservador</b>.</li>
+      <li>Sobe com o budget: com o dobro do budget, cada encomenda fica ~27% mais cara (elasticidade 0,35). É o que acontece quando o Meta tem de ir buscar públicos menos quentes.</li>
+      <li>Ajuste por fase: pré-BF ×1,1 (as pessoas esperam), Black Week ×0,8 (convertem mais), Natal ×0,9, pós-Natal ×1,3, Saldos ×1,0.</li>
+      <li><b>Os preços nunca baixam</b>, nem na Black Friday nem nos Saldos. As ofertas são em produto (ex: "Compra 2, Leva 3"), e como o produto custa pouco (caneleira €2,84, meia €0,88), a margem quase não mexe: Black Week com ticket €48 e margem 70%, Saldos com ticket €42 e margem 72%.</li>
+      <li>Envio: abaixo de €40 o cliente paga €4,95; a partir de €40 é grátis. A empresa paga sempre €5,40.</li>
+      <li>Lucro = faturação × margem − ads. Não inclui despesas fixas mensais, clubes, nem custo dos influencers.</li>
+    </ul>
+  </section>
+  </div>
+
+  <div class="tabpanel" id="tab-inventario" role="tabpanel" aria-labelledby="tab-btn-inventario" hidden>
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Inventário por variante</h2>
+        <span class="muted" style="font-size:13px">Stock a <span id="live-stock-date">23 Set 2026</span> · consumo = vendas do <b>site</b> desde que os ads arrancaram (<span id="live-sample">9–23 Set, 46 encomendas</span>). Mais as vendas a clubes (painel abaixo).</span>
+      </div>
+      <div class="invctl">
+        <div class="ctl"><label for="inv-basis">Encomendar para</label>
+          <select id="inv-basis">
+            <option value="max">Full gas, criativos −30% (recomendado: não falta produto)</option>
+            <option value="plan">O cenário escolhido na aba Plano</option>
+          </select></div>
+        <div class="ctl"><label for="inv-offer">Oferta na Black Week</label>
+          <select id="inv-offer">
+            <option value="1">Sem oferta / por decidir</option>
+            <option value="2">Compra 2, Leva 3 (~2× unidades)</option>
+            <option value="1.8">Buy 1 Get 1 (~1,8× unidades)</option>
+          </select></div>
+        <div class="ctl"><label for="inv-safety">Margem de segurança %</label><input type="number" id="inv-safety" min="0" max="100" step="5"></div>
+        <div class="ctl"><label for="inv-arrival">Encomenda chega a</label><input type="date" id="inv-arrival"></div>
+        <div class="ctl"><label for="inv-mailers">Bubble mailers em stock</label><input type="number" id="inv-mailers" min="0" step="10"></div>
+        <div class="ctl"><label for="inv-mailer-rate">Mailers por encomenda</label><input type="number" id="inv-mailer-rate" min="1" max="3" step="0.05"></div>
+        <div class="ctl"><label for="inv-gift-kids">Meia de oferta em tamanho Kids %</label><input type="number" id="inv-gift-kids" min="0" max="100" step="5"></div>
+        <div class="ctl"><label for="inv-min-sleeve">Mínimo de sleeves por variante</label><input type="number" id="inv-min-sleeve" min="0" step="5"></div>
+        <div class="ctl"><label for="inv-floor">Meias e sleeves: mínimo por 100 encomendas, por variante</label><input type="number" id="inv-floor" min="0" max="20" step="0.5"></div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Clubes</h2>
+        <label style="font-size:14px;display:flex;gap:8px;align-items:center"><input type="checkbox" id="clubs-on"> Incluir clubes nas contas</label>
+      </div>
+      <div class="scroll"><table class="inv" id="clubs-table" style="min-width:1180px"></table></div>
+      <p class="muted" style="font-size:13px">Unidades por mês e por clube, de agora até 31 Jan. Nos clubes as meias são <b>sempre Kids</b> e as caneleiras nunca são XL. Caneleiras por variante: Criança Pequeno gasta uma S, Adulto Pequeno uma M e Adulto Médio uma L (nunca XL nos clubes). Rio Tinto: no ano passado venderam-se ~20 caneleiras entre Nov e Jan, sobretudo de criança, daí 7/mês.</p>
+    </section>
+
+    <section class="kpis" id="inv-kpis" aria-label="Resumo do inventário"></section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Detalhe por variante</h2>
+        <div class="legend">
+          <span><span class="flag bad">esgota antes</span> acaba antes de a encomenda chegar</span>
+          <span><span class="flag warn">esgota</span> acaba antes de 31 Jan</span>
+          <span><span class="flag ok">chega</span> dura até 31 Jan</span>
+        </div>
+      </div>
+      <div class="scroll"><table class="inv" id="inv-table"></table></div>
+      <p class="muted" style="font-size:13px">"Por 100 enc." = unidades gastas por cada 100 encomendas do site. A Grip Sock Branca inclui a <b>meia de oferta (1 por encomenda)</b>. Se o cliente puder escolher o tamanho da oferta, a parte "Kids %" sai do stock Branco Kids e não do Adulto. Por defeito são 35%, que é a parte de caneleiras de criança vendidas no site desde 9 Set (15 de 42). Mete 0% para ver como está hoje. Nas meias e sleeves, as variantes que venderam pouco ou nada contam com um consumo mínimo (campo acima, 2 por cada 100 encomendas, o mesmo que as cores que menos vendem), porque com mais vendas e ads de todas as cores podem começar a sair. Encomendar = (precisa até 31 Jan × (1 + margem) − stock), arredondado às dezenas.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Lista de compras por fornecedor</h2>
+      <div class="shop" id="inv-shop"></div>
+      <p class="muted" style="font-size:13px">Custos aos preços da última encomenda (produção + transporte por avião). Na aba "Opções de envio" vês quanto baixa por comboio. O botão copia a lista em inglês, pronta a colar na mensagem ao fornecedor.</p>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Como fica o inventário depois das compras</h2>
+        <span class="muted" style="font-size:13px">Stock de hoje + a lista de compras acima, contra o que se prevê vender (site + clubes) no cenário escolhido.</span>
+      </div>
+      <div class="scroll"><table class="inv" id="inv-after" style="min-width:820px"></table></div>
+      <p class="muted" style="font-size:13px"><span class="warnc">Amarelo</span> em "Sobra a 31 Jan" = sobra menos de 3 semanas de vendas ao ritmo de janeiro. Convém reforçar ou planear já a encomenda seguinte. Custo da compra = produção + transporte por avião, aos preços da última encomenda. Por comboio fica mais barato (ver aba Opções de envio). O tape não tem preço registado.</p>
+    </section>
+  </div>
+
+  <div class="tabpanel" id="tab-envio" role="tabpanel" aria-labelledby="tab-btn-envio" hidden>
+    <section class="panel">
+      <div class="panel-head">
+        <h2>Opções de envio</h2>
+        <span class="muted" style="font-size:13px">Usa as quantidades da aba Inventário. Prazos da betopmax (23 Set): 7 dias para a foto da amostra, 3 semanas de produção, 2 semanas por avião ou ~5 por comboio. O comboio DDP costuma ser ~3× mais barato.</span>
+      </div>
+      <div class="invctl">
+        <div class="ctl"><label for="ship-pay">Data de pagamento</label><input type="date" id="ship-pay"></div>
+        <div class="ctl"><label for="ship-sample">Amostra (semanas)</label><input type="number" id="ship-sample" min="0" max="4" step="0.5"></div>
+        <div class="ctl"><label for="ship-prod">Produção (semanas)</label><input type="number" id="ship-prod" min="0" max="10" step="0.5"></div>
+        <div class="ctl"><label for="ship-sleeve">Sleeves prontas (semanas)</label><input type="number" id="ship-sleeve" min="0" max="6" step="0.5"></div>
+        <div class="ctl"><label for="ship-air">Avião (semanas)</label><input type="number" id="ship-air" min="0" max="6" step="0.5"></div>
+        <div class="ctl"><label for="ship-train">Comboio (semanas)</label><input type="number" id="ship-train" min="0" max="10" step="0.5"></div>
+        <div class="ctl"><label for="ship-ratio">Avião é quantas vezes mais caro</label><input type="number" id="ship-ratio" min="1" max="6" step="0.5"></div>
+      </div>
+      <div class="sc" id="ship-dates" style="max-width:560px"></div>
+    </section>
+
+    <section class="panel">
+      <h2>Quando chega: começar a 28 Set ou a 1 Out</h2>
+      <div class="scroll"><table class="inv" id="ship-start" style="min-width:760px"></table></div>
+      <p class="muted" style="font-size:13px">"Começar o processo" = pagar e dar o OK ao fornecedor. "Sem amostra" = pedir para saltar a foto da amostra (é uma recompra igual), o que poupa 1 semana. Os prazos vêm dos campos acima.</p>
+    </section>
+
+    <section class="panel">
+      <h2>Comparação</h2>
+      <div class="compare" id="ship-opts"></div>
+      <p class="muted" style="font-size:13px">"Unidades em falta" = o que se venderia entre o dia em que a variante esgota e o dia em que chega a encomenda. São vendas perdidas se não houver outra solução (por exemplo, mailers comprados cá).</p>
+    </section>
+
+    <section class="panel">
+      <h2>Ponte aérea + comboio: detalhe por variante</h2>
+      <div class="scroll"><table class="inv" id="ship-table"></table></div>
+    </section>
+
+    <section class="panel">
+      <h2>Custos por unidade usados</h2>
+      <div class="scroll"><table class="inv" style="min-width:640px"><thead><tr><th>Família</th><th>Produção</th><th>Transporte avião</th><th>Transporte comboio</th><th style="text-align:left">De onde vem</th></tr></thead><tbody id="ship-costs"></tbody></table></div>
+      <p class="muted" style="font-size:13px">Transporte por avião = o que pagaste nas últimas encomendas (assumindo que vieram por avião DDP). Comboio = avião ÷ o fator acima. Juntar tudo num agente (como o szfly56 da 1.ª encomenda) e mandar num só envio DDP costuma baixar ainda mais o custo, mas o envio só sai quando o fornecedor mais lento tiver tudo pronto. Pede orçamento ao agente para confirmar.</p>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+const PHASES=[
+  {id:"out",nome:"Escalar a época",sub:"Época já arrancou · criativos novos + influencers",from:"2026-10-01",to:"2026-10-31",f:1.0,aov:44,m:0.73},
+  {id:"prebf",nome:"Aquecimento BF",sub:"Lista de email, teasers",from:"2026-11-01",to:"2026-11-19",f:1.1,aov:44,m:0.73},
+  {id:"bw",nome:"Black Week",sub:"BF 27 Nov · CM 30 Nov · oferta em produto",from:"2026-11-20",to:"2026-12-01",f:0.8,aov:48,m:0.70},
+  {id:"natal",nome:"Natal",sub:"Até ao último dia de envios",from:"2026-12-02",to:"2026-12-18",f:0.9,aov:46,m:0.70},
+  {id:"pos",nome:"Natal → Ano Novo",sub:"Cartão-oferta",from:"2026-12-19",to:"2027-01-01",f:1.3,aov:44,m:0.73},
+  {id:"saldos",nome:"Saldos + 2.ª volta",sub:"Ofertas em produto, cores paradas",from:"2027-01-02",to:"2027-01-31",f:1.0,aov:42,m:0.72}
+];
+const PRESETS={
+  cons:{nome:"Conservador",b:{out:50,prebf:70,bw:150,natal:110,pos:40,saldos:70}},
+  base:{nome:"Otimista-realista",b:{out:80,prebf:120,bw:300,natal:200,pos:60,saldos:120}},
+  full:{nome:"Full gas",b:{out:150,prebf:250,bw:700,natal:450,pos:100,saldos:250}}
+};
+const EVENTS=[
+  {d:"2026-11-27",t:"Black Friday",lvl:0},
+  {d:"2026-11-30",t:"Cyber Monday",lvl:1},
+  {d:"2026-12-18",t:"Últimos envios",lvl:0},
+  {d:"2026-12-25",t:"Natal",lvl:1},
+  {d:"2027-01-01",t:"Ano Novo",lvl:0},
+  {d:"2027-01-02",t:"Saldos",lvl:1}
+];
+const SPECIAL={"2026-11-26":1.3,"2026-11-27":2.6,"2026-11-28":1.5,"2026-11-29":1.3,"2026-11-30":1.9,"2027-01-02":1.4,"2027-01-03":1.3,"2027-01-04":1.2};
+const BASE_COST=16, BASE_BUDGET=48, ELAST=0.35;
+// Inventário a 23 Set 2026 + vendas do site desde 9 Set (46 encomendas pagas).
+let SAMPLE_ORDERS=46;
+const FAMILIES=[
+  {k:"builtin",nome:"Caneleiras Built-In",sup:"Zhejiang Fele",en:"Sleeve Shin Pad W/Bag"},
+  {k:"grip",nome:"Meias antiderrapantes (Grip Socks)",sup:"betopmax",en:"Grip Socks"},
+  {k:"sleeve",nome:"Sock Sleeves",sup:"betopmax",en:"Sock Sleeves"},
+  {k:"mini",nome:"Caneleiras Mini",sup:"threebo",en:"Mini Shin Pads"},
+  {k:"airflow",nome:"Airflow",sup:"threebo",en:"Shin Pads Midi (Airflow)"},
+  {k:"tape",nome:"Tape desportivo",sup:"Outro fornecedor",en:"Sports Tape"},
+  {k:"mailer",nome:"Embalagem",sup:"seawavelabels",en:"Bubble Mailers"}
+];
+const ITEMS=[
+  {f:"builtin",n:"Built-In S",en:"S",stock:374,cost:2.84,shop:18,club:8},
+  {f:"builtin",n:"Built-In M",en:"M",stock:310,cost:2.84,shop:26,club:8},
+  {f:"builtin",n:"Built-In L",en:"L",stock:234,cost:2.84,shop:5,club:5},
+  {f:"builtin",n:"Built-In XL",en:"XL",stock:47,cost:2.84,shop:0},
+  {f:"grip",n:"Branco · Adulto",en:"White – adults",stock:717,cost:0.88,shop:54,gift:1,giftSide:"A"},
+  {f:"grip",n:"Preto · Adulto",en:"Black – adults",stock:75,cost:0.88,shop:9},
+  {f:"grip",n:"Azul · Adulto",en:"Blue – adults",stock:98,cost:0.88,shop:1},
+  {f:"grip",n:"Verde · Adulto",en:"Green – adults",stock:93,cost:0.88,shop:0},
+  {f:"grip",n:"Vermelho · Adulto",en:"Red – adults",stock:99,cost:0.88,shop:1},
+  {f:"grip",n:"Amarelo · Adulto",en:"Yellow – adults",stock:100,cost:0.88,shop:0},
+  {f:"grip",n:"Branco · Kids",en:"White – kids",stock:371,cost:0.88,shop:10,giftSide:"K",club:11},
+  {f:"grip",n:"Preto · Kids",en:"Black – kids",stock:24,cost:0.88,shop:14,club:6},
+  {f:"grip",n:"Azul · Kids",en:"Blue – kids",stock:34,cost:0.88,shop:9,club:7},
+  {f:"grip",n:"Verde · Kids",en:"Green – kids",stock:46,cost:0.88,shop:3,club:1},
+  {f:"grip",n:"Vermelho · Kids",en:"Red – kids",stock:47,cost:0.88,shop:3},
+  {f:"grip",n:"Amarelo · Kids",en:"Yellow – kids",stock:46,cost:0.88,shop:0,club:4},
+  {f:"sleeve",n:"Preto · Adulto",en:"Black – adults",stock:31,cost:0.88,shop:4},
+  {f:"sleeve",n:"Branco · Adulto",en:"White – adults",stock:11,cost:0.88,shop:3},
+  {f:"sleeve",n:"Azul · Adulto",en:"Blue – adults",stock:13,cost:0.88,shop:1},
+  {f:"sleeve",n:"Verde · Adulto",en:"Green – adults",stock:15,cost:0.88,shop:1},
+  {f:"sleeve",n:"Vermelho · Adulto",en:"Red – adults",stock:14,cost:0.88,shop:1},
+  {f:"sleeve",n:"Amarelo · Adulto",en:"Yellow – adults",stock:20,cost:0.88,shop:0},
+  {f:"sleeve",n:"Preto · Kids",en:"Black – kids",stock:2,cost:0.88,shop:6},
+  {f:"sleeve",n:"Branco · Kids",en:"White – kids",stock:3,cost:0.88,shop:2},
+  {f:"sleeve",n:"Azul · Kids",en:"Blue – kids",stock:0,cost:0.88,shop:4},
+  {f:"sleeve",n:"Verde · Kids",en:"Green – kids",stock:0,cost:0.88,shop:0},
+  {f:"sleeve",n:"Vermelho · Kids",en:"Red – kids",stock:5,cost:0.88,shop:0},
+  {f:"sleeve",n:"Amarelo · Kids",en:"Yellow – kids",stock:0,cost:0.88,shop:0},
+  {f:"mini",n:"10x6 Cinza",en:"10x6 Grey",stock:123,cost:1.65,shop:1,club:1},
+  {f:"mini",n:"10x6 Preto",en:"10x6 Black",stock:97,cost:1.65,shop:0,club:3},
+  {f:"mini",n:"8x5 Cinza",en:"8x5 Grey",stock:23,cost:1.65,shop:0,club:7},
+  {f:"mini",n:"8x5 Preto",en:"8x5 Black",stock:18,cost:1.65,shop:2,club:8},
+  {f:"airflow",n:"15x9",en:"15x9",stock:48,cost:1.67,shop:0,club:2},
+  {f:"airflow",n:"9x6",en:"9x6",stock:49,cost:1.67,shop:0,club:1},
+  {f:"tape",n:"Branco",en:"White",stock:7,cost:null,shop:4},
+  {f:"tape",n:"Preto",en:"Black",stock:4,cost:null,shop:0},
+  {f:"mailer",n:"Bubble mailers",en:"",stock:null,cost:0.69,shop:null,mailer:true}
+];
+// Clubes: vendas previstas por mês, de 24 Set a 31 Jan. Nos clubes as meias são SEMPRE Kids.
+const CLUBS_INIT=[
+  {id:"candal",nome:"Candal",cor:"Azul",corMes:10,branco:10,preto:10,canS:1,canM:1,canL:0,m8c:1,m8p:2,m10c:0,m10p:0,a15:0,a9:0},
+  {id:"canidelo",nome:"Canidelo",cor:"Verde",corMes:10,branco:10,preto:10,canS:1,canM:1,canL:0,m8c:2,m8p:1,m10c:0,m10p:0,a15:0,a9:0},
+  {id:"riotinto",nome:"Rio Tinto",cor:"Amarelo",corMes:10,branco:10,preto:10,canS:3,canM:3,canL:1,m8c:1,m8p:1,m10c:1,m10p:1,a15:1,a9:1}
+];
+// Coluna do painel de clubes → artigo físico que gasta
+const CLUB_ITEM={canS:"builtin|Built-In S",canM:"builtin|Built-In M",canL:"builtin|Built-In L",m8c:"mini|8x5 Cinza",m8p:"mini|8x5 Preto",m10c:"mini|10x6 Cinza",m10p:"mini|10x6 Preto",a15:"airflow|15x9",a9:"airflow|9x6"};
+function clubMonthly(it,clubs){
+  let m=0;
+  clubs.forEach(c=>{
+    const N=k=>Math.max(0,Number(c[k])||0);
+    if(it.f==="grip"&&/Kids$/.test(it.n)){const cor=it.n.split(" · ")[0]; if(cor===c.cor)m+=N("corMes"); if(cor==="Branco")m+=N("branco"); if(cor==="Preto")m+=N("preto");}
+    Object.entries(CLUB_ITEM).forEach(([k,key])=>{if(key===it.f+"|"+it.n)m+=N(k);});
+  });
+  return m;
+}
+let TODAY_ISO="2026-09-23", PRE_ORDERS_DAY=3.1; // 24–30 Set ao ritmo atual (46 encomendas em 15 dias)
+
+// Na app (/plano-q4) o servidor injeta window.__LIVE__ com stock e vendas atuais da base de dados.
+const LIVE=window.__LIVE__||null;
+const codeOf=it=>{
+  if(it.f==="builtin") return "BUILTIN-"+it.en;
+  if(it.f==="grip"||it.f==="sleeve"){const [c,a]=it.n.split(" · "); return (it.f==="grip"?"GRIP-":"SLEEVE-")+(a==="Adulto"?"A-":"K-")+c.toUpperCase();}
+  if(it.f==="mini") return "MINI-"+it.n.replace(" ","-").toUpperCase();
+  if(it.f==="airflow") return "AIRFLOW-"+it.n.toUpperCase();
+  if(it.f==="tape") return "SIMPLE-TAPE-DESPORTIVO-"+it.n.toUpperCase();
+  return null;
+};
+if(LIVE){
+  SAMPLE_ORDERS=LIVE.sampleOrders; TODAY_ISO=LIVE.today; PRE_ORDERS_DAY=LIVE.ordersPerDay;
+  ITEMS.forEach(it=>{const x=LIVE.items[codeOf(it)]; if(x){it.stock=x.stock; it.shop=x.site; it.club=x.club;}});
+  const fmtIso=s=>{const [y,m,d]=s.split("-").map(Number);return d+" "+["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"][m-1]+" "+y;};
+  document.getElementById("live-stock-date").textContent=fmtIso(LIVE.today)+" (atualizado da base de dados)";
+  document.getElementById("live-sample").textContent="9 Set – "+fmtIso(LIVE.today).replace(/ \d{4}$/,"")+", "+LIVE.sampleOrders+" encomendas";
+}
+
+const DAY=86400000;
+const parse=s=>{const [y,m,d]=s.split("-").map(Number);return Date.UTC(y,m-1,d)};
+const iso=t=>new Date(t).toISOString().slice(0,10);
+const eur=v=>"€"+Math.round(v).toLocaleString("pt-PT");
+const eurK=v=>Math.abs(v)>=1000?"€"+(v/1000).toLocaleString("pt-PT",{maximumFractionDigits:1})+"k":eur(v);
+const MESES=["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+const fmtD=t=>{const d=new Date(t);return d.getUTCDate()+" "+MESES[d.getUTCMonth()]};
+
+// day list with within-phase weights
+const days=[];
+PHASES.forEach((p,pi)=>{
+  const a=parse(p.from), b=parse(p.to), n=Math.round((b-a)/DAY)+1, ws=[];
+  for(let i=0;i<n;i++){
+    const k=iso(a+i*DAY);
+    let w=SPECIAL[k]||1;
+    if(p.id==="natal") w=0.8+0.6*Math.min(1,i/(n-4)); // rampa até meados de Dez
+    ws.push(w);
+  }
+  const mean=ws.reduce((s,w)=>s+w,0)/n;
+  ws.forEach((w,i)=>days.push({t:a+i*DAY,pi,w:w/mean}));
+});
+
+const INV_DEFAULT={basis:"max",offer:"1",safety:10,arrival:"2026-11-10",mailers:200,mailerRate:1.1,giftKids:35,minSleeve:25,floorRate:2};
+const SHIP_INIT={pay:"2026-09-28",sample:1,prod:3,sleeveReady:1,air:2,train:5,ratio:3};
+let state={sc:"base",creative:-20,b:{...PRESETS.base.b},tab:"plano",inv:{...INV_DEFAULT},ship:{...SHIP_INIT},clubsOn:true,clubs:CLUBS_INIT.map(c=>({...c}))};
+try{const s=JSON.parse(localStorage.getItem("plano-q4-v2")||"null"); if(s&&s.b) state={...state,...s,inv:{...INV_DEFAULT,...(s.inv||{})},ship:{...SHIP_INIT,...(s.ship||{})},clubs:CLUBS_INIT.map(c=>({...c,...((s.clubs||[]).find(x=>x.id===c.id)||{})}))};}catch(e){}
+if(["#plano","#inventario","#envio"].includes(location.hash)) state.tab=location.hash.slice(1);
+const save=()=>{try{localStorage.setItem("plano-q4-v2",JSON.stringify(state))}catch(e){}};
+
+function costFor(p,budget,creative){
+  return BASE_COST*Math.pow(Math.max(budget,1)/BASE_BUDGET,ELAST)*p.f*(1+creative/100);
+}
+function simulate(b,creative){
+  const ph=PHASES.map(p=>({p,budget:b[p.id],cost:costFor(p,b[p.id],creative),spend:0,orders:0,rev:0,profit:0}));
+  const daily=days.map(d=>{
+    const r=ph[d.pi], spend=r.budget*d.w, orders=spend/r.cost, rev=orders*r.p.aov, profit=rev*r.p.m-spend;
+    r.spend+=spend; r.orders+=orders; r.rev+=rev; r.profit+=profit;
+    return {t:d.t,spend,orders,rev,profit};
+  });
+  const tot=ph.reduce((a,r)=>({spend:a.spend+r.spend,orders:a.orders+r.orders,rev:a.rev+r.rev,profit:a.profit+r.profit}),{spend:0,orders:0,rev:0,profit:0});
+  const endDec=parse("2026-12-31");
+  const dec=daily.filter(d=>d.t<=endDec).reduce((a,d)=>({rev:a.rev+d.rev,profit:a.profit+d.profit,spend:a.spend+d.spend}),{rev:0,profit:0,spend:0});
+  return {ph,daily,tot,dec};
+}
+
+function renderKpis(s){
+  const roas=s.tot.rev/s.tot.spend;
+  const items=[
+    ["Faturação Out–Dez",eurK(s.dec.rev),"até 31 Dez"],
+    ["Faturação Out–Jan",eurK(s.tot.rev),"com os Saldos"],
+    ["Gasto em ads",eurK(s.tot.spend),"Out–Jan"],
+    ["Lucro depois de ads",eurK(s.tot.profit),"antes de despesas fixas",s.tot.profit>=0?"pos":"neg"],
+    ["Encomendas",Math.round(s.tot.orders).toLocaleString("pt-PT"),"~"+(s.tot.orders/days.length).toFixed(1)+"/dia em média"],
+    ["ROAS",roas.toFixed(2)+"×","faturação ÷ ads"]
+  ];
+  document.getElementById("kpis").innerHTML=items.map(([l,v,sub,c])=>`<div class="kpi"><span class="eyebrow">${l}</span><span class="v ${c||""}">${v}</span><span class="s">${sub}</span></div>`).join("");
+}
+
+function renderChart(s){
+  const W=1000,H=330,L=52,R=14,T=44,B=34, iw=W-L-R, ih=H-T-B, n=s.daily.length, bw=iw/n;
+  const max=Math.max(...s.daily.map(d=>d.rev))*1.08;
+  const step=[100,200,250,500,1000,2000,2500,5000,10000].find(v=>max/v<=5)||20000;
+  const y=v=>T+ih-(v/max)*ih, x=i=>L+i*bw;
+  let g="";
+  // phase bands
+  PHASES.forEach((p,pi)=>{
+    const idx=s.daily.map((d,i)=>days[i].pi===pi?i:-1).filter(i=>i>=0);
+    const x0=x(idx[0]), x1=x(idx[idx.length-1]+1);
+    if(pi%2===0) g+=`<rect x="${x0}" y="${T}" width="${x1-x0}" height="${ih}" fill="var(--band)"/>`;
+  });
+  for(let v=0;v<=max;v+=step){
+    g+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="var(--line)" stroke-width="1"/>`;
+    g+=`<text x="${L-8}" y="${y(v)+4}" text-anchor="end" font-size="12" fill="var(--muted)">${eurK(v)}</text>`;
+  }
+  s.daily.forEach((d,i)=>{g+=`<rect x="${x(i)+0.6}" y="${y(d.rev)}" width="${Math.max(bw-1.2,1)}" height="${T+ih-y(d.rev)}" fill="var(--accent)"/>`;});
+  g+=`<polyline fill="none" stroke="var(--spend)" stroke-width="2" points="${s.daily.map((d,i)=>(x(i)+bw/2).toFixed(1)+","+y(d.spend).toFixed(1)).join(" ")}"/>`;
+  // month ticks
+  s.daily.forEach((d,i)=>{const dt=new Date(d.t); if(dt.getUTCDate()===1){
+    g+=`<line x1="${x(i)}" x2="${x(i)}" y1="${T+ih}" y2="${T+ih+5}" stroke="var(--muted)"/>`;
+    g+=`<text x="${x(i)+4}" y="${T+ih+20}" font-size="12" fill="var(--muted)">${MESES[dt.getUTCMonth()]} ${String(dt.getUTCFullYear()).slice(2)}</text>`;}});
+  // events
+  EVENTS.forEach(e=>{const i=s.daily.findIndex(d=>iso(d.t)===e.d); if(i<0)return; const ex=x(i)+bw/2, ly=e.lvl?30:14;
+    g+=`<line x1="${ex}" x2="${ex}" y1="${ly+4}" y2="${T+ih}" stroke="var(--event)" stroke-width="1.2" stroke-dasharray="3 3"/>`;
+    const anchor=ex>W-110?"end":"start", dx=anchor==="end"?-4:4;
+    g+=`<text x="${ex+dx}" y="${ly}" text-anchor="${anchor}" font-size="12" font-weight="600" fill="var(--event)">${e.t}</text>`;});
+  g+=`<line id="hov" x1="0" x2="0" y1="${T}" y2="${T+ih}" stroke="var(--ink)" stroke-width="1" opacity="0"/>`;
+  const el=document.getElementById("chart");
+  el.innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Faturação e gasto em ads por dia, Out 2026 a Jan 2027">${g}</svg><div class="tip" hidden></div>`;
+  const svg=el.querySelector("svg"), tip=el.querySelector(".tip"), hov=svg.querySelector("#hov");
+  svg.addEventListener("pointermove",ev=>{
+    const r=svg.getBoundingClientRect(), sx=(ev.clientX-r.left)*W/r.width, i=Math.floor((sx-L)/bw);
+    if(i<0||i>=n){tip.hidden=true;hov.setAttribute("opacity",0);return;}
+    const d=s.daily[i], px=(x(i)+bw/2)*r.width/W;
+    hov.setAttribute("x1",x(i)+bw/2);hov.setAttribute("x2",x(i)+bw/2);hov.setAttribute("opacity",.35);
+    tip.hidden=false; tip.style.left=Math.min(Math.max(px,90),r.width-90)+"px"; tip.style.top=(T*r.height/H)+"px";
+    tip.textContent=`${fmtD(d.t)} · ${eur(d.rev)} · ${d.orders.toFixed(1)} enc. · ads ${eur(d.spend)}`;
+  });
+  svg.addEventListener("pointerleave",()=>{tip.hidden=true;hov.setAttribute("opacity",0);});
+}
+
+function renderPhases(s){
+  const rows=s.ph.map(r=>{
+    const be=r.p.aov*r.p.m, ok=r.cost<be;
+    return `<tr>
+      <td><div class="phase-name">${r.p.nome}</div><div class="phase-sub">${fmtD(parse(r.p.from))} – ${fmtD(parse(r.p.to))} · ${r.p.sub}</div></td>
+      <td><input type="number" min="0" step="10" id="b-${r.p.id}" data-id="${r.p.id}" value="${r.budget}" aria-label="Budget por dia, ${r.p.nome}"></td>
+      <td>€${r.cost.toFixed(1)}</td>
+      <td><span class="pill ${ok?"ok":"no"}">€${be.toFixed(0)}</span></td>
+      <td>€${r.p.aov} · ${Math.round(r.p.m*100)}%</td>
+      <td>${Math.round(r.orders)}</td>
+      <td>${eur(r.rev)}</td>
+      <td>${eur(r.spend)}</td>
+      <td class="${r.profit>=0?"pos":"neg"}">${eur(r.profit)}</td>
+    </tr>`;}).join("");
+  const t=s.tot;
+  document.getElementById("phases").innerHTML=`<thead><tr><th>Fase</th><th>Budget/dia</th><th>Custo/enc.</th><th>Break-even</th><th>Ticket · margem</th><th>Encomendas</th><th>Faturação</th><th>Ads</th><th>Lucro</th></tr></thead>
+    <tbody>${rows}</tbody>
+    <tfoot><tr><td>Total</td><td></td><td>€${(t.spend/t.orders).toFixed(1)}</td><td></td><td></td><td>${Math.round(t.orders)}</td><td>${eur(t.rev)}</td><td>${eur(t.spend)}</td><td class="${t.profit>=0?"pos":"neg"}">${eur(t.profit)}</td></tr></tfoot>`;
+  document.querySelectorAll("#phases input").forEach(inp=>inp.addEventListener("change",()=>{
+    const v=Math.max(0,Number(inp.value)||0); state.b[inp.dataset.id]=v; state.sc="custom"; update(inp.id);
+  }));
+}
+
+function renderCompare(){
+  const res=Object.entries(PRESETS).map(([k,p])=>({k,p,s:simulate(p.b,state.creative)}));
+  document.getElementById("compare").innerHTML=res.map(({k,p,s})=>`<div class="sc ${state.sc===k?"on":""}">
+    <h3>${p.nome}</h3>
+    <div class="row"><span class="muted">Faturação Out–Jan</span><b>${eurK(s.tot.rev)}</b></div>
+    <div class="row"><span class="muted">Ads</span><span>${eurK(s.tot.spend)}</span></div>
+    <div class="row"><span class="muted">Lucro depois de ads</span><b class="${s.tot.profit>=0?"pos":"neg"}">${eurK(s.tot.profit)}</b></div>
+    <div class="row"><span class="muted">Lucro por €1 de ads</span><span>€${(s.tot.profit/s.tot.spend).toFixed(2)}</span></div>
+  </div>`).join("");
+  // Quanto seria preciso para 150k até 31 Dez?
+  const scaleB=m=>Object.fromEntries(Object.entries(PRESETS.base.b).map(([k,v])=>[k,v*m]));
+  let lo=1,hi=200;
+  for(let i=0;i<50;i++){const mid=(lo+hi)/2; simulate(scaleB(mid),state.creative).dec.rev<150000?lo=mid:hi=mid;}
+  const g=simulate(scaleB(hi),state.creative);
+  document.getElementById("goal150").innerHTML=`<h3>E os €150k até ao fim do ano?</h3>
+    <p>Para lá chegar até 31 Dez, o modelo precisa de ~<b>${hi.toFixed(1)}×</b> o budget do cenário otimista-realista: cerca de <b>${eur(PRESETS.base.b.bw*hi)}/dia</b> na Black Week e <b>${eurK(g.dec.spend)}</b> em ads de Out a Dez. Cada encomenda custaria ~<b>€${(g.dec.spend/g.daily.filter(d=>d.t<=parse("2026-12-31")).reduce((a,d)=>a+d.orders,0)).toFixed(0)}</b> e o lucro até 31 Dez seria <b class="${g.dec.profit>=0?"pos":"neg"}">${eurK(g.dec.profit)}</b>. Faturar muito a perder dinheiro não é o objetivo: o limite certo é o ponto em que o custo por encomenda chega perto do break-even.</p>`;
+}
+
+function renderInventory(s){
+  const inv=state.inv, today=parse(TODAY_ISO), arrive=parse(inv.arrival||INV_DEFAULT.arrival);
+  const bwFrom=parse("2026-11-20"), bwTo=parse("2026-12-01"), endBF=bwTo, mult=Number(inv.offer)||1;
+  const sim=inv.basis==="max"?simulate(PRESETS.full.b,-30):s;
+  // linha do tempo de encomendas: 24–30 Set ao ritmo atual + plano
+  const timeline=[];
+  for(let t=today+DAY;t<parse("2026-10-01");t+=DAY) timeline.push({t,orders:PRE_ORDERS_DAY});
+  sim.daily.forEach(d=>{if(d.t>today) timeline.push({t:d.t,orders:d.orders});}); // dias já passados já saíram do stock
+  const totalOrders=timeline.reduce((a,d)=>a+d.orders,0);
+
+  const rows=ITEMS.map(it=>{
+    const stock=it.mailer?Number(inv.mailers)||0:it.stock;
+    const floor=(it.f==="sleeve"||it.f==="grip")?Math.max(0,Number(inv.floorRate)||0)/100:0;
+    const rate=it.mailer?0:Math.max(floor,(it.shop-(it.gift||0)*SAMPLE_ORDERS)/SAMPLE_ORDERS);
+    const kShare=Math.min(100,Math.max(0,Number(inv.giftKids)||0))/100;
+    const gift=it.giftSide==="A"?1-kShare:it.giftSide==="K"?kShare:0, mRate=Number(inv.mailerRate)||1;
+    const clubDay=state.clubsOn&&!it.mailer?clubMonthly(it,state.clubs)*12/365:0;
+    let cum=0,needBF=0,out=null,clubCum=0; const curve=[];
+    for(const d of timeline){
+      const inBW=d.t>=bwFrom&&d.t<=bwTo;
+      const per=it.mailer?1+(mRate-1)*(inBW?mult:1):gift+rate*(inBW?mult:1);
+      cum+=d.orders*per+clubDay; clubCum+=clubDay; curve.push({t:d.t,v:cum});
+      if(d.t<=endBF) needBF=cum;
+      if(out===null&&cum>stock) out=d.t;
+    }
+    const per100=it.mailer?mRate*100:(gift+rate)*100;
+    const want=cum*(1+(Number(inv.safety)||0)/100)-stock;
+    const minSleeve=it.f==="sleeve"?Math.max(0,Number(inv.minSleeve)||0):0;
+    const qty=Math.max(cum>0&&want>0?Math.ceil(want/10)*10:0,Math.max(0,Math.ceil((minSleeve-stock)/5)*5));
+    const status=out===null?"ok":out<arrive?"bad":"warn";
+    return {...it,stock,per100,needBF,needJan:cum,clubJan:clubCum,out,qty,status,value:qty*(it.cost||0),curve};
+  });
+  lastInv={rows,safety:(Number(inv.safety)||0)/100};
+
+  renderClubs();
+  // KPIs
+  const units=rows.reduce((a,r)=>a+r.qty,0), cost=rows.reduce((a,r)=>a+r.value,0);
+  const early=rows.filter(r=>r.status==="bad");
+  document.getElementById("inv-kpis").innerHTML=[
+    ["Encomendas até 31 Jan",Math.round(totalOrders).toLocaleString("pt-PT"),inv.basis==="max"?"full gas, criativos −30%":"cenário da aba Plano"],
+    ["Unidades a encomendar",units.toLocaleString("pt-PT"),"com "+inv.safety+"% de margem"],
+    ["Custo da encomenda",eurK(cost),"produto, aos preços anteriores"],
+    ["Esgotam antes de chegar",String(early.length),early.length?"precisam de envio urgente":"nenhuma variante",early.length?"neg":"pos"]
+  ].map(([l,v,sub,c])=>`<div class="kpi"><span class="eyebrow">${l}</span><span class="v ${c||""}">${v}</span><span class="s">${sub}</span></div>`).join("");
+
+  // Tabela por família: Site | Clubes | Total
+  const n0=v=>Math.round(v).toLocaleString("pt-PT");
+  const cl=r=>r.needJan>0?r.clubJan/r.needJan:0;
+  let html=`<thead><tr><th rowspan="2">Variante</th><th rowspan="2">Stock hoje</th><th colspan="3" class="g gh">Site</th><th colspan="3" class="g gh">Clubes</th><th colspan="7" class="g gh">Total</th></tr>
+    <tr><th class="g">Vendido desde 9 Set</th><th>Por 100 enc.</th><th>Precisa até 31 Jan</th>
+    <th class="g">Vendido até hoje</th><th>Previsão até 31 Jan</th><th>Mandar vir p/ clubes</th>
+    <th class="g">Precisa até 1 Dez</th><th>Precisa até 31 Jan</th><th>Esgota</th><th>Encomendar</th><th>Custo</th><th>Stock depois</th><th>Sobra a 31 Jan</th></tr></thead><tbody>`;
+  FAMILIES.forEach(f=>{
+    const rs=rows.filter(r=>r.f===f.k); if(!rs.length) return;
+    const sum=fn=>rs.reduce((a,r)=>a+(fn(r)||0),0);
+    html+=`<tr class="fam"><td>${f.nome} <span class="muted" style="font-weight:500">· ${f.sup}</span></td><td>${n0(sum(r=>r.stock))}</td>
+      <td class="g">${f.k==="mailer"?"—":n0(sum(r=>r.shop))}</td><td>${n0(sum(r=>r.per100))}</td><td>${n0(sum(r=>r.needJan-r.clubJan))}</td>
+      <td class="g">${n0(sum(r=>r.club))}</td><td>${n0(sum(r=>r.clubJan))}</td><td>${n0(sum(r=>Math.round(r.qty*cl(r))))}</td>
+      <td class="g">${n0(sum(r=>r.needBF))}</td><td>${n0(sum(r=>r.needJan))}</td><td></td><td>${n0(sum(r=>r.qty))}</td><td>${eur(sum(r=>r.value))}</td><td>${n0(sum(r=>r.stock+r.qty))}</td><td>${n0(sum(r=>r.stock+r.qty-r.needJan))}</td></tr>`;
+    rs.forEach(r=>{
+      const zero=r.needJan<0.5, siteJan=r.needJan-r.clubJan, forClub=Math.round(r.qty*cl(r));
+      const flag=zero?`<span class="muted">sem vendas previstas</span>`
+        :r.status==="ok"?`<span class="flag ok">chega</span>`
+        :`<span class="flag ${r.status}">${r.status==="bad"?"esgota antes ~":"esgota ~"}${fmtD(r.out)}</span>`;
+      const z=v=>v<0.5?' class="zero"':"";
+      html+=`<tr><td>${r.n}${r.giftSide?' <span class="muted">(inclui oferta)</span>':""}</td><td>${n0(r.stock)}</td>
+        <td class="g">${r.mailer?"—":r.shop}</td><td${z(r.per100)}>${r.per100.toFixed(1)}</td><td${z(siteJan)}>${n0(siteJan)}</td>
+        <td class="g${r.club?"":" zero"}">${r.club||"—"}</td><td${z(r.clubJan)}>${r.clubJan<0.5?"—":n0(r.clubJan)}</td><td${z(forClub)}>${forClub?n0(forClub):"—"}</td>
+        <td class="g${zero?" zero":""}">${n0(r.needBF)}</td><td${z(r.needJan)}>${n0(r.needJan)}</td><td>${flag}</td><td><b>${r.qty?n0(r.qty):"—"}</b></td><td>${r.cost==null?"—":r.qty?eur(r.value):"—"}</td><td><b>${n0(r.stock+r.qty)}</b></td><td class="${r.stock+r.qty-r.needJan<0?"neg":""}">${n0(r.stock+r.qty-r.needJan)}</td></tr>`;
+    });
+  });
+  document.getElementById("inv-table").innerHTML=html+`</tbody>`;
+
+  // Como fica depois das compras
+  {
+    const c=v=>v?eur(v):"—";
+    // "Sobra pouco" = menos de 3 semanas de vendas ao ritmo de janeiro
+    const jan1=parse("2027-01-01"), jan31=parse("2027-01-31");
+    const lowCls=(r,after)=>{const left=after-r.needJan, perDay=(cumAt(r.curve,jan31)-cumAt(r.curve,jan1))/30; return left<0?"neg":perDay>0.01&&left<21*perDay?"warnc":"";};
+    let h=`<thead><tr><th>Variante</th><th>Stock hoje</th><th>+ Compra</th><th>= Stock depois</th><th>Sobra a 31 Jan</th><th>Custo da compra</th></tr></thead><tbody>`;
+    FAMILIES.forEach(f=>{
+      const rs=rows.filter(r=>r.f===f.k&&(r.stock>0||r.qty>0||r.needJan>=0.5)); if(!rs.length) return;
+      const sum=fn=>rs.reduce((a,r)=>a+fn(r),0);
+      h+=`<tr class="fam"><td>${f.nome}</td><td>${n0(sum(r=>r.stock))}</td><td class="pos">${sum(r=>r.qty)?"+"+n0(sum(r=>r.qty)):"—"}</td><td>${n0(sum(r=>r.stock+r.qty))}</td><td>${n0(sum(r=>r.stock+r.qty-r.needJan))}</td><td class="neg">${c(sum(r=>r.value))}</td></tr>`;
+      rs.forEach(r=>{
+        const after=r.stock+r.qty;
+        h+=`<tr><td>${r.n}</td><td>${n0(r.stock)}</td><td class="${r.qty?"pos":""}">${r.qty?"+"+n0(r.qty):"—"}</td><td><b>${n0(after)}</b></td><td class="${lowCls(r,after)}">${n0(after-r.needJan)}</td><td class="${r.value?"neg":""}">${r.cost==null&&r.qty?"sem preço":c(r.value)}</td></tr>`;
+      });
+    });
+    const tot=rows.reduce((a,r)=>a+r.value,0), un=rows.reduce((a,r)=>a+r.qty,0);
+    h+=`</tbody><tfoot><tr><td>Total</td><td></td><td class="pos">+${n0(un)}</td><td></td><td></td><td class="neg">${eur(tot)}</td></tr></tfoot>`;
+    document.getElementById("inv-after").innerHTML=h;
+  }
+
+  // Lista de compras por fornecedor
+  const bySup={};
+  rows.filter(r=>r.qty>0).forEach(r=>{const f=FAMILIES.find(x=>x.k===r.f);(bySup[f.sup]=bySup[f.sup]||[]).push({f,r});});
+  const sups=Object.keys(bySup);
+  document.getElementById("inv-shop").innerHTML=sups.length?sups.map((sup,i)=>{
+    const list=bySup[sup], tot=list.reduce((a,x)=>a+x.r.value,0), un=list.reduce((a,x)=>a+x.r.qty,0);
+    return `<div class="sc"><h3>${sup}</h3>
+      <ul>${list.map(({f,r})=>`<li>${f.en}${r.en?" "+r.en:""}: <b>${n0(r.qty)}</b></li>`).join("")}</ul>
+      <div class="row"><span class="muted">${n0(un)} unidades</span><b>${eur(tot)}</b></div>
+      <button type="button" class="copy" id="copy-${i}" data-sup="${sup}">Copiar lista</button></div>`;
+  }).join(""):`<p class="muted">Nada a encomendar com estes pressupostos.</p>`;
+  document.querySelectorAll("#inv-shop .copy").forEach(btn=>btn.addEventListener("click",()=>{
+    const list=bySup[btn.dataset.sup];
+    const groups={};
+    list.forEach(({f,r})=>{(groups[f.en]=groups[f.en]||[]).push(r);});
+    const txt=Object.entries(groups).map(([en,rs])=>`${en} (${rs.reduce((a,r)=>a+r.qty,0)} pcs):\n`+rs.map(r=>`- ${r.en||en}: ${r.qty}`).join("\n")).join("\n\n");
+    const done=()=>{btn.textContent="Copiado";setTimeout(()=>btn.textContent="Copiar lista",1500);};
+    try{navigator.clipboard.writeText(txt).then(done,()=>{btn.textContent="Não deu para copiar";});}catch(e){btn.textContent="Não deu para copiar";}
+  }));
+}
+
+// ── Opções de envio ──
+// Custos reais das encomendas anteriores (produção vs transporte, por unidade). Transporte = avião DDP.
+const LOGI={
+  builtin:{prod:2.24,air:0.60,custom:true,src:"Dez 2025: 1.050 un., produção €2.351 + transporte €630"},
+  grip:{prod:0.59,air:0.29,custom:true,src:"Dez 2025: 2.050 un. meias+sleeves, produção €1.211 + transporte €599"},
+  sleeve:{prod:0.59,air:0.29,custom:false,src:"mesma encomenda das meias"},
+  mailer:{prod:0.28,air:0.41,custom:true,src:"Dez 2024: 500 un., produção €138 + transporte €205"},
+  mini:{prod:1.00,air:0.33,custom:true,src:"Dez 2024: 200 un., produção €200 + transporte €65"},
+  airflow:{prod:0.95,air:0.58,custom:true,src:"Set 2025: 200 un., produção €190 + transporte €115"}
+};
+const SHIP_DEFAULT={pay:"2026-09-28",sample:1,prod:3,sleeveReady:1,air:2,train:5,ratio:3};
+let lastInv=null;
+const cumAt=(curve,t)=>{let v=0;for(const c of curve){if(c.t>t)break;v=c.v;}return v;};
+const addW=(t,w)=>t+Math.round(w*7)*DAY;
+
+function calcShip(payIso,noSample){
+  const sh=state.ship, rows=lastInv.rows.filter(r=>r.qty>0&&LOGI[r.f]), safety=lastInv.safety;
+  const pay=parse(payIso||SHIP_DEFAULT.pay), W=k=>k==="sample"&&noSample?0:Number(sh[k])||0, ratio=Math.max(1,W("ratio"));
+  const ready={custom:addW(pay,W("sample")+W("prod")),plain:addW(pay,W("sleeveReady"))};
+  const arr=(r,mode)=>addW(LOGI[r.f].custom?ready.custom:ready.plain,mode==="air"?W("air"):W("train"));
+  const fr=(r,mode)=>mode==="air"?LOGI[r.f].air:LOGI[r.f].air/ratio;
+  const short=(r,t)=>Math.max(0,cumAt(r.curve,t)-r.stock);
+  const OPTS=[
+    {k:"air",nome:"Tudo por avião",desc:"Cada fornecedor envia por avião DDP.",plan:r=>[{mode:"air",q:r.qty}]},
+    {k:"train",nome:"Tudo por comboio",desc:"Tudo por comboio DDP. O mais barato, mas chega muito tarde.",plan:r=>[{mode:"train",q:r.qty}]},
+    {k:"mix",nome:"Sleeves por avião, resto por comboio",desc:"As sleeves não precisam de produção e vêm já por avião. O resto vem por comboio.",plan:r=>[{mode:LOGI[r.f].custom?"train":"air",q:r.qty}]},
+    {k:"bridge",nome:"Ponte aérea + comboio",desc:"Por avião só o que é preciso até o comboio chegar (com margem). O resto por comboio.",plan:r=>{
+      const need=Math.max(0,cumAt(r.curve,arr(r,"train"))-r.stock)*(1+safety);
+      const a=Math.min(r.qty,Math.ceil(need/10)*10);
+      return [{mode:"air",q:a},{mode:"train",q:r.qty-a}].filter(x=>x.q>0);}}
+  ];
+  const res=OPTS.map(o=>{
+    let freight=0,prod=0,units=0,shortU=0; const lines=[], bad=[];
+    rows.forEach(r=>{
+      const parts=o.plan(r); prod+=r.qty*LOGI[r.f].prod; units+=r.qty;
+      parts.forEach(p=>freight+=p.q*fr(r,p.mode));
+      const first=Math.min(...parts.map(p=>arr(r,p.mode)));
+      const sU=short(r,first); if(sU>=1){shortU+=sU;bad.push({r,sU,first});}
+      lines.push({r,parts,first});
+    });
+    return {...o,freight,prod,units,shortU,bad,lines};
+  });
+  const best=res.reduce((a,b)=>(b.shortU<a.shortU-1||(Math.abs(b.shortU-a.shortU)<=1&&b.freight<a.freight))?b:a);
+  return {ready,arr,short,W,ratio,res,best};
+}
+
+const START_DATES=[["2026-09-28","Segunda, 28 Set"],["2026-10-01","Quinta, 1 Out"]];
+function renderStartCompare(){
+  const cols=[];
+  START_DATES.forEach(([d,l])=>{cols.push({l,c:calcShip(d,false)});cols.push({l:l+" · sem amostra",c:calcShip(d,true)});});
+  const W=cols[0].c.W;
+  const row=(label,f)=>`<tr><td>${label}</td>${cols.map(x=>`<td>${f(x.c)}</td>`).join("")}</tr>`;
+  const br=c=>c.res.find(o=>o.k==="bridge");
+  document.getElementById("ship-start").innerHTML=`<thead><tr><th>Começar o processo a</th>${cols.map(x=>`<th>${x.l}</th>`).join("")}</tr></thead><tbody>
+    ${row("Sleeves por avião chegam",c=>fmtD(addW(c.ready.plain,W("air"))))}
+    ${row("Sleeves por comboio chegam",c=>fmtD(addW(c.ready.plain,W("train"))))}
+    ${row("Caneleiras, meias, mailers prontos",c=>fmtD(c.ready.custom))}
+    ${row("<b>… por avião chegam</b>",c=>`<b>${fmtD(addW(c.ready.custom,W("air")))}</b>`)}
+    ${row("… por comboio chegam",c=>{const t=addW(c.ready.custom,W("train"));return `${fmtD(t)}${t>parse("2026-11-20")?' <span class="flag warn">depois do início da BW</span>':""}`;})}
+    ${row("Ponte aérea + comboio: transporte",c=>eur(br(c).freight))}
+    ${row("Ponte aérea + comboio: unidades em falta",c=>`<span class="${br(c).shortU>=1?"neg":"pos"}">${Math.round(br(c).shortU)}</span>`)}
+  </tbody>`;
+}
+
+function renderShipping(){
+  const sh=state.ship;
+  const {ready,arr,short,W,ratio,res,best}=calcShip(sh.pay,false);
+  const famName=k=>FAMILIES.find(f=>f.k===k).nome;
+  document.getElementById("ship-dates").innerHTML=`
+    <div class="row"><span class="muted">Artigos personalizados prontos (amostra + produção)</span><b>${fmtD(ready.custom)}</b></div>
+    <div class="row"><span class="muted">→ chegam por avião / por comboio</span><b>${fmtD(addW(ready.custom,W("air")))} / ${fmtD(addW(ready.custom,W("train")))}</b></div>
+    <div class="row"><span class="muted">Sleeves prontas (sem produção)</span><b>${fmtD(ready.plain)}</b></div>
+    <div class="row"><span class="muted">→ chegam por avião / por comboio</span><b>${fmtD(addW(ready.plain,W("air")))} / ${fmtD(addW(ready.plain,W("train")))}</b></div>
+    <div class="row"><span class="muted">Black Week começa</span><b>20 Nov</b></div>`;
+  document.getElementById("ship-opts").innerHTML=res.map(o=>`<div class="sc ${o===best?"on":""}">
+    <h3>${o.nome}${o===best?' <span class="flag ok">melhor equilíbrio</span>':""}</h3>
+    <p class="muted" style="font-size:13px">${o.desc}</p>
+    <div class="row"><span class="muted">Transporte</span><b>${eur(o.freight)}</b></div>
+    <div class="row"><span class="muted">Produção (igual em todas)</span><span>${eur(o.prod)}</span></div>
+    <div class="row"><span class="muted">Total</span><b>${eur(o.freight+o.prod)}</b></div>
+    <div class="row"><span class="muted">Unidades em falta antes de chegar</span><b class="${o.shortU>=1?"neg":"pos"}">${Math.round(o.shortU).toLocaleString("pt-PT")}</b></div>
+    <div class="row"><span class="muted">Variantes que esgotam antes</span><span>${o.bad.length}</span></div>
+  </div>`).join("");
+  // detalhe da opção escolhida (ponte aérea)
+  const br=res.find(o=>o.k==="bridge");
+  let h=`<thead><tr><th>Variante</th><th>Stock</th><th>Esgota</th><th>Avião</th><th>Chega</th><th>Comboio</th><th>Chega</th><th>Em falta antes de chegar</th></tr></thead><tbody>`;
+  let fam="";
+  br.lines.forEach(({r,parts})=>{
+    if(r.f!==fam){fam=r.f;h+=`<tr class="fam"><td colspan="8">${famName(r.f)} · ${LOGI[r.f].custom?"produção personalizada":"sem produção"}</td></tr>`;}
+    const a=parts.find(p=>p.mode==="air"), t=parts.find(p=>p.mode==="train");
+    const first=Math.min(...parts.map(p=>arr(r,p.mode))), sU=short(r,first);
+    h+=`<tr><td>${r.n}</td><td>${Math.round(r.stock)}</td><td>${r.out?fmtD(r.out):"—"}</td><td>${a?a.q:"—"}</td><td>${a?fmtD(arr(r,"air")):""}</td><td>${t?t.q:"—"}</td><td>${t?fmtD(arr(r,"train")):""}</td><td class="${sU>=1?"neg":""}">${sU>=1?Math.round(sU)+" un.":"—"}</td></tr>`;
+  });
+  document.getElementById("ship-table").innerHTML=h+"</tbody>";
+  document.getElementById("ship-costs").innerHTML=Object.entries(LOGI).map(([k,l])=>`<tr><td>${famName(k)}</td><td>€${l.prod.toFixed(2)}</td><td>€${l.air.toFixed(2)}</td><td>€${(l.air/ratio).toFixed(2)}</td><td class="muted" style="text-align:left">${l.src}</td></tr>`).join("");
+}
+function renderShipControls(){
+  const sh=state.ship;
+  [["ship-pay","pay"],["ship-sample","sample"],["ship-prod","prod"],["ship-sleeve","sleeveReady"],["ship-air","air"],["ship-train","train"],["ship-ratio","ratio"]].forEach(([id,k])=>document.getElementById(id).value=sh[k]);
+}
+
+function renderClubs(){
+  const F=[["corMes","Meia cor do clube"],["branco","Meia branca"],["preto","Meia preta"],["canS","Embutida Criança Pequeno (S)"],["canM","Embutida Adulto Pequeno (M)"],["canL","Embutida Adulto Médio (L)"],["m8c","Mini 8x5 Cinza"],["m8p","Mini 8x5 Preto"],["m10c","Mini 10x6 Cinza"],["m10p","Mini 10x6 Preto"],["a15","Airflow 15x9"],["a9","Airflow 9x6"]];
+  document.getElementById("clubs-on").checked=!!state.clubsOn;
+  document.getElementById("clubs-table").innerHTML=`<thead><tr><th>Clube</th>${F.map(([,l])=>`<th>${l}<br><span style="font-weight:500;text-transform:none">/ mês</span></th>`).join("")}</tr></thead><tbody>${state.clubs.map(c=>`<tr><td><b>${c.nome}</b> <span class="muted">· meia ${c.cor.toLowerCase()} Kids</span></td>${F.map(([k])=>`<td><input type="number" min="0" step="1" id="club-${c.id}-${k}" data-club="${c.id}" data-k="${k}" value="${c[k]}" aria-label="${c.nome} ${k}"></td>`).join("")}</tr>`).join("")}</tbody>`;
+  document.querySelectorAll("#clubs-table input").forEach(inp=>inp.addEventListener("change",()=>{
+    const c=state.clubs.find(x=>x.id===inp.dataset.club); c[inp.dataset.k]=Math.max(0,Number(inp.value)||0); update(inp.id);
+  }));
+}
+function renderInvControls(){
+  const inv=state.inv;
+  document.getElementById("inv-basis").value=inv.basis;
+  document.getElementById("inv-offer").value=inv.offer;
+  document.getElementById("inv-safety").value=inv.safety;
+  document.getElementById("inv-arrival").value=inv.arrival;
+  document.getElementById("inv-mailers").value=inv.mailers;
+  document.getElementById("inv-mailer-rate").value=inv.mailerRate;
+  document.getElementById("inv-gift-kids").value=inv.giftKids;
+  document.getElementById("inv-min-sleeve").value=inv.minSleeve;
+  document.getElementById("inv-floor").value=inv.floorRate;
+}
+function renderTabs(){
+  document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===state.tab)));
+  ["plano","inventario","envio"].forEach(t=>document.getElementById("tab-"+t).hidden=state.tab!==t);
+}
+
+function update(focusId){
+  const s=simulate(state.b,state.creative);
+  document.querySelectorAll("#scenarios button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.sc===state.sc)));
+  const c=state.creative;
+  document.getElementById("creative-lbl").textContent=c===0?"iguais":(c<0?`${-c}% mais baratos por encomenda`:`${c}% mais caros por encomenda`);
+  document.getElementById("creative").value=c;
+  renderKpis(s); renderChart(s); renderPhases(s); renderCompare(); renderInvControls(); renderInventory(s); renderShipControls(); renderShipping(); renderStartCompare(); renderTabs();
+  if(focusId){const el=document.getElementById(focusId); if(el) el.focus();}
+  save();
+}
+document.querySelectorAll("#scenarios button").forEach(b=>b.addEventListener("click",()=>{state.sc=b.dataset.sc;state.b={...PRESETS[b.dataset.sc].b};update();}));
+document.getElementById("creative").addEventListener("input",e=>{state.creative=Number(e.target.value);update();});
+document.getElementById("clubs-on").addEventListener("change",e=>{state.clubsOn=e.target.checked;update("clubs-on");});
+document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>{state.tab=b.dataset.tab;renderTabs();save();}));
+[["ship-pay","pay"],["ship-sample","sample"],["ship-prod","prod"],["ship-sleeve","sleeveReady"],["ship-air","air"],["ship-train","train"],["ship-ratio","ratio"]].forEach(([id,k])=>{
+  document.getElementById(id).addEventListener("change",e=>{state.ship[k]=e.target.value;update(id);});
+});
+[["inv-basis","basis"],["inv-offer","offer"],["inv-safety","safety"],["inv-arrival","arrival"],["inv-mailers","mailers"],["inv-mailer-rate","mailerRate"],["inv-gift-kids","giftKids"],["inv-min-sleeve","minSleeve"],["inv-floor","floorRate"]].forEach(([id,k])=>{
+  document.getElementById(id).addEventListener("change",e=>{state.inv[k]=e.target.value;update(id);});
+});
+update();
+})();
+</script>
+
+</body></html>

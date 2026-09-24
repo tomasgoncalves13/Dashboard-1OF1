@@ -5,12 +5,13 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, ShoppingBag, Package, Warehouse, Users,
   Receipt, Upload, Settings, Sparkles,
-  Calculator, Landmark, Trophy, X, ShoppingCart, Instagram, Facebook, TrendingUp, Music2, Video,
+  Calculator, Landmark, Trophy, X, ShoppingCart, Instagram, Facebook, TrendingUp, Music2, Video, Target,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const nav = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/plano-q4", label: "Plano Q4", icon: Target },
   { href: "/finance", label: "Finanças", icon: Landmark },
   { href: "/orders", label: "Encomendas Site", icon: ShoppingBag },
   { href: "/clubs", label: "Vendas Físicas", icon: Trophy },
