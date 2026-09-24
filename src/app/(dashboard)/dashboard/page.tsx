@@ -334,11 +334,11 @@ function Q4PlanCard({ q4, currency }: { q4: Q4Tracking; currency: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Real vs Plano Q4 · cenário otimista-realista</CardTitle>
+        <CardTitle>Real vs Plano Q4 · Plano realista</CardTitle>
         <p className="text-xs text-muted-foreground">
           Custo por encomenda = gasto em ads (FB + Google) ÷ todas as encomendas pagas. Decisão a meio de outubro, com €80–100/dia:
           ≤ {formatMoney(FULL_GAS_MAX_CPO, currency)} full gas · até {formatMoney(CONSERVATIVE_MIN_CPO, currency)} otimista-realista · acima disso conservador.
-          O plano assume criativos 20% melhores que os de teste (9–22 Set: {formatMoney(16.4, currency)}/encomenda a {formatMoney(48, currency)}/dia).{" "}
+          O plano assume criativos 30% melhores que os de teste (9–22 Set: {formatMoney(16.4, currency)}/encomenda a {formatMoney(48, currency)}/dia).{" "}
           <a className="underline" href="https://claude.ai/artifact/Dq1WuXHPqd5PhgR69oCuu6" target="_blank" rel="noreferrer">Abrir o plano</a>
         </p>
       </CardHeader>

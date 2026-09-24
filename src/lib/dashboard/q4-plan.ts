@@ -5,8 +5,8 @@ import { ymd } from "@/lib/dashboard/range";
 
 // Plano Q4 2026 (Out 2026 → Jan 2027). Mesmo modelo do simulador em
 // https://claude.ai/artifact/Dq1WuXHPqd5PhgR69oCuu6 e de "Facebook Ads/01 - Estrategia e Analise.md":
-// custo por encomenda = €16 × (budget/€48)^0,35 × fator da fase × 0,8.
-// €16 a €48/dia = real dos 14 dias de teste (9–22 Set 2026); × 0,8 = criativos novos 20% melhores.
+// custo por encomenda = €16 × (budget/€48)^0,35 × fator da fase × 0,7.
+// €16 a €48/dia = real dos 14 dias de teste (9–22 Set 2026); × 0,7 = criativos novos 30% melhores ("Plano realista" do dono, 24 Set 2026).
 
 type Phase = { id: string; nome: string; from: string; to: string; f: number; aov: number; m: number };
 
@@ -19,7 +19,7 @@ export const Q4_PHASES: Phase[] = [
   { id: "saldos", nome: "Saldos + 2.ª volta", from: "2027-01-02", to: "2027-01-31", f: 1.0, aov: 42, m: 0.72 },
 ];
 
-const BASE_BUDGETS: Record<string, number> = { out: 80, prebf: 120, bw: 300, natal: 200, pos: 60, saldos: 120 };
+const BASE_BUDGETS: Record<string, number> = { out: 80, prebf: 120, bw: 300, natal: 200, pos: 100, saldos: 100 };
 
 // Dias fortes dentro de uma fase (a média da fase mantém-se).
 const SPECIAL: Record<string, number> = {
@@ -35,13 +35,13 @@ const DAY = 86_400_000;
 const utc = (s: string) => new Date(`${s}T00:00:00Z`);
 
 function costPerOrder(p: Phase, budget: number) {
-  return 16 * Math.pow(Math.max(budget, 1) / 48, 0.35) * p.f * 0.8;
+  return 16 * Math.pow(Math.max(budget, 1) / 48, 0.35) * p.f * 0.7;
 }
 
 type Totals = { spend: number; orders: number; revenue: number };
 const zero = (): Totals => ({ spend: 0, orders: 0, revenue: 0 });
 
-/** Plano diário do cenário otimista-realista. */
+/** Plano diário do "Plano realista". */
 function planDaily(): { date: string; phaseId: string; spend: number; orders: number; revenue: number }[] {
   const out: { date: string; phaseId: string; spend: number; orders: number; revenue: number }[] = [];
   for (const p of Q4_PHASES) {
