@@ -255,11 +255,6 @@ table.inv{min-width:1180px}
         <span class="muted" style="font-size:13px">Stock a <span id="live-stock-date">23 Set 2026</span> · consumo = vendas do <b>site</b> desde que os ads arrancaram (<span id="live-sample">9–23 Set, 46 encomendas</span>). Mais as vendas a clubes (painel abaixo).</span>
       </div>
       <div class="invctl">
-        <div class="ctl"><label for="inv-basis">Encomendar para</label>
-          <select id="inv-basis">
-            <option value="max">Full gas, criativos −30% (recomendado: não falta produto)</option>
-            <option value="plan">O cenário escolhido na aba Plano</option>
-          </select></div>
         <div class="ctl"><label for="inv-offer">Oferta na Black Week</label>
           <select id="inv-offer">
             <option value="1">Sem oferta / por decidir</option>
@@ -493,7 +488,7 @@ PHASES.forEach((p,pi)=>{
   ws.forEach((w,i)=>days.push({t:a+i*DAY,pi,w:w/mean}));
 });
 
-const INV_DEFAULT={basis:"max",offer:"1",safety:10,arrival:"2026-12-01",mailers:200,mailerRate:1.1,giftKids:35,minSleeve:25,floorRate:2};
+const INV_DEFAULT={offer:"1",safety:10,arrival:"2026-12-01",mailers:200,mailerRate:1.1,giftKids:35,minSleeve:25,floorRate:2};
 const SHIP_INIT={pay:"2026-09-28",sample:1,prod:3,sleeveReady:1,air:2,train:5,ratio:3};
 let state={sc:"base",creative:-20,b:{...PRESETS.base.b},tab:"plano",inv:{...INV_DEFAULT},ship:{...SHIP_INIT},clubsOn:true,clubs:CLUBS_INIT.map(c=>({...c}))};
 try{const s=JSON.parse(localStorage.getItem("plano-q4-v2")||"null"); if(s&&s.b) state={...state,...s,inv:{...INV_DEFAULT,...(s.inv||{})},ship:{...SHIP_INIT,...(s.ship||{})},clubs:CLUBS_INIT.map(c=>({...c,...((s.clubs||[]).find(x=>x.id===c.id)||{})}))};}catch(e){}
@@ -616,7 +611,7 @@ function renderCompare(){
 function renderInventory(s){
   const inv=state.inv, today=parse(TODAY_ISO), arrive=parse(inv.arrival||INV_DEFAULT.arrival);
   const bwFrom=parse("2026-11-20"), bwTo=parse("2026-12-01"), endBF=bwTo, mult=Number(inv.offer)||1;
-  const sim=inv.basis==="max"?simulate(PRESETS.full.b,-30):s;
+  const sim=s; // sempre o cenário escolhido na aba Plano
   // linha do tempo de encomendas: 24–30 Set ao ritmo atual + plano
   const timeline=[];
   for(let t=today+DAY;t<parse("2026-10-01");t+=DAY) timeline.push({t,orders:PRE_ORDERS_DAY});
@@ -652,7 +647,7 @@ function renderInventory(s){
   const units=rows.reduce((a,r)=>a+r.qty,0), cost=rows.reduce((a,r)=>a+r.value,0);
   const early=rows.filter(r=>r.status==="bad");
   document.getElementById("inv-kpis").innerHTML=[
-    ["Encomendas até 31 Jan",Math.round(totalOrders).toLocaleString("pt-PT"),inv.basis==="max"?"full gas, criativos −30%":"cenário da aba Plano"],
+    ["Encomendas até 31 Jan",Math.round(totalOrders).toLocaleString("pt-PT"),"cenário "+(PRESETS[state.sc]?PRESETS[state.sc].nome:"personalizado")+" da aba Plano"],
     ["Unidades a encomendar",units.toLocaleString("pt-PT"),"com "+inv.safety+"% de margem"],
     ["Custo da encomenda",eurK(cost),"produto, aos preços anteriores"],
     ["Esgotam antes de chegar",String(early.length),early.length?"precisam de envio urgente":"nenhuma variante",early.length?"neg":"pos"]
@@ -839,7 +834,6 @@ function renderClubs(){
 }
 function renderInvControls(){
   const inv=state.inv;
-  document.getElementById("inv-basis").value=inv.basis;
   document.getElementById("inv-offer").value=inv.offer;
   document.getElementById("inv-safety").value=inv.safety;
   document.getElementById("inv-arrival").value=inv.arrival;
@@ -871,7 +865,7 @@ document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",
 [["ship-pay","pay"],["ship-sample","sample"],["ship-prod","prod"],["ship-sleeve","sleeveReady"],["ship-air","air"],["ship-train","train"],["ship-ratio","ratio"]].forEach(([id,k])=>{
   document.getElementById(id).addEventListener("change",e=>{state.ship[k]=e.target.value;update(id);});
 });
-[["inv-basis","basis"],["inv-offer","offer"],["inv-safety","safety"],["inv-arrival","arrival"],["inv-mailers","mailers"],["inv-mailer-rate","mailerRate"],["inv-gift-kids","giftKids"],["inv-min-sleeve","minSleeve"],["inv-floor","floorRate"]].forEach(([id,k])=>{
+[["inv-offer","offer"],["inv-safety","safety"],["inv-arrival","arrival"],["inv-mailers","mailers"],["inv-mailer-rate","mailerRate"],["inv-gift-kids","giftKids"],["inv-min-sleeve","minSleeve"],["inv-floor","floorRate"]].forEach(([id,k])=>{
   document.getElementById(id).addEventListener("change",e=>{state.inv[k]=e.target.value;update(id);});
 });
 update();
