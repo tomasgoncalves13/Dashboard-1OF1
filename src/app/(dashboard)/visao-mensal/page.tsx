@@ -14,152 +14,15 @@ export default async function VisaoMensalPage() {
   if (!store) return null;
 
   const months = await getMonthlyOverview(store.id);
-  const money = (v: number) => (v ? formatMoney(v, store.currency) : "—");
-  const signed = (v: number) => (
-    <span className={`font-semibold ${v < 0 ? "text-destructive" : "text-emerald-600"}`}>{formatMoney(v, store.currency)}</span>
-  );
-  const sum = (f: (m: MonthSummary) => number) => months.reduce((a, m) => a + f(m), 0);
-
-  const totalProfit = sum(monthProfit);
-  const totalCash = sum(monthCash);
-  const academia = sum((m) => m.academia);
-  const stockBought = sum((m) => m.stockPurchases);
-  const stockUsed = sum((m) => m.cogs + m.physicalCogs);
-
-  let cumProfit = 0;
-  let cumCash = 0;
-  const rows = months.map((m) => {
-    cumProfit += monthProfit(m);
-    cumCash += monthCash(m);
-    return { m, cumProfit, cumCash };
-  });
-
-  const th = "text-right font-medium py-2 px-2 whitespace-nowrap";
-  const td = "py-2 px-2 text-right tabular-nums whitespace-nowrap";
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">Visão mensal</h1>
-        <p className="text-sm text-muted-foreground">Desde o início · em que meses se ganha ou perde dinheiro</p>
+        <p className="text-sm text-muted-foreground">Desde o início · em que meses se ganha ou perde dinheiro · sem a Academia Ecommerce</p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle>Lucro acumulado</CardTitle></CardHeader>
-          <CardContent>
-            <div className="text-2xl">{signed(totalProfit)}</div>
-            <p className="text-xs text-muted-foreground mt-1">Conta só o custo das peças que já se venderam. Sem a Academia Ecommerce.</p>
-            <p className="text-xs mt-1">Com a Academia ({formatMoney(academia, store.currency)}): {signed(totalProfit - academia)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle>Dinheiro real acumulado</CardTitle></CardHeader>
-          <CardContent>
-            <div className="text-2xl">{signed(totalCash)}</div>
-            <p className="text-xs text-muted-foreground mt-1">Conta todo o stock comprado, vendido ou não. Sem a Academia Ecommerce.</p>
-            <p className="text-xs mt-1">Com a Academia ({formatMoney(academia, store.currency)}): {signed(totalCash - academia)}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle>Stock comprado</CardTitle></CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold">{formatMoney(stockBought, store.currency)}</div>
-            <p className="text-xs text-muted-foreground mt-1">Encomendas a fornecedores, com transporte</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle>Stock ainda por vender (a custo)</CardTitle></CardHeader>
-          <CardContent>
-            <div className="text-2xl font-semibold">{formatMoney(stockBought - stockUsed, store.currency)}</div>
-            <p className="text-xs text-muted-foreground mt-1">
-              Comprado − custo das peças vendidas ({formatMoney(stockUsed, store.currency)}). É a diferença entre lucro e dinheiro real.
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Mês a mês</CardTitle>
-          <CardDescription>
-            Site = encomendas pagas (inclui reembolsadas, como o Shopify; sem PENDING/expiradas). Custo encomendas = produto + embalagem + oferta +
-            comissões de pagamento + envio que pagamos. Físicas = vendas a clubes e em mão, menos custo do produto e comissão do clube.
-            Despesas fixas = subscrições e software. Outras = despesas pontuais (patente, shooting, etiquetas…). A Academia Ecommerce não entra na tabela, só nos cards de cima.
-            Dinheiro real = lucro, mas trocando o custo das peças vendidas pelo stock comprado nesse mês. Não inclui IVA.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="text-xs text-muted-foreground border-b">
-              <tr>
-                <th className="text-left font-medium py-2 px-2">Mês</th>
-                <th className={th}>Encomendas</th>
-                <th className={th}>Líquido site</th>
-                <th className={th}>Custo encomendas</th>
-                <th className={th}>Anúncios Meta</th>
-                <th className={th}>Físicas (líq.)</th>
-                <th className={th}>Despesas fixas</th>
-                <th className={th}>Outras despesas</th>
-                <th className={th}>Lucro do mês</th>
-                <th className={th}>Lucro acum.</th>
-                <th className={th}>Stock comprado</th>
-                <th className={th}>Dinheiro real</th>
-                <th className={th}>Dinheiro acum.</th>
-                <th className={th}>Ads / encomenda</th>
-                <th className={th}>Líquido ÷ ads</th>
-                <th className={th}>Ticket médio</th>
-                <th className={th}>Unidades</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(({ m, cumProfit, cumCash }) => {
-                const net = m.gross - m.refunds;
-                return (
-                  <tr key={m.month} className="border-b last:border-0">
-                    <td className="py-2 px-2 whitespace-nowrap">
-                      <a href={`#m-${m.month}`} className="underline-offset-2 hover:underline">{label(m.month)}</a>
-                    </td>
-                    <td className={td}>{m.orders || "—"}</td>
-                    <td className={td}>{money(net)}</td>
-                    <td className={td}>{money(m.orderCosts)}</td>
-                    <td className={td}>{money(m.adSpend)}</td>
-                    <td className={td}>{money(m.physicalRevenue - m.physicalCogs - m.physicalCommission)}</td>
-                    <td className={td}>{money(m.fixedExpenses)}</td>
-                    <td className={td}>{money(m.otherExpenses)}</td>
-                    <td className={td}>{signed(monthProfit(m))}</td>
-                    <td className={td}>{signed(cumProfit)}</td>
-                    <td className={td}>{money(m.stockPurchases)}</td>
-                    <td className={td}>{signed(monthCash(m))}</td>
-                    <td className={td}>{signed(cumCash)}</td>
-                    <td className={td}>{m.adSpend && m.orders ? formatMoney(m.adSpend / m.orders, store.currency) : "—"}</td>
-                    <td className={td}>{m.adSpend ? `${(net / m.adSpend).toLocaleString("pt-PT", { maximumFractionDigits: 2 })}×` : "—"}</td>
-                    <td className={td}>{m.orders ? formatMoney(m.gross / m.orders, store.currency) : "—"}</td>
-                    <td className={td}>{units(m) || "—"}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-            <tfoot className="border-t font-medium">
-              <tr>
-                <td className="py-2 px-2">Total</td>
-                <td className={td}>{sum((m) => m.orders)}</td>
-                <td className={td}>{money(sum((m) => m.gross - m.refunds))}</td>
-                <td className={td}>{money(sum((m) => m.orderCosts))}</td>
-                <td className={td}>{money(sum((m) => m.adSpend))}</td>
-                <td className={td}>{money(sum((m) => m.physicalRevenue - m.physicalCogs - m.physicalCommission))}</td>
-                <td className={td}>{money(sum((m) => m.fixedExpenses))}</td>
-                <td className={td}>{money(sum((m) => m.otherExpenses))}</td>
-                <td className={td}>{signed(totalProfit)}</td>
-                <td className={td} />
-                <td className={td}>{money(stockBought)}</td>
-                <td className={td}>{signed(totalCash)}</td>
-                <td className={td} colSpan={5} />
-              </tr>
-            </tfoot>
-          </table>
-        </CardContent>
-      </Card>
+      <Overview months={months} currency={store.currency} withAcademia={false} />
 
       <Card>
         <CardHeader>
@@ -202,6 +65,166 @@ export default async function VisaoMensalPage() {
           ))}
         </CardContent>
       </Card>
+
+      <div className="pt-6 border-t">
+        <h2 className="text-xl font-semibold tracking-tight">Com a Academia Ecommerce</h2>
+        <p className="text-sm text-muted-foreground">
+          O mesmo de cima, mas a contar com a Academia Ecommerce ({formatMoney(months.reduce((a, m) => a + m.academia, 0), store.currency)} até hoje) em "Outras despesas".
+        </p>
+      </div>
+
+      <Overview months={months} currency={store.currency} withAcademia />
     </div>
+  );
+}
+
+// Cards + tabela mês a mês. withAcademia soma a Academia Ecommerce às "Outras despesas".
+function Overview({ months, currency, withAcademia }: { months: MonthSummary[]; currency: string; withAcademia: boolean }) {
+  const ac = (m: MonthSummary) => (withAcademia ? m.academia : 0);
+  const profit = (m: MonthSummary) => monthProfit(m) - ac(m);
+  const cash = (m: MonthSummary) => monthCash(m) - ac(m);
+  const other = (m: MonthSummary) => m.otherExpenses + ac(m);
+
+  const money = (v: number) => (v ? formatMoney(v, currency) : "—");
+  const signed = (v: number) => (
+    <span className={`font-semibold ${v < 0 ? "text-destructive" : "text-emerald-600"}`}>{formatMoney(v, currency)}</span>
+  );
+  const sum = (f: (m: MonthSummary) => number) => months.reduce((a, m) => a + f(m), 0);
+
+  const totalProfit = sum(profit);
+  const totalCash = sum(cash);
+  const stockBought = sum((m) => m.stockPurchases);
+  const stockUsed = sum((m) => m.cogs + m.physicalCogs);
+  const academiaNote = withAcademia ? "Com a Academia Ecommerce." : "Sem a Academia Ecommerce.";
+
+  let cumProfit = 0;
+  let cumCash = 0;
+  const rows = months.map((m) => {
+    cumProfit += profit(m);
+    cumCash += cash(m);
+    return { m, cumProfit, cumCash };
+  });
+
+  const th = "text-right font-medium py-2 px-2 whitespace-nowrap";
+  const td = "py-2 px-2 text-right tabular-nums whitespace-nowrap";
+
+  return (
+    <>
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card>
+          <CardHeader className="pb-2"><CardTitle>Lucro acumulado</CardTitle></CardHeader>
+          <CardContent>
+            <div className="text-2xl">{signed(totalProfit)}</div>
+            <p className="text-xs text-muted-foreground mt-1">Conta só o custo das peças que já se venderam. {academiaNote}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle>Dinheiro real acumulado</CardTitle></CardHeader>
+          <CardContent>
+            <div className="text-2xl">{signed(totalCash)}</div>
+            <p className="text-xs text-muted-foreground mt-1">Conta todo o stock comprado, vendido ou não. {academiaNote}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle>Stock comprado</CardTitle></CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold">{formatMoney(stockBought, currency)}</div>
+            <p className="text-xs text-muted-foreground mt-1">Encomendas a fornecedores, com transporte</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle>Stock ainda por vender (a custo)</CardTitle></CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold">{formatMoney(stockBought - stockUsed, currency)}</div>
+            <p className="text-xs text-muted-foreground mt-1">
+              Comprado − custo das peças vendidas ({formatMoney(stockUsed, currency)}). É a diferença entre lucro e dinheiro real.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Mês a mês{withAcademia ? " · com a Academia" : ""}</CardTitle>
+          <CardDescription>
+            Site = encomendas pagas (inclui reembolsadas, como o Shopify; sem PENDING/expiradas). Custo encomendas = produto + embalagem + oferta +
+            comissões de pagamento + envio que pagamos. Físicas = vendas a clubes e em mão, menos custo do produto e comissão do clube.
+            Despesas fixas = subscrições e software. Outras = despesas pontuais (patente, shooting, etiquetas…)
+            {withAcademia ? " e a Academia Ecommerce." : ". A Academia Ecommerce não entra aqui (está no fim da página)."}{" "}
+            Dinheiro real = lucro, mas trocando o custo das peças vendidas pelo stock comprado nesse mês. Não inclui IVA.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="text-xs text-muted-foreground border-b">
+              <tr>
+                <th className="text-left font-medium py-2 px-2">Mês</th>
+                <th className={th}>Encomendas</th>
+                <th className={th}>Líquido site</th>
+                <th className={th}>Custo encomendas</th>
+                <th className={th}>Anúncios Meta</th>
+                <th className={th}>Físicas (líq.)</th>
+                <th className={th}>Despesas fixas</th>
+                <th className={th}>Outras despesas</th>
+                <th className={th}>Lucro do mês</th>
+                <th className={th}>Lucro acum.</th>
+                <th className={th}>Stock comprado</th>
+                <th className={th}>Dinheiro real</th>
+                <th className={th}>Dinheiro acum.</th>
+                <th className={th}>Ads / encomenda</th>
+                <th className={th}>Líquido ÷ ads</th>
+                <th className={th}>Ticket médio</th>
+                <th className={th}>Unidades</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map(({ m, cumProfit, cumCash }) => {
+                const net = m.gross - m.refunds;
+                return (
+                  <tr key={m.month} className="border-b last:border-0">
+                    <td className="py-2 px-2 whitespace-nowrap">
+                      <a href={`#m-${m.month}`} className="underline-offset-2 hover:underline">{label(m.month)}</a>
+                    </td>
+                    <td className={td}>{m.orders || "—"}</td>
+                    <td className={td}>{money(net)}</td>
+                    <td className={td}>{money(m.orderCosts)}</td>
+                    <td className={td}>{money(m.adSpend)}</td>
+                    <td className={td}>{money(m.physicalRevenue - m.physicalCogs - m.physicalCommission)}</td>
+                    <td className={td}>{money(m.fixedExpenses)}</td>
+                    <td className={td}>{money(other(m))}</td>
+                    <td className={td}>{signed(profit(m))}</td>
+                    <td className={td}>{signed(cumProfit)}</td>
+                    <td className={td}>{money(m.stockPurchases)}</td>
+                    <td className={td}>{signed(cash(m))}</td>
+                    <td className={td}>{signed(cumCash)}</td>
+                    <td className={td}>{m.adSpend && m.orders ? formatMoney(m.adSpend / m.orders, currency) : "—"}</td>
+                    <td className={td}>{m.adSpend ? `${(net / m.adSpend).toLocaleString("pt-PT", { maximumFractionDigits: 2 })}×` : "—"}</td>
+                    <td className={td}>{m.orders ? formatMoney(m.gross / m.orders, currency) : "—"}</td>
+                    <td className={td}>{units(m) || "—"}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot className="border-t font-medium">
+              <tr>
+                <td className="py-2 px-2">Total</td>
+                <td className={td}>{sum((m) => m.orders)}</td>
+                <td className={td}>{money(sum((m) => m.gross - m.refunds))}</td>
+                <td className={td}>{money(sum((m) => m.orderCosts))}</td>
+                <td className={td}>{money(sum((m) => m.adSpend))}</td>
+                <td className={td}>{money(sum((m) => m.physicalRevenue - m.physicalCogs - m.physicalCommission))}</td>
+                <td className={td}>{money(sum((m) => m.fixedExpenses))}</td>
+                <td className={td}>{money(sum(other))}</td>
+                <td className={td}>{signed(totalProfit)}</td>
+                <td className={td} />
+                <td className={td}>{money(stockBought)}</td>
+                <td className={td}>{signed(totalCash)}</td>
+                <td className={td} colSpan={5} />
+              </tr>
+            </tfoot>
+          </table>
+        </CardContent>
+      </Card>
+    </>
   );
 }
