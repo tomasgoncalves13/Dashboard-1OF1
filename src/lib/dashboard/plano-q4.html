@@ -331,6 +331,15 @@ table.inv{min-width:1180px}
     </section>
 
     <section class="panel">
+      <div class="panel-head">
+        <h2>O que pedir a cada fornecedor</h2>
+      </div>
+      <p id="ship-plan-note" style="font-size:14px;margin:0 0 12px"></p>
+      <div class="shop" id="ship-orders"></div>
+      <p class="muted" style="font-size:13px">Quantidades totais = lista de compras da aba Inventário. A divisão entre avião e comboio segue a opção escolhida em "Comparação" (por defeito a de melhor equilíbrio). Caneleiras Built-In (sleeve shin pads), meias antiderrapantes, Mini, Airflow e mailers precisam de produção (amostra + produção). As sock sleeves não, ficam prontas mais cedo e podem sair logo. "Em falta" = vendas que se perdem entre o dia em que a variante esgota e o dia em que chega a primeira parte. O botão copia a lista em inglês, separada por avião e comboio.</p>
+    </section>
+
+    <section class="panel">
       <h2>Quando chega: começar a 28 Set ou a 1 Out</h2>
       <div class="scroll"><table class="inv" id="ship-start" style="min-width:760px"></table></div>
       <p class="muted" style="font-size:13px">"Começar o processo" = pagar e dar o OK ao fornecedor. "Sem amostra" = pedir para saltar a foto da amostra (é uma recompra igual), o que poupa 1 semana. Os prazos vêm dos campos acima.</p>
@@ -342,10 +351,6 @@ table.inv{min-width:1180px}
       <p class="muted" style="font-size:13px">"Unidades em falta" = o que se venderia entre o dia em que a variante esgota e o dia em que chega a encomenda. São vendas perdidas se não houver outra solução (por exemplo, mailers comprados cá).</p>
     </section>
 
-    <section class="panel">
-      <h2>Ponte aérea + comboio: detalhe por variante</h2>
-      <div class="scroll"><table class="inv" id="ship-table"></table></div>
-    </section>
 
     <section class="panel">
       <h2>Custos por unidade usados</h2>
@@ -492,7 +497,7 @@ PHASES.forEach((p,pi)=>{
 });
 
 const INV_DEFAULT={offer:"1",safety:10,arrival:"2026-12-01",mailers:200,mailerRate:1.1,giftKids:35,minSleeve:25,floorRate:2};
-const SHIP_INIT={pay:"2026-09-28",sample:1,prod:3,sleeveReady:1,air:2,train:5,ratio:3};
+const SHIP_INIT={pay:"2026-09-28",sample:1,prod:3,sleeveReady:1,air:2,train:5,ratio:3,opt:"auto"};
 let state={sc:"real",creative:-30,b:{...PRESETS.real.b},tab:"plano",inv:{...INV_DEFAULT},ship:{...SHIP_INIT},clubsOn:true,clubs:CLUBS_INIT.map(c=>({...c}))};
 try{const s=JSON.parse(localStorage.getItem("plano-q4-v2")||"null"); if(s&&s.b) state={...state,...s,inv:{...INV_DEFAULT,...(s.inv||{})},ship:{...SHIP_INIT,...(s.ship||{})},clubs:CLUBS_INIT.map(c=>({...c,...((s.clubs||[]).find(x=>x.id===c.id)||{})}))};}catch(e){}
 if(state.sc==="custom"&&Object.keys(PRESETS.real.b).every(k=>state.b[k]===PRESETS.real.b[k])) state.sc="real";
@@ -805,7 +810,8 @@ function renderShipping(){
     <div class="row"><span class="muted">Sleeves prontas (sem produção)</span><b>${fmtD(ready.plain)}</b></div>
     <div class="row"><span class="muted">→ chegam por avião / por comboio</span><b>${fmtD(addW(ready.plain,W("air")))} / ${fmtD(addW(ready.plain,W("train")))}</b></div>
     <div class="row"><span class="muted">Black Week começa</span><b>20 Nov</b></div>`;
-  document.getElementById("ship-opts").innerHTML=res.map(o=>`<div class="sc ${o===best?"on":""}">
+  const chosen=res.find(o=>o.k===sh.opt)||best;
+  document.getElementById("ship-opts").innerHTML=res.map(o=>`<div class="sc ${o===chosen?"on":""}">
     <h3>${o.nome}${o===best?' <span class="flag ok">melhor equilíbrio</span>':""}</h3>
     <p class="muted" style="font-size:13px">${o.desc}</p>
     <div class="row"><span class="muted">Transporte</span><b>${eur(o.freight)}</b></div>
@@ -813,18 +819,47 @@ function renderShipping(){
     <div class="row"><span class="muted">Total</span><b>${eur(o.freight+o.prod)}</b></div>
     <div class="row"><span class="muted">Unidades em falta antes de chegar</span><b class="${o.shortU>=1?"neg":"pos"}">${Math.round(o.shortU).toLocaleString("pt-PT")}</b></div>
     <div class="row"><span class="muted">Variantes que esgotam antes</span><span>${o.bad.length}</span></div>
+    ${o===chosen?'<span class="flag ok" style="justify-self:start">opção usada na lista acima</span>':`<button type="button" class="copy" data-opt="${o.k}">Usar esta opção</button>`}
   </div>`).join("");
-  // detalhe da opção escolhida (ponte aérea)
-  const br=res.find(o=>o.k==="bridge");
-  let h=`<thead><tr><th>Variante</th><th>Stock</th><th>Esgota</th><th>Avião</th><th>Chega</th><th>Comboio</th><th>Chega</th><th>Em falta antes de chegar</th></tr></thead><tbody>`;
-  let fam="";
-  br.lines.forEach(({r,parts})=>{
-    if(r.f!==fam){fam=r.f;h+=`<tr class="fam"><td colspan="8">${famName(r.f)} · ${LOGI[r.f].custom?"produção personalizada":"sem produção"}</td></tr>`;}
-    const a=parts.find(p=>p.mode==="air"), t=parts.find(p=>p.mode==="train");
-    const first=Math.min(...parts.map(p=>arr(r,p.mode))), sU=short(r,first);
-    h+=`<tr><td>${r.n}</td><td>${Math.round(r.stock)}</td><td>${r.out?fmtD(r.out):"—"}</td><td>${a?a.q:"—"}</td><td>${a?fmtD(arr(r,"air")):""}</td><td>${t?t.q:"—"}</td><td>${t?fmtD(arr(r,"train")):""}</td><td class="${sU>=1?"neg":""}">${sU>=1?Math.round(sU)+" un.":"—"}</td></tr>`;
-  });
-  document.getElementById("ship-table").innerHTML=h+"</tbody>";
+  document.querySelectorAll("#ship-opts [data-opt]").forEach(btn=>btn.addEventListener("click",()=>{state.ship.opt=btn.dataset.opt;update();}));
+
+  // Lista por fornecedor e por variante: quanto por avião, quanto por comboio, quando chega
+  const n0=v=>Math.round(v).toLocaleString("pt-PT");
+  const q=(parts,m)=>(parts.find(p=>p.mode===m)||{q:0}).q;
+  const fr=(r,m)=>m==="air"?LOGI[r.f].air:LOGI[r.f].air/ratio;
+  const airU=chosen.lines.reduce((x,l)=>x+q(l.parts,"air"),0), trainU=chosen.lines.reduce((x,l)=>x+q(l.parts,"train"),0);
+  document.getElementById("ship-plan-note").innerHTML=chosen.lines.length?`Opção usada: <b>${chosen.nome}</b>. ${airU?`Por <b>avião</b> vêm <b>${n0(airU)} unidades</b>${chosen.k==="bridge"?" (só o que é preciso para não esgotar até o comboio chegar, com a margem de segurança)":""}.`:"Nada por avião."} ${trainU?`Por <b>comboio</b> vêm <b>${n0(trainU)} unidades</b>.`:"Nada por comboio."} Transporte total <b>${eur(chosen.freight)}</b>.`:"Nada a encomendar com estes pressupostos (aba Inventário).";
+  const bySup={};
+  chosen.lines.forEach(l=>{const fam=FAMILIES.find(x=>x.k===l.r.f);(bySup[fam.sup]=bySup[fam.sup]||[]).push({...l,fam});});
+  const sups=Object.keys(bySup);
+  document.getElementById("ship-orders").innerHTML=sups.map((sup,i)=>{
+    const ls=bySup[sup];
+    const tA=ls.reduce((x,l)=>x+q(l.parts,"air"),0), tT=ls.reduce((x,l)=>x+q(l.parts,"train"),0);
+    const cA=ls.reduce((x,l)=>x+q(l.parts,"air")*fr(l.r,"air"),0), cT=ls.reduce((x,l)=>x+q(l.parts,"train")*fr(l.r,"train"),0);
+    const prodC=ls.reduce((x,l)=>x+l.r.qty*LOGI[l.r.f].prod,0);
+    let fam="", body="";
+    ls.forEach(({r,parts,fam:F})=>{
+      if(F.k!==fam){fam=F.k;body+=`<tr class="fam"><td colspan="6">${F.en} · ${LOGI[F.k].custom?"precisa de produção, pronto ~"+fmtD(ready.custom):"sem produção, pronto ~"+fmtD(ready.plain)} · avião chega ~${fmtD(arr(r,"air"))} · comboio chega ~${fmtD(arr(r,"train"))}</td></tr>`;}
+      const A=q(parts,"air"), T=q(parts,"train"), first=Math.min(...parts.map(p=>arr(r,p.mode))), sU=short(r,first);
+      body+=`<tr><td>${r.n}</td><td><b>${n0(r.qty)}</b></td><td>${A?n0(A):"—"}</td><td>${T?n0(T):"—"}</td><td>${r.out?fmtD(r.out):"—"}</td><td class="${sU>=1?"neg":""}">${sU>=1?n0(sU):"—"}</td></tr>`;
+    });
+    return `<div class="sc" style="grid-column:1/-1"><h3>${sup}</h3>
+      <div class="scroll"><table class="inv" style="min-width:560px"><thead><tr><th>Variante</th><th>Total</th><th>Avião</th><th>Comboio</th><th>Esgota</th><th>Em falta</th></tr></thead>
+      <tbody>${body}</tbody><tfoot><tr><td>Total</td><td>${n0(tA+tT)}</td><td>${tA?n0(tA):"—"}</td><td>${tT?n0(tT):"—"}</td><td></td><td></td></tr></tfoot></table></div>
+      <div class="row"><span class="muted">Produção</span><span>${eur(prodC)}</span></div>
+      <div class="row"><span class="muted">Transporte avião / comboio</span><span>${eur(cA)} / ${eur(cT)}</span></div>
+      <div class="row"><span class="muted">Total fornecedor</span><b>${eur(prodC+cA+cT)}</b></div>
+      <button type="button" class="copy" data-sup="${i}">Copiar lista (inglês)</button></div>`;
+  }).join("");
+  document.querySelectorAll("#ship-orders .copy").forEach(btn=>btn.addEventListener("click",()=>{
+    const ls=bySup[sups[Number(btn.dataset.sup)]];
+    const block=(m,title)=>{const xs=ls.filter(l=>q(l.parts,m)); if(!xs.length) return "";
+      const g={}; xs.forEach(l=>{(g[l.fam.en]=g[l.fam.en]||[]).push(l);});
+      return title+"\n"+Object.entries(g).map(([en,arrL])=>`${en} (${arrL.reduce((x,l)=>x+q(l.parts,m),0)} pcs):\n`+arrL.map(l=>`- ${l.r.en||en}: ${q(l.parts,m)}`).join("\n")).join("\n\n");};
+    const txt=[block("air","BY AIR (urgent, ship as soon as ready):"),block("train","BY TRAIN (DDP):")].filter(Boolean).join("\n\n");
+    const done=()=>{btn.textContent="Copiado";setTimeout(()=>btn.textContent="Copiar lista (inglês)",1500);};
+    try{navigator.clipboard.writeText(txt).then(done,()=>{btn.textContent="Não deu para copiar";});}catch(e){btn.textContent="Não deu para copiar";}
+  }));
   document.getElementById("ship-costs").innerHTML=Object.entries(LOGI).map(([k,l])=>`<tr><td>${famName(k)}</td><td>€${l.prod.toFixed(2)}</td><td>€${l.air.toFixed(2)}</td><td>€${(l.air/ratio).toFixed(2)}</td><td class="muted" style="text-align:left">${l.src}</td></tr>`).join("");
 }
 function renderShipControls(){
