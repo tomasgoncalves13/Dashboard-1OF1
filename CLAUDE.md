@@ -29,6 +29,7 @@ This is the standing reference for what the brand *is* — personas, sales angle
 ## Workflow
 
 **Depois de cada alteração de código: faz sempre commit e deploy logo a seguir**, sem perguntar. Deploy = `git push origin main` (o Vercel faz deploy automático do `main`). Corre `npm run typecheck` antes do commit.
+**⚠️ Regra do dono (reforçada a 24 Set 2026): isto vale para QUALQUER pedido que mexa em código ou docs do repo.** Mal a alteração esteja feita e verificada: typecheck → commit → `git push origin main` (= produção). Nunca deixar alterações só locais nem perguntar "queres que faça deploy?".
 
 ## Commands
 
@@ -136,6 +137,7 @@ First 100€ → 25%, next 200€ → 30%, above 300€ → 35%. Rio Tinto has `
 
 - `ProductVariant.stockOnHand` is the source of truth
 - Every inventory change writes a `StockMovement` (signed quantity + type + reference)
+- Encomendas Shopify só descontam stock quando estão **pagas** (PAID / PARTIALLY_REFUNDED / REFUNDED). As PENDING (MB por pagar) e EXPIRED não descontam; se tinham descontado antes, o sync repõe o stock e apaga esses movimentos (`ingestOrder` em `src/lib/shopify/sync/orders.ts`).
 - `registerPhysicalSale()` in `src/lib/clubs/service.ts` auto-decrements stock and writes movements
 - Manual adjustments via `/inventory` → `adjustStock()` Server Action
 - **Caneleiras Embutidas: variante à venda → tamanho físico (BOM)**: Criança Pequeno / "- Criança" MINI → **S**; Adulto Pequeno, Criança Médio / "- Criança" MIDI → **M**; Adulto Médio, Criança Grande → **L**; Adulto Grande → **XL**. O nome da variante NÃO é o tamanho físico (ex: "Adulto Pequeno" gasta um M). ⚠️ As variantes "Pack Pro - Caneleiras Embutidas · Criança (7-12) / MAXI / *" não têm BOM: se venderem, não descontam stock.

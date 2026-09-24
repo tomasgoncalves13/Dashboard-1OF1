@@ -6,6 +6,10 @@ import { calculateOrderProfit } from "@/lib/profit/calculate";
 import { getOrderOverheads, type OrderOverheads } from "@/lib/profit/order-costs";
 import { consumeStock } from "@/lib/inventory/consume";
 
+// Stock only leaves the warehouse for paid orders. REFUNDED stays consumed (it was paid).
+const STOCK_PAID_STATUSES = ["PAID", "PARTIALLY_REFUNDED", "REFUNDED"];
+const STOCK_UNPAID_STATUSES = ["PENDING", "EXPIRED", "VOIDED", "AUTHORIZED"];
+
 type Page = { orders: { pageInfo: { hasNextPage: boolean; endCursor: string | null }; edges: { node: ShopifyOrderNode }[] } };
 
 export type OrderSyncOptions = {
@@ -146,12 +150,29 @@ export async function ingestOrder(
     }),
   });
 
-  // Consume physical inventory — idempotent: skip if already consumed for this order
-  const alreadyConsumed = await prisma.stockMovement.findFirst({
+  // Consume physical inventory only once the order is paid — idempotent: skip if
+  // already consumed. MB/Multibanco orders sit as PENDING until paid (or EXPIRED).
+  const consumed = await prisma.stockMovement.findMany({
     where: { storeId, reference: shopifyOrderId, type: "SHOPIFY_SALE" },
+    select: { id: true, inventoryItemId: true, quantity: true },
   });
+  const status = order.displayFinancialStatus ?? "";
+  const isPaid = STOCK_PAID_STATUSES.includes(status);
 
-  if (!alreadyConsumed) {
+  // Consumed while unpaid (before this rule existed): give the stock back, so it's
+  // consumed again if the order is paid later.
+  if (consumed.length > 0 && STOCK_UNPAID_STATUSES.includes(status)) {
+    await prisma.$transaction(async (tx) => {
+      for (const m of consumed) {
+        if (m.inventoryItemId) {
+          await tx.inventoryItem.update({ where: { id: m.inventoryItemId }, data: { stockOnHand: { decrement: m.quantity } } });
+        }
+      }
+      await tx.stockMovement.deleteMany({ where: { id: { in: consumed.map((m) => m.id) } } });
+    });
+  }
+
+  if (isPaid && consumed.length === 0) {
     for (const { node: li } of order.lineItems.edges) {
       const variantGid = li.variant?.id ?? null;
       const dbV = variantGid ? variantByGid.get(variantGid) : null;
