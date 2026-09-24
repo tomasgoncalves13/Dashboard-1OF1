@@ -269,6 +269,8 @@ table.inv{min-width:1180px}
         <div class="ctl"><label for="inv-gift-kids">Meia de oferta em tamanho Kids %</label><input type="number" id="inv-gift-kids" min="0" max="100" step="5"></div>
         <div class="ctl"><label for="inv-min-sleeve">Mínimo de sleeves por variante</label><input type="number" id="inv-min-sleeve" min="0" step="5"></div>
         <div class="ctl"><label for="inv-floor">Meias e sleeves: mínimo por 100 encomendas, por variante</label><input type="number" id="inv-floor" min="0" max="20" step="0.5"></div>
+        <div class="ctl"><label for="inv-fix-s">Built-In S a encomendar (Zhejiang)</label><input type="number" id="inv-fix-s" min="0" step="10"></div>
+        <div class="ctl"><label for="inv-fix-m">Built-In M a encomendar (Zhejiang)</label><input type="number" id="inv-fix-m" min="0" step="10"></div>
       </div>
     </section>
 
@@ -316,16 +318,20 @@ table.inv{min-width:1180px}
     <section class="panel">
       <div class="panel-head">
         <h2>Opções de envio</h2>
-        <span class="muted" style="font-size:13px">Usa as quantidades da aba Inventário. Prazos da betopmax (23 Set): 7 dias para a foto da amostra, 3 semanas de produção, 2 semanas por avião ou ~5 por comboio. O comboio DDP costuma ser ~3× mais barato.</span>
+        <span class="muted" style="font-size:13px">Usa as quantidades da aba Inventário. Cada fornecedor manda tudo junto num só envio. As sock sleeves já feitas saem logo à parte, por avião. betopmax (23 Set): 7 dias para a amostra, 3 semanas de produção, 2 semanas por avião ou ~5 por comboio. Zhejiang Fele (Hanna, 24 Set): ~30 dias de produção, avião 13–14 dias (~USD 398), comboio ~45 dias (~USD 255).</span>
       </div>
       <div class="invctl">
         <div class="ctl"><label for="ship-pay">Data de pagamento</label><input type="date" id="ship-pay"></div>
         <div class="ctl"><label for="ship-sample">Amostra (semanas)</label><input type="number" id="ship-sample" min="0" max="4" step="0.5"></div>
         <div class="ctl"><label for="ship-prod">Produção (semanas)</label><input type="number" id="ship-prod" min="0" max="10" step="0.5"></div>
-        <div class="ctl"><label for="ship-sleeve">Sleeves prontas (semanas)</label><input type="number" id="ship-sleeve" min="0" max="6" step="0.5"></div>
+        <div class="ctl"><label for="ship-sleeve">Sock sleeves já feitas: prontas (semanas)</label><input type="number" id="ship-sleeve" min="0" max="6" step="0.5"></div>
         <div class="ctl"><label for="ship-air">Avião (semanas)</label><input type="number" id="ship-air" min="0" max="6" step="0.5"></div>
         <div class="ctl"><label for="ship-train">Comboio (semanas)</label><input type="number" id="ship-train" min="0" max="10" step="0.5"></div>
         <div class="ctl"><label for="ship-ratio">Avião é quantas vezes mais caro</label><input type="number" id="ship-ratio" min="1" max="6" step="0.5"></div>
+        <div class="ctl"><label for="ship-zprod">Zhejiang: produção (semanas)</label><input type="number" id="ship-zprod" min="0" max="12" step="0.1"></div>
+        <div class="ctl"><label for="ship-zair">Zhejiang: avião (semanas)</label><input type="number" id="ship-zair" min="0" max="6" step="0.1"></div>
+        <div class="ctl"><label for="ship-ztrain">Zhejiang: comboio (semanas)</label><input type="number" id="ship-ztrain" min="0" max="12" step="0.1"></div>
+        <div class="ctl"><label for="ship-usd">1 USD em €</label><input type="number" id="ship-usd" min="0.5" max="1.5" step="0.01"></div>
       </div>
       <div class="sc" id="ship-dates" style="max-width:560px"></div>
     </section>
@@ -336,7 +342,7 @@ table.inv{min-width:1180px}
       </div>
       <p id="ship-plan-note" style="font-size:14px;margin:0 0 12px"></p>
       <div class="shop" id="ship-orders"></div>
-      <p class="muted" style="font-size:13px">Quantidades totais = lista de compras da aba Inventário. A divisão entre avião e comboio segue a opção escolhida em "Comparação" (por defeito a de melhor equilíbrio). Caneleiras Built-In (sleeve shin pads), meias antiderrapantes, Mini, Airflow e mailers precisam de produção (amostra + produção). As sock sleeves não, ficam prontas mais cedo e podem sair logo. "Em falta" = vendas que se perdem entre o dia em que a variante esgota e o dia em que chega a primeira parte. O botão copia a lista em inglês, separada por avião e comboio.</p>
+      <p class="muted" style="font-size:13px">Quantidades = lista de compras da aba Inventário (Built-In fixo em 500: S e M lá em cima). Cada fornecedor manda tudo junto num só envio, de comboio se chegar antes de alguma coisa esgotar, senão de avião (opção "Por fornecedor"; podes escolher outra em "Comparação"). As sock sleeves já feitas saem logo, todas juntas, de avião. Se alguma cor/tamanho ainda tiver de ser produzida, vem com as grip socks. "Em falta" = vendas que se perdem entre o dia em que a variante esgota e o dia em que o envio chega. O botão copia a lista em inglês para mandar ao fornecedor.</p>
     </section>
 
     <section class="panel">
@@ -496,8 +502,8 @@ PHASES.forEach((p,pi)=>{
   ws.forEach((w,i)=>days.push({t:a+i*DAY,pi,w:w/mean}));
 });
 
-const INV_DEFAULT={offer:"1",safety:10,arrival:"2026-12-01",mailers:200,mailerRate:1.1,giftKids:35,minSleeve:25,floorRate:2};
-const SHIP_INIT={pay:"2026-09-28",sample:1,prod:3,sleeveReady:1,air:2,train:5,ratio:3,opt:"auto"};
+const INV_DEFAULT={offer:"1",safety:10,arrival:"2026-12-01",mailers:200,mailerRate:1.1,giftKids:35,minSleeve:25,floorRate:2,fixS:120,fixM:380};
+const SHIP_INIT={pay:"2026-09-28",sample:1,prod:3,sleeveReady:1,air:2,train:5,ratio:3,zProd:4.3,zAir:2,zTrain:6.4,usd:0.86,opt:"auto"};
 let state={sc:"real",creative:-30,b:{...PRESETS.real.b},tab:"plano",inv:{...INV_DEFAULT},ship:{...SHIP_INIT},clubsOn:true,clubs:CLUBS_INIT.map(c=>({...c}))};
 try{const s=JSON.parse(localStorage.getItem("plano-q4-v2")||"null"); if(s&&s.b) state={...state,...s,inv:{...INV_DEFAULT,...(s.inv||{})},ship:{...SHIP_INIT,...(s.ship||{})},clubs:CLUBS_INIT.map(c=>({...c,...((s.clubs||[]).find(x=>x.id===c.id)||{})}))};}catch(e){}
 if(state.sc==="custom"&&Object.keys(PRESETS.real.b).every(k=>state.b[k]===PRESETS.real.b[k])) state.sc="real";
@@ -649,9 +655,11 @@ function renderInventory(s){
     const per100=it.mailer?mRate*100:(gift+rate)*100;
     const want=cum*(1+(Number(inv.safety)||0)/100)-stock;
     const minSleeve=it.f==="sleeve"?Math.max(0,Number(inv.minSleeve)||0):0;
-    const qty=Math.max(cum>0&&want>0?Math.ceil(want/10)*10:0,Math.max(0,Math.ceil((minSleeve-stock)/5)*5));
+    const auto=Math.max(cum>0&&want>0?Math.ceil(want/10)*10:0,Math.max(0,Math.ceil((minSleeve-stock)/5)*5));
+    // Built-In: encomenda fixa à Zhejiang (mínimo 500), só S e M
+    const qty=it.f==="builtin"?Math.max(0,Number(it.n==="Built-In S"?inv.fixS:it.n==="Built-In M"?inv.fixM:0)||0):auto;
     const status=out===null?"ok":out<arrive?"bad":"warn";
-    return {...it,stock,per100,needBF,needJan:cum,clubJan:clubCum,out,qty,status,value:qty*(it.cost||0),curve};
+    return {...it,stock,per100,needBF,needJan:cum,clubJan:clubCum,out,qty,status,value:qty*(it.f==="builtin"?unit("builtin","prod")+unit("builtin","air"):(it.cost||0)),curve};
   });
   lastInv={rows,safety:(Number(inv.safety)||0)/100};
 
@@ -737,82 +745,97 @@ function renderInventory(s){
 }
 
 // ── Opções de envio ──
-// Custos reais das encomendas anteriores (produção vs transporte, por unidade). Transporte = avião DDP.
+// Cada fornecedor manda a encomenda toda junta, num só envio (avião OU comboio). Dividir só em último caso.
+// Custos por unidade das encomendas anteriores (produção vs transporte avião DDP); a Zhejiang Fele usa o orçamento de 24 Set.
 const LOGI={
-  builtin:{prod:2.24,air:0.60,custom:true,src:"Dez 2025: 1.050 un., produção €2.351 + transporte €630"},
-  grip:{prod:0.59,air:0.29,custom:true,src:"Dez 2025: 2.050 un. meias+sleeves, produção €1.211 + transporte €599"},
-  sleeve:{prod:0.59,air:0.29,custom:false,src:"mesma encomenda das meias"},
-  mailer:{prod:0.28,air:0.41,custom:true,src:"Dez 2024: 500 un., produção €138 + transporte €205"},
-  mini:{prod:1.00,air:0.33,custom:true,src:"Dez 2024: 200 un., produção €200 + transporte €65"},
-  airflow:{prod:0.95,air:0.58,custom:true,src:"Set 2025: 200 un., produção €190 + transporte €115"}
+  builtin:{src:"Orçamento Hanna 24 Set (PI ZZ19-26225): USD 1.334,40 por 500 caneleiras + sacos · avião DDP ~USD 398 (13–14 dias) · comboio DDP ~USD 255 (~45 dias) · produção ~30 dias depois do sinal. O avião muda todas as semanas."},
+  grip:{prod:0.59,air:0.29,src:"Dez 2025: 2.050 un. meias+sleeves, produção €1.211 + transporte €599"},
+  sleeve:{prod:0.59,air:0.29,src:"mesma encomenda das meias; as já feitas saem logo num envio à parte, de avião"},
+  mailer:{prod:0.28,air:0.41,src:"Dez 2024: 500 un., produção €138 + transporte €205"},
+  mini:{prod:1.00,air:0.33,src:"Dez 2024: 200 un., produção €200 + transporte €65"},
+  airflow:{prod:0.95,air:0.58,src:"Set 2025: 200 un., produção €190 + transporte €115"}
 };
-const SHIP_DEFAULT={pay:"2026-09-28",sample:1,prod:3,sleeveReady:1,air:2,train:5,ratio:3};
+const ZQ={qty:500,prod:1334.40,air:398,train:255}; // orçamento Zhejiang Fele, em USD
+const SHIP_DEFAULT=SHIP_INIT;
 let lastInv=null;
 const cumAt=(curve,t)=>{let v=0;for(const c of curve){if(c.t>t)break;v=c.v;}return v;};
 const addW=(t,w)=>t+Math.round(w*7)*DAY;
+// Envios: um por fornecedor. As sock sleeves já feitas saem logo à parte (betopmax, por avião); as meias vêm depois.
+const SLEEVE_GRP="betopmax · sock sleeves já feitas";
+const supOf=f=>f==="sleeve"?SLEEVE_GRP:FAMILIES.find(x=>x.k===f).sup;
+// custo por unidade: kind = prod | air | train
+function unit(f,kind){
+  const sh=state.ship, usd=Number(sh.usd)||SHIP_INIT.usd, ratio=Math.max(1,Number(sh.ratio)||1);
+  if(f==="builtin") return ZQ[kind]*usd/ZQ.qty;
+  const l=LOGI[f]; return kind==="prod"?l.prod:kind==="air"?l.air:l.air/ratio;
+}
+// prazos por fornecedor: pronto = pagamento + amostra + produção; depois avião ou comboio
+function supTimes(sup,pay,noSample){
+  const W=k=>Number(state.ship[k])||0, s=noSample?0:W("sample");
+  if(sup===SLEEVE_GRP) return {ready:addW(pay,W("sleeveReady")),air:W("air"),train:W("train")};
+  if(sup==="Zhejiang Fele") return {ready:addW(pay,s+W("zProd")),air:W("zAir"),train:W("zTrain")};
+  return {ready:addW(pay,s+W("prod")),air:W("air"),train:W("train")};
+}
 
 function calcShip(payIso,noSample){
-  const sh=state.ship, rows=lastInv.rows.filter(r=>r.qty>0&&LOGI[r.f]), safety=lastInv.safety;
-  const pay=parse(payIso||SHIP_DEFAULT.pay), W=k=>k==="sample"&&noSample?0:Number(sh[k])||0, ratio=Math.max(1,W("ratio"));
-  const ready={custom:addW(pay,W("sample")+W("prod")),plain:addW(pay,W("sleeveReady"))};
-  const arr=(r,mode)=>addW(LOGI[r.f].custom?ready.custom:ready.plain,mode==="air"?W("air"):W("train"));
-  const fr=(r,mode)=>mode==="air"?LOGI[r.f].air:LOGI[r.f].air/ratio;
+  const rows=lastInv.rows.filter(r=>r.qty>0&&LOGI[r.f]), safety=lastInv.safety;
+  const pay=parse(payIso||SHIP_DEFAULT.pay);
+  const sups=[...new Set(rows.map(r=>supOf(r.f)))];
+  const T=Object.fromEntries(sups.map(s=>[s,supTimes(s,pay,noSample)]));
+  const arr=(sup,mode)=>addW(T[sup].ready,mode==="air"?T[sup].air:T[sup].train);
   const short=(r,t)=>Math.max(0,cumAt(r.curve,t)-r.stock);
+  const shortBy=(sup,mode)=>rows.filter(r=>supOf(r.f)===sup).reduce((a,r)=>a+short(r,arr(sup,mode)),0);
+  // por fornecedor: comboio se nada esgotar antes de chegar, senão avião. As sleeves já feitas vêm sempre de avião.
+  // O dono pode forçar o meio de um fornecedor (botão no cartão do fornecedor).
+  const over=state.ship.over||{};
+  const auto=Object.fromEntries(sups.map(s=>[s,s!==SLEEVE_GRP&&shortBy(s,"train")<1?"train":"air"]));
+  const pick=Object.fromEntries(sups.map(s=>[s,over[s]||auto[s]]));
   const OPTS=[
-    {k:"air",nome:"Tudo por avião",desc:"Cada fornecedor envia por avião DDP.",plan:r=>[{mode:"air",q:r.qty}]},
-    {k:"train",nome:"Tudo por comboio",desc:"Tudo por comboio DDP. O mais barato, mas chega muito tarde.",plan:r=>[{mode:"train",q:r.qty}]},
-    {k:"mix",nome:"Sleeves por avião, resto por comboio",desc:"As sleeves não precisam de produção e vêm já por avião. O resto vem por comboio.",plan:r=>[{mode:LOGI[r.f].custom?"train":"air",q:r.qty}]},
-    {k:"bridge",nome:"Ponte aérea + comboio",desc:"Por avião só o que é preciso até o comboio chegar (com margem). O resto por comboio.",plan:r=>{
-      const need=Math.max(0,cumAt(r.curve,arr(r,"train"))-r.stock)*(1+safety);
-      const a=Math.min(r.qty,Math.ceil(need/10)*10);
+    {k:"sup",nome:"Por fornecedor",desc:"Cada fornecedor manda tudo junto num só envio: de comboio se chegar antes de alguma coisa esgotar, senão de avião. As sock sleeves já feitas saem logo, todas juntas, de avião.",plan:r=>[{mode:pick[supOf(r.f)],q:r.qty}]},
+    {k:"air",nome:"Tudo por avião",desc:"Todos os fornecedores mandam tudo por avião DDP. Chega mais cedo, custa mais.",plan:r=>[{mode:"air",q:r.qty}]},
+    {k:"train",nome:"Tudo por comboio",desc:"Todos mandam tudo por comboio DDP. O mais barato, mas chega mais tarde.",plan:r=>[{mode:"train",q:r.qty}]},
+    {k:"bridge",nome:"Último recurso: dividir",desc:"Cada fornecedor faz dois envios: por avião só o que é preciso até o comboio chegar, o resto por comboio. Só se o avião for caro demais.",plan:r=>{
+      const need=short(r,arr(supOf(r.f),"train"))*(1+safety), a=Math.min(r.qty,Math.ceil(need/10)*10);
       return [{mode:"air",q:a},{mode:"train",q:r.qty-a}].filter(x=>x.q>0);}}
   ];
   const res=OPTS.map(o=>{
-    let freight=0,prod=0,units=0,shortU=0; const lines=[], bad=[];
+    let freight=0,prod=0,units=0,shortU=0; const lines=[],bad=[];
     rows.forEach(r=>{
-      const parts=o.plan(r); prod+=r.qty*LOGI[r.f].prod; units+=r.qty;
-      parts.forEach(p=>freight+=p.q*fr(r,p.mode));
-      const first=Math.min(...parts.map(p=>arr(r,p.mode)));
-      const sU=short(r,first); if(sU>=1){shortU+=sU;bad.push({r,sU,first});}
-      lines.push({r,parts,first});
+      const sup=supOf(r.f), parts=o.plan(r); prod+=r.qty*unit(r.f,"prod"); units+=r.qty;
+      parts.forEach(p=>freight+=p.q*unit(r.f,p.mode));
+      const first=Math.min(...parts.map(p=>arr(sup,p.mode))), sU=short(r,first);
+      if(sU>=1){shortU+=sU;bad.push({r,sU,first});}
+      lines.push({r,parts,first,sup});
     });
     return {...o,freight,prod,units,shortU,bad,lines};
   });
-  const best=res.reduce((a,b)=>(b.shortU<a.shortU-1||(Math.abs(b.shortU-a.shortU)<=1&&b.freight<a.freight))?b:a);
-  return {ready,arr,short,W,ratio,res,best};
+  return {T,arr,short,res,best:res[0],auto,shortBy};
 }
 
 const START_DATES=[["2026-09-28","Segunda, 28 Set"],["2026-10-01","Quinta, 1 Out"]];
 function renderStartCompare(){
   const cols=[];
   START_DATES.forEach(([d,l])=>{cols.push({l,c:calcShip(d,false)});cols.push({l:l+" · sem amostra",c:calcShip(d,true)});});
-  const W=cols[0].c.W;
+  const sups=Object.keys(cols[0].c.T), bw=parse("2026-11-20");
   const row=(label,f)=>`<tr><td>${label}</td>${cols.map(x=>`<td>${f(x.c)}</td>`).join("")}</tr>`;
-  const br=c=>c.res.find(o=>o.k==="bridge");
+  const late=t=>t>bw?' <span class="flag warn">depois do início da BW</span>':"";
   document.getElementById("ship-start").innerHTML=`<thead><tr><th>Começar o processo a</th>${cols.map(x=>`<th>${x.l}</th>`).join("")}</tr></thead><tbody>
-    ${row("Sleeves por avião chegam",c=>fmtD(addW(c.ready.plain,W("air"))))}
-    ${row("Sleeves por comboio chegam",c=>fmtD(addW(c.ready.plain,W("train"))))}
-    ${row("Caneleiras, meias, mailers prontos",c=>fmtD(c.ready.custom))}
-    ${row("<b>… por avião chegam</b>",c=>`<b>${fmtD(addW(c.ready.custom,W("air")))}</b>`)}
-    ${row("… por comboio chegam",c=>{const t=addW(c.ready.custom,W("train"));return `${fmtD(t)}${t>parse("2026-11-20")?' <span class="flag warn">depois do início da BW</span>':""}`;})}
-    ${row("Ponte aérea + comboio: transporte",c=>eur(br(c).freight))}
-    ${row("Ponte aérea + comboio: unidades em falta",c=>`<span class="${br(c).shortU>=1?"neg":"pos"}">${Math.round(br(c).shortU)}</span>`)}
+    ${sups.map(s=>row(`<b>${s}</b>: pronto`,c=>fmtD(c.T[s].ready))+row("… por avião chega",c=>{const t=c.arr(s,"air");return fmtD(t)+late(t);})+row("… por comboio chega",c=>{const t=c.arr(s,"train");return fmtD(t)+late(t);})).join("")}
+    ${row("<b>Por fornecedor</b>: transporte",c=>eur(c.best.freight))}
+    ${row("<b>Por fornecedor</b>: unidades em falta",c=>`<span class="${c.best.shortU>=1?"neg":"pos"}">${Math.round(c.best.shortU)}</span>`)}
   </tbody>`;
 }
 
 function renderShipping(){
   const sh=state.ship;
-  const {ready,arr,short,W,ratio,res,best}=calcShip(sh.pay,false);
+  const {T,arr,short,res,best,auto,shortBy}=calcShip(sh.pay,false);
   const famName=k=>FAMILIES.find(f=>f.k===k).nome;
-  document.getElementById("ship-dates").innerHTML=`
-    <div class="row"><span class="muted">Artigos personalizados prontos (amostra + produção)</span><b>${fmtD(ready.custom)}</b></div>
-    <div class="row"><span class="muted">→ chegam por avião / por comboio</span><b>${fmtD(addW(ready.custom,W("air")))} / ${fmtD(addW(ready.custom,W("train")))}</b></div>
-    <div class="row"><span class="muted">Sleeves prontas (sem produção)</span><b>${fmtD(ready.plain)}</b></div>
-    <div class="row"><span class="muted">→ chegam por avião / por comboio</span><b>${fmtD(addW(ready.plain,W("air")))} / ${fmtD(addW(ready.plain,W("train")))}</b></div>
-    <div class="row"><span class="muted">Black Week começa</span><b>20 Nov</b></div>`;
+  const modeName=m=>m==="air"?"avião":"comboio";
+  document.getElementById("ship-dates").innerHTML=Object.keys(T).map(s=>`<div class="row"><span class="muted">${s}: pronto ${fmtD(T[s].ready)} → chega por avião / comboio</span><b>${fmtD(arr(s,"air"))} / ${fmtD(arr(s,"train"))}</b></div>`).join("")+
+    `<div class="row"><span class="muted">Black Week começa</span><b>20 Nov</b></div>`;
   const chosen=res.find(o=>o.k===sh.opt)||best;
   document.getElementById("ship-opts").innerHTML=res.map(o=>`<div class="sc ${o===chosen?"on":""}">
-    <h3>${o.nome}${o===best?' <span class="flag ok">melhor equilíbrio</span>':""}</h3>
+    <h3>${o.nome}${o===best?' <span class="flag ok">recomendado</span>':""}</h3>
     <p class="muted" style="font-size:13px">${o.desc}</p>
     <div class="row"><span class="muted">Transporte</span><b>${eur(o.freight)}</b></div>
     <div class="row"><span class="muted">Produção (igual em todas)</span><span>${eur(o.prod)}</span></div>
@@ -823,49 +846,61 @@ function renderShipping(){
   </div>`).join("");
   document.querySelectorAll("#ship-opts [data-opt]").forEach(btn=>btn.addEventListener("click",()=>{state.ship.opt=btn.dataset.opt;update();}));
 
-  // Lista por fornecedor e por variante: quanto por avião, quanto por comboio, quando chega
+  // Lista por fornecedor: um envio por fornecedor (avião ou comboio), com o que vai em cada variante
   const n0=v=>Math.round(v).toLocaleString("pt-PT");
   const q=(parts,m)=>(parts.find(p=>p.mode===m)||{q:0}).q;
-  const fr=(r,m)=>m==="air"?LOGI[r.f].air:LOGI[r.f].air/ratio;
-  const airU=chosen.lines.reduce((x,l)=>x+q(l.parts,"air"),0), trainU=chosen.lines.reduce((x,l)=>x+q(l.parts,"train"),0);
-  document.getElementById("ship-plan-note").innerHTML=chosen.lines.length?`Opção usada: <b>${chosen.nome}</b>. ${airU?`Por <b>avião</b> vêm <b>${n0(airU)} unidades</b>${chosen.k==="bridge"?" (só o que é preciso para não esgotar até o comboio chegar, com a margem de segurança)":""}.`:"Nada por avião."} ${trainU?`Por <b>comboio</b> vêm <b>${n0(trainU)} unidades</b>.`:"Nada por comboio."} Transporte total <b>${eur(chosen.freight)}</b>.`:"Nada a encomendar com estes pressupostos (aba Inventário).";
   const bySup={};
-  chosen.lines.forEach(l=>{const fam=FAMILIES.find(x=>x.k===l.r.f);(bySup[fam.sup]=bySup[fam.sup]||[]).push({...l,fam});});
+  chosen.lines.forEach(l=>{const fam=FAMILIES.find(x=>x.k===l.r.f);(bySup[l.sup]=bySup[l.sup]||[]).push({...l,fam});});
   const sups=Object.keys(bySup);
+  const modesOf=ls=>["air","train"].filter(m=>ls.some(l=>q(l.parts,m)));
+  document.getElementById("ship-plan-note").innerHTML=sups.length?`Opção usada: <b>${chosen.nome}</b>. `+sups.map(s=>{const ms=modesOf(bySup[s]);return `<b>${s}</b>: ${ms.map(m=>`${modeName(m)} (chega ~${fmtD(arr(s,m))})`).join(" + ")}`;}).join(" · ")+`. Transporte total <b>${eur(chosen.freight)}</b>.`
+    :"Nada a encomendar com estes pressupostos (aba Inventário).";
   document.getElementById("ship-orders").innerHTML=sups.map((sup,i)=>{
-    const ls=bySup[sup];
+    const ls=bySup[sup], ms=modesOf(ls);
     const tA=ls.reduce((x,l)=>x+q(l.parts,"air"),0), tT=ls.reduce((x,l)=>x+q(l.parts,"train"),0);
-    const cA=ls.reduce((x,l)=>x+q(l.parts,"air")*fr(l.r,"air"),0), cT=ls.reduce((x,l)=>x+q(l.parts,"train")*fr(l.r,"train"),0);
-    const prodC=ls.reduce((x,l)=>x+l.r.qty*LOGI[l.r.f].prod,0);
+    const cA=ls.reduce((x,l)=>x+q(l.parts,"air")*unit(l.r.f,"air"),0), cT=ls.reduce((x,l)=>x+q(l.parts,"train")*unit(l.r.f,"train"),0);
+    const prodC=ls.reduce((x,l)=>x+l.r.qty*unit(l.r.f,"prod"),0);
+    const how=ms.length>1?`<span class="flag warn">dividido: avião + comboio</span>`:`<span class="flag ok">tudo junto por ${modeName(ms[0])}</span>`;
     let fam="", body="";
     ls.forEach(({r,parts,fam:F})=>{
-      if(F.k!==fam){fam=F.k;body+=`<tr class="fam"><td colspan="6">${F.en} · ${LOGI[F.k].custom?"precisa de produção, pronto ~"+fmtD(ready.custom):"sem produção, pronto ~"+fmtD(ready.plain)} · avião chega ~${fmtD(arr(r,"air"))} · comboio chega ~${fmtD(arr(r,"train"))}</td></tr>`;}
-      const A=q(parts,"air"), T=q(parts,"train"), first=Math.min(...parts.map(p=>arr(r,p.mode))), sU=short(r,first);
-      body+=`<tr><td>${r.n}</td><td><b>${n0(r.qty)}</b></td><td>${A?n0(A):"—"}</td><td>${T?n0(T):"—"}</td><td>${r.out?fmtD(r.out):"—"}</td><td class="${sU>=1?"neg":""}">${sU>=1?n0(sU):"—"}</td></tr>`;
+      if(F.k!==fam){fam=F.k;body+=`<tr class="fam"><td colspan="${ms.length>1?6:4}">${F.en}</td></tr>`;}
+      const first=Math.min(...parts.map(p=>arr(sup,p.mode))), sU=short(r,first);
+      body+=`<tr><td>${r.n}</td><td><b>${n0(r.qty)}</b></td>${ms.length>1?`<td>${q(parts,"air")?n0(q(parts,"air")):"—"}</td><td>${q(parts,"train")?n0(q(parts,"train")):"—"}</td>`:""}<td>${r.out?fmtD(r.out):"—"}</td><td class="${sU>=1?"neg":""}">${sU>=1?n0(sU):"—"}</td></tr>`;
     });
-    return `<div class="sc" style="grid-column:1/-1"><h3>${sup}</h3>
-      <div class="scroll"><table class="inv" style="min-width:560px"><thead><tr><th>Variante</th><th>Total</th><th>Avião</th><th>Comboio</th><th>Esgota</th><th>Em falta</th></tr></thead>
-      <tbody>${body}</tbody><tfoot><tr><td>Total</td><td>${n0(tA+tT)}</td><td>${tA?n0(tA):"—"}</td><td>${tT?n0(tT):"—"}</td><td></td><td></td></tr></tfoot></table></div>
+    return `<div class="sc" style="grid-column:1/-1"><h3>${sup} ${how}</h3>
+      <div class="row"><span class="muted">Pronto ~${fmtD(T[sup].ready)}</span><span>${ms.map(m=>`${modeName(m)} chega <b>~${fmtD(arr(sup,m))}</b>`).join(" · ")}</span></div>
+      <div class="scroll"><table class="inv" style="min-width:520px"><thead><tr><th>Variante</th><th>Quantidade</th>${ms.length>1?"<th>Avião</th><th>Comboio</th>":""}<th>Esgota</th><th>Em falta</th></tr></thead>
+      <tbody>${body}</tbody><tfoot><tr><td>Total</td><td>${n0(tA+tT)}</td>${ms.length>1?`<td>${n0(tA)}</td><td>${n0(tT)}</td>`:""}<td></td><td></td></tr></tfoot></table></div>
       <div class="row"><span class="muted">Produção</span><span>${eur(prodC)}</span></div>
-      <div class="row"><span class="muted">Transporte avião / comboio</span><span>${eur(cA)} / ${eur(cT)}</span></div>
+      <div class="row"><span class="muted">Transporte${ms.length>1?" avião / comboio":" ("+modeName(ms[0])+")"}</span><span>${ms.length>1?`${eur(cA)} / ${eur(cT)}`:eur(cA+cT)}</span></div>
       <div class="row"><span class="muted">Total fornecedor</span><b>${eur(prodC+cA+cT)}</b></div>
+      ${chosen.k==="sup"&&ms.length===1?(()=>{const alt=ms[0]==="air"?"train":"air", fA=ls.reduce((x,l)=>x+l.r.qty*unit(l.r.f,alt),0), sA=shortBy(sup,alt);
+        return `<div class="row"><span class="muted">Se for de ${modeName(alt)}: chega ~${fmtD(arr(sup,alt))}, transporte ${eur(fA)} (${fA<cA+cT?"poupas "+eur(cA+cT-fA):"mais "+eur(fA-cA-cT)})</span><span class="${sA>=1?"neg":"pos"}">${sA>=1?"faltam "+n0(sA)+" un.":"não falta nada"}</span></div>
+        <button type="button" class="copy" data-mode-sup="${sup}" data-mode="${alt}">Mandar por ${modeName(alt)}</button>${(state.ship.over||{})[sup]?` <span class="muted" style="font-size:12px">escolhido por ti (o automático era ${modeName(auto[sup])})</span>`:""}`;})():""}
       <button type="button" class="copy" data-sup="${i}">Copiar lista (inglês)</button></div>`;
   }).join("");
-  document.querySelectorAll("#ship-orders .copy").forEach(btn=>btn.addEventListener("click",()=>{
-    const ls=bySup[sups[Number(btn.dataset.sup)]];
-    const block=(m,title)=>{const xs=ls.filter(l=>q(l.parts,m)); if(!xs.length) return "";
-      const g={}; xs.forEach(l=>{(g[l.fam.en]=g[l.fam.en]||[]).push(l);});
-      return title+"\n"+Object.entries(g).map(([en,arrL])=>`${en} (${arrL.reduce((x,l)=>x+q(l.parts,m),0)} pcs):\n`+arrL.map(l=>`- ${l.r.en||en}: ${q(l.parts,m)}`).join("\n")).join("\n\n");};
-    const txt=[block("air","BY AIR (urgent, ship as soon as ready):"),block("train","BY TRAIN (DDP):")].filter(Boolean).join("\n\n");
+  document.querySelectorAll("#ship-orders [data-mode-sup]").forEach(btn=>btn.addEventListener("click",()=>{
+    const o={...(state.ship.over||{})}, sup=btn.dataset.modeSup;
+    if(btn.dataset.mode===auto[sup]) delete o[sup]; else o[sup]=btn.dataset.mode;
+    state.ship.over=o; update();
+  }));
+  document.querySelectorAll("#ship-orders .copy[data-sup]").forEach(btn=>btn.addEventListener("click",()=>{
+    const ls=bySup[sups[Number(btn.dataset.sup)]], ms=modesOf(ls);
+    const list=(m)=>{const g={}; ls.filter(l=>m?q(l.parts,m):true).forEach(l=>{(g[l.fam.en]=g[l.fam.en]||[]).push(l);});
+      return Object.entries(g).map(([en,xs])=>{const n=l=>m?q(l.parts,m):l.r.qty; return `${en} (${xs.reduce((x,l)=>x+n(l),0)} pcs):\n`+xs.map(l=>`- ${l.r.en||en}: ${n(l)}`).join("\n");}).join("\n\n");};
+    const txt=ms.length>1
+      ?`BY AIR DDP (urgent):\n${list("air")}\n\nBY TRAIN DDP:\n${list("train")}`
+      :`${list(null)}\n\nPlease ship everything together in one shipment by ${ms[0]==="air"?"AIR":"TRAIN"} DDP to Portugal.`;
     const done=()=>{btn.textContent="Copiado";setTimeout(()=>btn.textContent="Copiar lista (inglês)",1500);};
     try{navigator.clipboard.writeText(txt).then(done,()=>{btn.textContent="Não deu para copiar";});}catch(e){btn.textContent="Não deu para copiar";}
   }));
-  document.getElementById("ship-costs").innerHTML=Object.entries(LOGI).map(([k,l])=>`<tr><td>${famName(k)}</td><td>€${l.prod.toFixed(2)}</td><td>€${l.air.toFixed(2)}</td><td>€${(l.air/ratio).toFixed(2)}</td><td class="muted" style="text-align:left">${l.src}</td></tr>`).join("");
+  document.getElementById("ship-costs").innerHTML=Object.keys(LOGI).map(k=>`<tr><td>${famName(k)}</td><td>€${unit(k,"prod").toFixed(2)}</td><td>€${unit(k,"air").toFixed(2)}</td><td>€${unit(k,"train").toFixed(2)}</td><td class="muted" style="text-align:left">${LOGI[k].src}</td></tr>`).join("");
 }
 function renderShipControls(){
   const sh=state.ship;
-  [["ship-pay","pay"],["ship-sample","sample"],["ship-prod","prod"],["ship-sleeve","sleeveReady"],["ship-air","air"],["ship-train","train"],["ship-ratio","ratio"]].forEach(([id,k])=>document.getElementById(id).value=sh[k]);
+  SHIP_CTL.forEach(([id,k])=>document.getElementById(id).value=sh[k]);
 }
+const SHIP_CTL=[["ship-pay","pay"],["ship-sample","sample"],["ship-prod","prod"],["ship-sleeve","sleeveReady"],["ship-air","air"],["ship-train","train"],["ship-ratio","ratio"],["ship-zprod","zProd"],["ship-zair","zAir"],["ship-ztrain","zTrain"],["ship-usd","usd"]];
 
 function renderClubs(){
   const F=[["corMes","Meia cor do clube"],["branco","Meia branca"],["preto","Meia preta"],["canS","Embutida Criança Pequeno (S)"],["canM","Embutida Adulto Pequeno (M)"],["canL","Embutida Adulto Médio (L)"],["m8c","Mini 8x5 Cinza"],["m8p","Mini 8x5 Preto"],["m10c","Mini 10x6 Cinza"],["m10p","Mini 10x6 Preto"],["a15","Airflow 15x9"],["a9","Airflow 9x6"]];
@@ -885,6 +920,8 @@ function renderInvControls(){
   document.getElementById("inv-gift-kids").value=inv.giftKids;
   document.getElementById("inv-min-sleeve").value=inv.minSleeve;
   document.getElementById("inv-floor").value=inv.floorRate;
+  document.getElementById("inv-fix-s").value=inv.fixS;
+  document.getElementById("inv-fix-m").value=inv.fixM;
 }
 function renderTabs(){
   document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===state.tab)));
@@ -905,10 +942,10 @@ document.querySelectorAll("#scenarios button").forEach(b=>b.addEventListener("cl
 document.getElementById("creative").addEventListener("input",e=>{state.creative=Number(e.target.value);update();});
 document.getElementById("clubs-on").addEventListener("change",e=>{state.clubsOn=e.target.checked;update("clubs-on");});
 document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>{state.tab=b.dataset.tab;renderTabs();save();}));
-[["ship-pay","pay"],["ship-sample","sample"],["ship-prod","prod"],["ship-sleeve","sleeveReady"],["ship-air","air"],["ship-train","train"],["ship-ratio","ratio"]].forEach(([id,k])=>{
+SHIP_CTL.forEach(([id,k])=>{
   document.getElementById(id).addEventListener("change",e=>{state.ship[k]=e.target.value;update(id);});
 });
-[["inv-offer","offer"],["inv-safety","safety"],["inv-arrival","arrival"],["inv-mailers","mailers"],["inv-mailer-rate","mailerRate"],["inv-gift-kids","giftKids"],["inv-min-sleeve","minSleeve"],["inv-floor","floorRate"]].forEach(([id,k])=>{
+[["inv-offer","offer"],["inv-safety","safety"],["inv-arrival","arrival"],["inv-mailers","mailers"],["inv-mailer-rate","mailerRate"],["inv-gift-kids","giftKids"],["inv-min-sleeve","minSleeve"],["inv-floor","floorRate"],["inv-fix-s","fixS"],["inv-fix-m","fixM"]].forEach(([id,k])=>{
   document.getElementById(id).addEventListener("change",e=>{state.inv[k]=e.target.value;update(id);});
 });
 update();
