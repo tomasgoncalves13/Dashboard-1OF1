@@ -74,6 +74,7 @@ Route groups separate auth from the main shell:
 | `/influencers` | Influencers | Pipeline by status, ROI tracking, discount codes |
 | `/ads` | Ads | Ad campaign metrics (Meta/Google/TikTok) |
 | `/expenses` | Expenses | Categorised expenses, recurring support |
+| `/visao-mensal` | Monthly overview | Month-by-month since Dec 2024: site + physical sales, ads, expenses, profit (COGS) vs real cash (stock purchases), cumulative (`src/lib/dashboard/monthly.ts`) |
 | `/finance` | Finance | Cashflow timeline (Shopify payouts + Eupago + expenses) |
 | `/manual-sales` | Manual sales | Legacy; superseded by /clubs for physical sales |
 | `/instagram` | Instagram | IG account insights + Reel scheduling (Meta Graph API) |
@@ -163,7 +164,7 @@ Job definitions: `src/lib/inngest/functions.ts`. Served at `src/app/api/inngest/
 | cron `0 * * * *` | Hourly Shopify pull safety net |
 | cron `30 3 * * *` | Meta Ads spend (last 7 days) → `AdCampaign`/`AdMetric` (`src/lib/meta/sync-ads.ts`). Backfill: `npx tsx --env-file=.env scripts/sync-meta-ads.mts 2025-07-01` |
 
-**Meta Ads spend lives in the DB** (`AdMetric`, per campaign per day). Finance (`getFinanceBreakdown`, monthly cashflow, cashflow entries) and the "Visão mensal" tab of `/plano-q4` read it from there; don't also record Meta spend as `Expense` rows (double count).
+**Meta Ads spend lives in the DB** (`AdMetric`, per campaign per day). Finance (`getFinanceBreakdown`, monthly cashflow, cashflow entries) and `/visao-mensal` read it from there; don't also record Meta spend as `Expense` rows (double count).
 
 ### Finance / Cashflow
 

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, ShoppingBag, Package, Warehouse, Users,
   Receipt, Upload, Settings, Sparkles,
-  Calculator, Landmark, Trophy, X, ShoppingCart, Instagram, Facebook, TrendingUp, Music2, Video, Target,
+  Calculator, Landmark, Trophy, X, ShoppingCart, Instagram, Facebook, TrendingUp, Music2, Video, Target, CalendarRange,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -27,6 +27,7 @@ const nav = [
   { href: "/costs", label: "Custos", icon: Calculator },
   { href: "/encomendas", label: "Importações", icon: ShoppingCart },
   { href: "/expenses", label: "Despesas Mensais", icon: Receipt },
+  { href: "/visao-mensal", label: "Visão mensal", icon: CalendarRange },
   { href: "/imports", label: "Importar", icon: Upload },
   { href: "/settings", label: "Definições", icon: Settings },
 ];
