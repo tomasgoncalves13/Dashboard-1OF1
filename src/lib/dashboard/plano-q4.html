@@ -175,8 +175,8 @@ table.inv{min-width:1180px}
         <h2>Visão mensal</h2>
         <span class="muted" style="font-size:13px">Encomendas do site pagas desde o início (inclui as reembolsadas, como o Shopify). Não inclui as PENDING/expiradas nem as vendas a clubes. Para confirmar: Shopify → Analytics → Relatórios → Vendas ao longo do tempo, por mês.</span>
       </div>
-      <div class="scroll"><table class="inv" id="month-table" style="min-width:760px"></table></div>
-      <p class="muted" style="font-size:13px">Faturação = total cobrado ao cliente (produtos + envio, depois de descontos). Líquido = faturação − reembolsos. Clica num mês para ver os produtos e as variantes.</p>
+      <div class="scroll"><table class="inv" id="month-table" style="min-width:1000px"></table></div>
+      <p class="muted" style="font-size:13px">Faturação = total cobrado ao cliente (produtos + envio, depois de descontos). Líquido = faturação − reembolsos. Anúncios Meta = gasto na conta de anúncios 1OF1 Fútbol (é a única conta), lido da Meta em cada visita. Não inclui promoções pagas pela app do Instagram no telemóvel nem outras plataformas. "Líquido ÷ ads" é o ROAS real: vendas todas do mês a dividir pelo gasto, e não só as que a Meta atribui aos anúncios. Clica num mês para ver os produtos e as variantes.</p>
     </section>
     <section class="panel">
       <h2>Produtos e variantes por mês</h2>
@@ -876,10 +876,16 @@ function renderMonthly(){
   const e2=v=>"€"+v.toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2});
   const lbl=k=>{const [y,m]=k.split("-");return MESES[Number(m)-1]+" "+y;};
   if(!ms.length){document.getElementById("month-table").innerHTML=`<tbody><tr><td class="muted">Sem dados (só aparecem dentro da app).</td></tr></tbody>`;return;}
-  const tot=ms.reduce((a,m)=>({orders:a.orders+m.orders,gross:a.gross+m.gross,shipping:a.shipping+m.shipping,discounts:a.discounts+m.discounts,refunds:a.refunds+m.refunds,over40:a.over40+m.over40}),{orders:0,gross:0,shipping:0,discounts:0,refunds:0,over40:0});
+  const tot=ms.reduce((a,m)=>({orders:a.orders+m.orders,gross:a.gross+m.gross,shipping:a.shipping+m.shipping,discounts:a.discounts+m.discounts,refunds:a.refunds+m.refunds,over40:a.over40+m.over40,adSpend:a.adSpend==null||m.adSpend==null?null:a.adSpend+m.adSpend}),{orders:0,gross:0,shipping:0,discounts:0,refunds:0,over40:0,adSpend:0});
   const units=m=>m.products.reduce((a,p)=>a+p.qty,0);
-  const row=(l,m,u)=>`<td>${l}</td><td>${m.orders}</td><td>${e2(m.gross)}</td><td>${e2(m.discounts)}</td><td>${e2(m.shipping)}</td><td>${m.refunds?e2(m.refunds):"—"}</td><td><b>${e2(m.gross-m.refunds)}</b></td><td>${e2(m.orders?m.gross/m.orders:0)}</td><td>${m.orders?Math.round(m.over40/m.orders*100):0}%</td><td>${u}</td>`;
-  document.getElementById("month-table").innerHTML=`<thead><tr><th>Mês</th><th>Encomendas</th><th>Faturação</th><th>Descontos</th><th>Envio cobrado</th><th>Reembolsos</th><th>Líquido</th><th>Ticket médio</th><th>≥ €40</th><th>Unidades</th></tr></thead><tbody>
+  const ads=m=>{
+    if(m.adSpend==null) return `<td class="muted">sem ligação</td><td></td><td></td>`;
+    if(!m.adSpend) return `<td class="zero">—</td><td class="zero">—</td><td class="zero">—</td>`;
+    const net=m.gross-m.refunds;
+    return `<td class="neg">${e2(m.adSpend)}</td><td>${m.orders?e2(m.adSpend/m.orders):"—"}</td><td>${(net/m.adSpend).toLocaleString("pt-PT",{minimumFractionDigits:2,maximumFractionDigits:2})}×</td>`;
+  };
+  const row=(l,m,u)=>`<td>${l}</td><td>${m.orders}</td><td>${e2(m.gross)}</td><td>${e2(m.discounts)}</td><td>${e2(m.shipping)}</td><td>${m.refunds?e2(m.refunds):"—"}</td><td><b>${e2(m.gross-m.refunds)}</b></td>${ads(m)}<td>${m.orders?e2(m.gross/m.orders):"—"}</td><td>${m.orders?Math.round(m.over40/m.orders*100):0}%</td><td>${u}</td>`;
+  document.getElementById("month-table").innerHTML=`<thead><tr><th>Mês</th><th>Encomendas</th><th>Faturação</th><th>Descontos</th><th>Envio cobrado</th><th>Reembolsos</th><th>Líquido</th><th>Anúncios Meta</th><th>Ads por encomenda</th><th>Líquido ÷ ads</th><th>Ticket médio</th><th>≥ €40</th><th>Unidades</th></tr></thead><tbody>
     ${ms.map(m=>`<tr>${row(`<a href="#m-${m.month}">${lbl(m.month)}</a>`,m,units(m))}</tr>`).join("")}</tbody>
     <tfoot><tr>${row("Total",tot,ms.reduce((a,m)=>a+units(m),0))}</tr></tfoot>`;
   document.getElementById("month-detail").innerHTML=ms.slice().reverse().map(m=>`<details id="m-${m.month}" style="margin-bottom:8px"><summary><b>${lbl(m.month)}</b> <span class="muted">· ${m.orders} encomendas · ${e2(m.gross)} · ${units(m)} unidades</span></summary>

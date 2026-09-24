@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { getAdSpendMonthly } from "@/lib/meta/graph";
 
 // Dados reais para o simulador do Plano Q4 (src/lib/dashboard/plano-q4.html):
 // stock por item físico, consumo do site desde que os ads arrancaram e vendas a clubes.
@@ -22,6 +23,8 @@ type MonthSummary = {
   discounts: number;
   refunds: number;
   over40: number; // encomendas com subtotal ≥ €40
+  adSpend: number | null; // gasto na conta de anúncios Meta (null = API indisponível)
+  metaPurchases: number; // compras atribuídas pela Meta
   products: { title: string; qty: number; revenue: number; variants: { title: string; qty: number; revenue: number }[] }[];
 };
 
@@ -39,7 +42,7 @@ async function getMonths(storeId: string): Promise<MonthSummary[]> {
   for (const o of orders) {
     const key = monthOf.format(o.processedAt).slice(0, 7);
     let m = byMonth.get(key);
-    if (!m) byMonth.set(key, (m = { month: key, orders: 0, gross: 0, shipping: 0, discounts: 0, refunds: 0, over40: 0, products: [], map: new Map() }));
+    if (!m) byMonth.set(key, (m = { month: key, orders: 0, gross: 0, shipping: 0, discounts: 0, refunds: 0, over40: 0, adSpend: 0, metaPurchases: 0, products: [], map: new Map() }));
     m.orders++;
     m.gross += Number(o.total);
     m.shipping += Number(o.shippingCharged);
@@ -59,8 +62,26 @@ async function getMonths(storeId: string): Promise<MonthSummary[]> {
       p.v.set(vt, v);
     }
   }
-  return [...byMonth.values()].map(({ map, ...m }) => ({
+  // Gasto em anúncios Meta por mês, direto da conta de anúncios
+  const ads = new Map<string, { spend: number; purchases: number }>();
+  let adsOk = true;
+  try {
+    const first = orders[0]?.processedAt.toISOString().slice(0, 7) ?? "2025-07";
+    for (const r of await getAdSpendMonthly(`${first}-01`, new Date().toISOString().slice(0, 10))) {
+      const purchases = Number(r.actions?.find((a) => a.action_type === "purchase")?.value ?? 0);
+      ads.set(r.date_start.slice(0, 7), { spend: Number(r.spend), purchases });
+    }
+  } catch {
+    adsOk = false;
+  }
+  for (const key of ads.keys()) {
+    if (!byMonth.has(key)) byMonth.set(key, { month: key, orders: 0, gross: 0, shipping: 0, discounts: 0, refunds: 0, over40: 0, adSpend: 0, metaPurchases: 0, products: [], map: new Map() });
+  }
+
+  return [...byMonth.values()].sort((a, b) => a.month.localeCompare(b.month)).map(({ map, ...m }) => ({
     ...m,
+    adSpend: adsOk ? (ads.get(m.month)?.spend ?? 0) : null,
+    metaPurchases: ads.get(m.month)?.purchases ?? 0,
     products: [...map.entries()]
       .map(([title, p]) => ({ title, qty: p.qty, revenue: p.revenue, variants: [...p.v.entries()].map(([t, v]) => ({ title: t, ...v })).sort((a, b) => b.qty - a.qty) }))
       .sort((a, b) => b.qty - a.qty),

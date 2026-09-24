@@ -105,6 +105,17 @@ export async function getAdAccountInsightsDaily(since: string, until: string): P
   return data.data;
 }
 
+// Gasto por mês na conta de anúncios (meses sem gasto não vêm na resposta).
+export async function getAdSpendMonthly(since: string, until: string): Promise<AdsInsight[]> {
+  const data = await get<{ data: AdsInsight[] }>(`${adAccountPath()}/insights`, adsToken(), {
+    fields: "spend,actions,action_values,date_start,date_stop",
+    time_range: JSON.stringify({ since, until }),
+    time_increment: "monthly",
+    level: "account",
+  });
+  return data.data;
+}
+
 export async function getCampaignInsights(since: string, until: string): Promise<CampaignInsight[]> {
   const data = await get<{ data: CampaignInsight[] }>(`${adAccountPath()}/insights`, adsToken(), {
     fields: "campaign_id,campaign_name,spend,impressions,clicks,ctr,cpc,cpm,reach,purchase_roas,actions,action_values",
