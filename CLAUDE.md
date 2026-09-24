@@ -161,6 +161,9 @@ Job definitions: `src/lib/inngest/functions.ts`. Served at `src/app/api/inngest/
 | `profit/recalculate.all` | Retroactive profit recalculation + 90 days of snapshots |
 | cron `0 3 * * *` | Daily snapshot refresh (7 days) |
 | cron `0 * * * *` | Hourly Shopify pull safety net |
+| cron `30 3 * * *` | Meta Ads spend (last 7 days) → `AdCampaign`/`AdMetric` (`src/lib/meta/sync-ads.ts`). Backfill: `npx tsx --env-file=.env scripts/sync-meta-ads.mts 2025-07-01` |
+
+**Meta Ads spend lives in the DB** (`AdMetric`, per campaign per day). Finance (`getFinanceBreakdown`, monthly cashflow, cashflow entries) and the "Visão mensal" tab of `/plano-q4` read it from there; don't also record Meta spend as `Expense` rows (double count).
 
 ### Finance / Cashflow
 

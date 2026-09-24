@@ -105,15 +105,38 @@ export async function getAdAccountInsightsDaily(since: string, until: string): P
   return data.data;
 }
 
-// Gasto por mês na conta de anúncios (meses sem gasto não vêm na resposta).
-export async function getAdSpendMonthly(since: string, until: string): Promise<AdsInsight[]> {
-  const data = await get<{ data: AdsInsight[] }>(`${adAccountPath()}/insights`, adsToken(), {
-    fields: "spend,actions,action_values,date_start,date_stop",
-    time_range: JSON.stringify({ since, until }),
-    time_increment: "monthly",
-    level: "account",
-  });
-  return data.data;
+export interface CampaignDailyInsight {
+  campaign_id: string;
+  campaign_name: string;
+  spend: string;
+  impressions: string;
+  clicks: string;
+  actions?: { action_type: string; value: string }[];
+  action_values?: { action_type: string; value: string }[];
+  date_start: string;
+}
+
+// Gasto diário por campanha, com paginação e sem cache (para guardar na base de dados).
+export async function getCampaignInsightsDaily(since: string, until: string): Promise<CampaignDailyInsight[]> {
+  const out: CampaignDailyInsight[] = [];
+  let next: string | undefined = await (async () => {
+    const url = new URL(`${BASE}${adAccountPath()}/insights`);
+    url.searchParams.set("access_token", adsToken());
+    url.searchParams.set("fields", "campaign_id,campaign_name,spend,impressions,clicks,actions,action_values,date_start");
+    url.searchParams.set("time_range", JSON.stringify({ since, until }));
+    url.searchParams.set("time_increment", "1");
+    url.searchParams.set("level", "campaign");
+    url.searchParams.set("limit", "500");
+    return url.toString();
+  })();
+  while (next) {
+    const res: Response = await fetch(next, { cache: "no-store" });
+    const data: { data: CampaignDailyInsight[]; paging?: { next?: string }; error?: { message: string } } = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    out.push(...data.data);
+    next = data.paging?.next;
+  }
+  return out;
 }
 
 export async function getCampaignInsights(since: string, until: string): Promise<CampaignInsight[]> {

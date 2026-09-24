@@ -1,6 +1,6 @@
 import { prisma } from "@/lib/prisma";
 import { getPhysicalKpis, getEupagoNet } from "@/lib/dashboard/kpis";
-import { getAdAccountInsights } from "@/lib/meta/graph";
+import { getStoredMetaAdSpend } from "@/lib/meta/sync-ads";
 import { getAdAccountInsights as getGoogleAdAccountInsights } from "@/lib/google-ads/client";
 import { ymd } from "@/lib/dashboard/range";
 
@@ -109,6 +109,32 @@ export async function getCashflowEntries(
     });
   }
 
+  // Cash OUT: Meta Ads (guardado na base de dados), uma linha por mês
+  const adDays = await prisma.adMetric.groupBy({
+    by: ["date"],
+    where: { campaign: { storeId, provider: "META" }, date: { gte: from, lte: to } },
+    _sum: { spend: true },
+  });
+  const adMonths = new Map<string, { spend: number; last: Date }>();
+  for (const d of adDays) {
+    const key = d.date.toISOString().slice(0, 7);
+    const m = adMonths.get(key) ?? { spend: 0, last: d.date };
+    m.spend += Number(d._sum.spend ?? 0);
+    if (d.date > m.last) m.last = d.date;
+    adMonths.set(key, m);
+  }
+  for (const [month, m] of adMonths) {
+    if (m.spend <= 0) continue;
+    entries.push({
+      date: m.last,
+      type: "OUT",
+      source: "Meta Ads",
+      description: `Gasto em anúncios (${month})`,
+      amount: m.spend,
+      net: -m.spend,
+    });
+  }
+
   return entries.sort((a, b) => b.date.getTime() - a.date.getTime());
 }
 
@@ -124,7 +150,7 @@ export async function getMonthlyCashflow(
     const from = d;
     const to = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 1));
 
-    const [payoutAgg, eupagoNet, expenseAgg, influencerAgg] = await Promise.all([
+    const [payoutAgg, eupagoNet, expenseAgg, influencerAgg, metaAds] = await Promise.all([
       prisma.payout.aggregate({
         where: { storeId, issuedAt: { gte: from, lt: to }, status: { in: ["PAID", "IN_TRANSIT"] } },
         _sum: { net: true },
@@ -138,12 +164,13 @@ export async function getMonthlyCashflow(
         where: { influencer: { storeId }, paidAt: { gte: from, lt: to } },
         _sum: { amount: true },
       }),
+      getStoredMetaAdSpend(storeId, from, new Date(to.getTime() - 1)),
     ]);
 
     const cashIn =
       Number(payoutAgg._sum.net ?? 0) + eupagoNet.net;
     const cashOut =
-      Number(expenseAgg._sum.amount ?? 0) + Number(influencerAgg._sum.amount ?? 0);
+      Number(expenseAgg._sum.amount ?? 0) + Number(influencerAgg._sum.amount ?? 0) + metaAds;
 
     result.push({
       month: `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}`,
@@ -187,7 +214,7 @@ export async function getFinanceBreakdown(storeId: string, from: Date, to: Date)
     payoutAgg,
     eupagoNet,
     onlineOrderAgg,
-    adsInsight,
+    metaAdsSpend,
     googleAdsInsight,
     recurringAgg,
     academiaAgg,
@@ -205,7 +232,7 @@ export async function getFinanceBreakdown(storeId: string, from: Date, to: Date)
       where: { storeId, processedAt: { gte: from, lte: to }, financialStatus: "PAID" },
       _sum: { cogsTotal: true, packagingCost: true, paymentFees: true, shippingCost: true, total: true },
     }),
-    getAdAccountInsights(ymd(from), ymd(to)).catch(() => null),
+    getStoredMetaAdSpend(storeId, from, to),
     getGoogleAdAccountInsights(ymd(from), ymd(to)).catch(() => null),
     prisma.expense.aggregate({
       where: { storeId, incurredOn: { gte: from, lte: to }, recurring: true },
@@ -240,7 +267,7 @@ export async function getFinanceBreakdown(storeId: string, from: Date, to: Date)
     Number(onlineOrderAgg._sum.cogsTotal ?? 0) + Number(onlineOrderAgg._sum.packagingCost ?? 0);
   const onlineOrderCost =
     onlineCogsCost + Number(onlineOrderAgg._sum.paymentFees ?? 0) + onlineShippingCost;
-  const facebookAdsCost = Number(adsInsight?.spend ?? 0);
+  const facebookAdsCost = metaAdsSpend;
   const googleAdsCost = Number(googleAdsInsight?.spend ?? 0);
   const monthlyExpensesCost = Number(recurringAgg._sum.amount ?? 0);
   const academiaCost = Number(academiaAgg._sum.amount ?? 0);

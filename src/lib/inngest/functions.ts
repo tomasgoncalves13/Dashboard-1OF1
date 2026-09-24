@@ -114,7 +114,24 @@ export const midnightShopifyPull = inngest.createFunction(
   },
 );
 
+// Daily: guarda o gasto Meta dos últimos 7 dias (a Meta ainda ajusta os valores durante uns dias).
+export const dailyMetaAdSpendSync = inngest.createFunction(
+  { id: "meta-ad-spend-daily", retries: 3 },
+  { cron: "30 3 * * *" },
+  async ({ step }) => {
+    const { prisma } = await import("@/lib/prisma");
+    const { syncMetaAdSpend } = await import("@/lib/meta/sync-ads");
+    const until = new Date().toISOString().slice(0, 10);
+    const since = new Date(Date.now() - 7 * 86_400_000).toISOString().slice(0, 10);
+    const stores = await prisma.store.findMany({ select: { id: true } });
+    for (const s of stores) {
+      await step.run(`meta-ads-${s.id}`, () => syncMetaAdSpend(s.id, since, until));
+    }
+  },
+);
+
 export const functions = [
+  dailyMetaAdSpendSync,
   shopifyFullSync,
   shopifyIncrementalSync,
   shopifyOrderUpdated,
