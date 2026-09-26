@@ -38,7 +38,11 @@ export function SpendChart({ data }: { data: DaySpend[] }) {
         />
         <YAxis tick={{ fontSize: 11 }} tickFormatter={(v) => `€${v}`} width={48} />
         <Tooltip
-          formatter={(v: number, name: string) => [fmt(v), LABELS[name] ?? name]}
+          formatter={(v: number, name: string) => {
+            if (name !== "profit") return [fmt(v), LABELS[name] ?? name];
+            const color = v >= 0 ? "#16a34a" : "#dc2626";
+            return [<span style={{ color }}>{fmt(v)}</span>, <span style={{ color }}>{LABELS.profit}</span>];
+          }}
           labelFormatter={(l) => {
             const d = new Date(l);
             return d.toLocaleDateString("pt-PT");
@@ -49,7 +53,19 @@ export function SpendChart({ data }: { data: DaySpend[] }) {
         <Bar dataKey="pending" name="pending" stackId="ganho" fill="#eab308" radius={[3, 3, 0, 0]} />
         <Bar dataKey="spend" name="spend" fill="#ef4444" radius={[3, 3, 0, 0]} />
         <ReferenceLine y={0} className="stroke-muted-foreground" />
-        <Line dataKey="profit" name="profit" type="monotone" stroke="#3b82f6" strokeWidth={2} dot={{ r: 3 }} />
+        <Line
+          dataKey="profit"
+          name="profit"
+          type="monotone"
+          stroke="#3b82f6"
+          strokeWidth={2}
+          dot={(p: { cx?: number; cy?: number; value?: number; index?: number }) => (
+            <circle key={p.index} cx={p.cx} cy={p.cy} r={3} fill={(p.value ?? 0) >= 0 ? "#16a34a" : "#dc2626"} />
+          )}
+          activeDot={(p: { cx?: number; cy?: number; value?: number }) => (
+            <circle cx={p.cx} cy={p.cy} r={5} fill={(p.value ?? 0) >= 0 ? "#16a34a" : "#dc2626"} />
+          )}
+        />
       </ComposedChart>
     </ResponsiveContainer>
   );
