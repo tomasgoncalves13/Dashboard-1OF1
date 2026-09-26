@@ -202,6 +202,7 @@ table.inv{min-width:1180px}
     <div class="timeline">
       <div class="tl"><div class="when">Até 3 Out<small>esta semana e a próxima</small></div><ul>
         <li class="hot">Fechar a encomenda de caneleiras Built-In (Zhejiang Fele) e de meias/sleeves (betopmax), com chegada até ~10 Nov. Perguntar se há envio aéreo.</li>
+        <li class="hot">Na Zhejiang, incluir os 2 tamanhos novos de criança com manga de criança: M (12x6) e L (14x6). São novos: pedir foto da amostra.</li>
         <li>Enviar produto a 10–15 influencers já, para ter o conteúdo pronto antes da Black Week.</li>
         <li>Pop-up de email na loja ("acesso antecipado à Black Friday") para começar a lista.</li>
       </ul></div>
@@ -269,8 +270,8 @@ table.inv{min-width:1180px}
         <div class="ctl"><label for="inv-gift-kids">Meia de oferta em tamanho Kids %</label><input type="number" id="inv-gift-kids" min="0" max="100" step="5"></div>
         <div class="ctl"><label for="inv-min-sleeve">Mínimo de sleeves por variante</label><input type="number" id="inv-min-sleeve" min="0" step="5"></div>
         <div class="ctl"><label for="inv-floor">Meias e sleeves: mínimo por 100 encomendas, por variante</label><input type="number" id="inv-floor" min="0" max="20" step="0.5"></div>
-        <div class="ctl"><label for="inv-fix-s">Built-In S a encomendar (Zhejiang)</label><input type="number" id="inv-fix-s" min="0" step="10"></div>
-        <div class="ctl"><label for="inv-fix-m">Built-In M a encomendar (Zhejiang)</label><input type="number" id="inv-fix-m" min="0" step="10"></div>
+        <div class="ctl"><label for="inv-kl-pct">Criança Grande (14x6): vendas em % do Criança Médio</label><input type="number" id="inv-kl-pct" min="0" max="200" step="10"></div>
+        <div class="ctl"><label for="inv-zmin">Built-In: mínimo da encomenda (Zhejiang)</label><input type="number" id="inv-zmin" min="0" step="50"></div>
       </div>
     </section>
 
@@ -280,7 +281,7 @@ table.inv{min-width:1180px}
         <label style="font-size:14px;display:flex;gap:8px;align-items:center"><input type="checkbox" id="clubs-on"> Incluir clubes nas contas</label>
       </div>
       <div class="scroll"><table class="inv" id="clubs-table" style="min-width:1180px"></table></div>
-      <p class="muted" style="font-size:13px">Unidades por mês e por clube, de agora até 31 Jan. Nos clubes as meias são <b>sempre Kids</b> e as caneleiras nunca são XL. Caneleiras por variante: Criança Pequeno gasta uma S, Adulto Pequeno uma M e Adulto Médio uma L (nunca XL nos clubes). Rio Tinto: no ano passado venderam-se ~20 caneleiras entre Nov e Jan, sobretudo de criança, daí 7/mês.</p>
+      <p class="muted" style="font-size:13px">Unidades por mês e por clube, de agora até 31 Jan. Nos clubes as meias são <b>sempre Kids</b> e as caneleiras nunca são XL. Caneleiras por variante: Criança Pequeno gasta uma S, Criança Médio uma M Criança (12x6), Criança Grande uma L Criança (14x6), Adulto Pequeno uma M e Adulto Médio uma L (nunca XL nos clubes). Os tamanhos de criança M e L são novos: mete aqui quantos cada clube vai vender. Rio Tinto: no ano passado venderam-se ~20 caneleiras entre Nov e Jan, sobretudo de criança, daí 7/mês.</p>
     </section>
 
     <section class="kpis" id="inv-kpis" aria-label="Resumo do inventário"></section>
@@ -296,6 +297,7 @@ table.inv{min-width:1180px}
       </div>
       <div class="scroll"><table class="inv" id="inv-table"></table></div>
       <p class="muted" style="font-size:13px">"Por 100 enc." = unidades gastas por cada 100 encomendas do site. A Grip Sock Branca inclui a <b>meia de oferta (1 por encomenda)</b>. Se o cliente puder escolher o tamanho da oferta, a parte "Kids %" sai do stock Branco Kids e não do Adulto. Por defeito são 35%, que é a parte de caneleiras de criança vendidas no site desde 9 Set (15 de 42). Mete 0% para ver como está hoje. Nas meias e sleeves, as variantes que venderam pouco ou nada contam com um consumo mínimo (campo acima, 2 por cada 100 encomendas, o mesmo que as cores que menos vendem), porque com mais vendas e ads de todas as cores podem começar a sair. Encomendar = (precisa até 31 Jan × (1 + margem) − stock), arredondado às dezenas.</p>
+      <p class="muted" style="font-size:13px"><b>Caneleiras Built-In (26 Set):</b> a criança passa a ter manga de criança em 3 tamanhos: S (10x6, Criança Pequeno / MINI), <b>M Criança (12x6, Criança Médio / MIDI)</b> e <b>L Criança (14x6, Criança Grande / MAXI)</b>. O M de adulto fica só para o Adulto Pequeno. O consumo vem das variantes vendidas no site desde 9 Set. Até a encomenda chegar (data acima), o Criança Médio continua a sair do M e o Criança Grande do L. O Criança Grande nunca vendeu, por isso é estimado em % do Criança Médio (campo acima). Se as necessidades não chegarem ao mínimo da Zhejiang, o resto vai para o tamanho que fica com menos semanas de stock a 31 Jan.</p>
     </section>
 
     <section class="panel">
@@ -342,7 +344,7 @@ table.inv{min-width:1180px}
       </div>
       <p id="ship-plan-note" style="font-size:14px;margin:0 0 12px"></p>
       <div class="shop" id="ship-orders"></div>
-      <p class="muted" style="font-size:13px">Quantidades = lista de compras da aba Inventário (Built-In fixo em 500: S e M lá em cima). Cada fornecedor manda tudo junto num só envio, de comboio se chegar antes de alguma coisa esgotar, senão de avião (opção "Por fornecedor"; podes escolher outra em "Comparação"). As sock sleeves já feitas saem logo, todas juntas, de avião. Se alguma cor/tamanho ainda tiver de ser produzida, vem com as grip socks. "Em falta" = vendas que se perdem entre o dia em que a variante esgota e o dia em que o envio chega. O botão copia a lista em inglês para mandar ao fornecedor.</p>
+      <p class="muted" style="font-size:13px">Quantidades = lista de compras da aba Inventário (Built-In por tamanho, arredondado ao mínimo de 500 da Zhejiang; M e L Criança são tamanhos novos). Cada fornecedor manda tudo junto num só envio, de comboio se chegar antes de alguma coisa esgotar, senão de avião (opção "Por fornecedor"; podes escolher outra em "Comparação"). As sock sleeves já feitas saem logo, todas juntas, de avião. Se alguma cor/tamanho ainda tiver de ser produzida, vem com as grip socks. "Em falta" = vendas que se perdem entre o dia em que a variante esgota e o dia em que o envio chega. O botão copia a lista em inglês para mandar ao fornecedor.</p>
     </section>
 
     <section class="panel">
@@ -405,10 +407,14 @@ const FAMILIES=[
   {k:"mailer",nome:"Embalagem",sup:"seawavelabels",en:"Bubble Mailers"}
 ];
 const ITEMS=[
-  {f:"builtin",n:"Built-In S",en:"S",stock:374,cost:2.84,shop:18,club:8},
-  {f:"builtin",n:"Built-In M",en:"M",stock:310,cost:2.84,shop:26,club:8},
-  {f:"builtin",n:"Built-In L",en:"L",stock:234,cost:2.84,shop:5,club:5},
-  {f:"builtin",n:"Built-In XL",en:"XL",stock:47,cost:2.84,shop:0},
+  // Tamanhos físicos (26 Set 2026): criança = manga de criança em 3 tamanhos (S 10x6, M 12x6, L 14x6).
+  // M, L e XL de adulto só servem adultos. "sub" = tamanho que se manda enquanto o novo não chega.
+  {f:"builtin",code:"S",n:"S · Criança Pequeno (10x6)",en:"S kids (10x6 pad, kids sleeve)",stock:374,cost:2.84,shop:5,club:8},
+  {f:"builtin",code:"KM",n:"M Criança · Criança Médio (12x6)",en:"M kids (12x6 pad, kids sleeve) - NEW SIZE",stock:0,cost:2.84,shop:5,sub:"M"},
+  {f:"builtin",code:"KL",n:"L Criança · Criança Grande (14x6)",en:"L kids (14x6 pad, kids sleeve) - NEW SIZE",stock:0,cost:2.84,shop:0,sub:"L"},
+  {f:"builtin",code:"M",n:"M · Adulto Pequeno",en:"M adults",stock:305,cost:2.84,shop:21,club:8},
+  {f:"builtin",code:"L",n:"L · Adulto Médio",en:"L adults",stock:232,cost:2.84,shop:7,club:5},
+  {f:"builtin",code:"XL",n:"XL · Adulto Grande",en:"XL adults",stock:47,cost:2.84,shop:0},
   {f:"grip",n:"Branco · Adulto",en:"White – adults",stock:717,cost:0.88,shop:54,gift:1,giftSide:"A"},
   {f:"grip",n:"Preto · Adulto",en:"Black – adults",stock:75,cost:0.88,shop:9},
   {f:"grip",n:"Azul · Adulto",en:"Blue – adults",stock:98,cost:0.88,shop:1},
@@ -445,18 +451,18 @@ const ITEMS=[
 ];
 // Clubes: vendas previstas por mês, de 24 Set a 31 Jan. Nos clubes as meias são SEMPRE Kids.
 const CLUBS_INIT=[
-  {id:"candal",nome:"Candal",cor:"Azul",corMes:10,branco:10,preto:10,canS:1,canM:1,canL:0,m8c:1,m8p:2,m10c:0,m10p:0,a15:0,a9:0},
-  {id:"canidelo",nome:"Canidelo",cor:"Verde",corMes:10,branco:10,preto:10,canS:1,canM:1,canL:0,m8c:2,m8p:1,m10c:0,m10p:0,a15:0,a9:0},
-  {id:"riotinto",nome:"Rio Tinto",cor:"Amarelo",corMes:10,branco:10,preto:10,canS:3,canM:3,canL:1,m8c:1,m8p:1,m10c:1,m10p:1,a15:1,a9:1}
+  {id:"candal",nome:"Candal",cor:"Azul",corMes:10,branco:10,preto:10,canS:1,canKM:0,canKL:0,canM:1,canL:0,m8c:1,m8p:2,m10c:0,m10p:0,a15:0,a9:0},
+  {id:"canidelo",nome:"Canidelo",cor:"Verde",corMes:10,branco:10,preto:10,canS:1,canKM:0,canKL:0,canM:1,canL:0,m8c:2,m8p:1,m10c:0,m10p:0,a15:0,a9:0},
+  {id:"riotinto",nome:"Rio Tinto",cor:"Amarelo",corMes:10,branco:10,preto:10,canS:3,canKM:0,canKL:0,canM:3,canL:1,m8c:1,m8p:1,m10c:1,m10p:1,a15:1,a9:1}
 ];
-// Coluna do painel de clubes → artigo físico que gasta
-const CLUB_ITEM={canS:"builtin|Built-In S",canM:"builtin|Built-In M",canL:"builtin|Built-In L",m8c:"mini|8x5 Cinza",m8p:"mini|8x5 Preto",m10c:"mini|10x6 Cinza",m10p:"mini|10x6 Preto",a15:"airflow|15x9",a9:"airflow|9x6"};
+// Coluna do painel de clubes → artigo físico que gasta (Built-In pelo código do tamanho)
+const CLUB_ITEM={canS:"builtin|S",canKM:"builtin|KM",canKL:"builtin|KL",canM:"builtin|M",canL:"builtin|L",m8c:"mini|8x5 Cinza",m8p:"mini|8x5 Preto",m10c:"mini|10x6 Cinza",m10p:"mini|10x6 Preto",a15:"airflow|15x9",a9:"airflow|9x6"};
 function clubMonthly(it,clubs){
   let m=0;
   clubs.forEach(c=>{
     const N=k=>Math.max(0,Number(c[k])||0);
     if(it.f==="grip"&&/Kids$/.test(it.n)){const cor=it.n.split(" · ")[0]; if(cor===c.cor)m+=N("corMes"); if(cor==="Branco")m+=N("branco"); if(cor==="Preto")m+=N("preto");}
-    Object.entries(CLUB_ITEM).forEach(([k,key])=>{if(key===it.f+"|"+it.n)m+=N(k);});
+    Object.entries(CLUB_ITEM).forEach(([k,key])=>{if(key===it.f+"|"+(it.f==="builtin"?it.code:it.n))m+=N(k);});
   });
   return m;
 }
@@ -465,7 +471,7 @@ let TODAY_ISO="2026-09-23", PRE_ORDERS_DAY=3.1; // 24–30 Set ao ritmo atual (4
 // Na app (/plano-q4) o servidor injeta window.__LIVE__ com stock e vendas atuais da base de dados.
 const LIVE=window.__LIVE__||null;
 const codeOf=it=>{
-  if(it.f==="builtin") return "BUILTIN-"+it.en;
+  if(it.f==="builtin") return "BUILTIN-"+it.code;
   if(it.f==="grip"||it.f==="sleeve"){const [c,a]=it.n.split(" · "); return (it.f==="grip"?"GRIP-":"SLEEVE-")+(a==="Adulto"?"A-":"K-")+c.toUpperCase();}
   if(it.f==="mini") return "MINI-"+it.n.replace(" ","-").toUpperCase();
   if(it.f==="airflow") return "AIRFLOW-"+it.n.toUpperCase();
@@ -502,7 +508,7 @@ PHASES.forEach((p,pi)=>{
   ws.forEach((w,i)=>days.push({t:a+i*DAY,pi,w:w/mean}));
 });
 
-const INV_DEFAULT={offer:"1",safety:10,arrival:"2026-12-01",mailers:200,mailerRate:1.1,giftKids:35,minSleeve:25,floorRate:2,fixS:120,fixM:380};
+const INV_DEFAULT={offer:"1",safety:10,arrival:"2026-12-01",mailers:200,mailerRate:1.1,giftKids:35,minSleeve:25,floorRate:2,klPct:50,zMin:500};
 const SHIP_INIT={pay:"2026-09-28",sample:1,prod:3,sleeveReady:1,air:2,train:5,ratio:3,zProd:4.3,zAir:2,zTrain:6.4,usd:0.86,opt:"auto"};
 let state={sc:"real",creative:-30,b:{...PRESETS.real.b},tab:"plano",inv:{...INV_DEFAULT},ship:{...SHIP_INIT},clubsOn:true,clubs:CLUBS_INIT.map(c=>({...c}))};
 try{const s=JSON.parse(localStorage.getItem("plano-q4-v2")||"null"); if(s&&s.b) state={...state,...s,inv:{...INV_DEFAULT,...(s.inv||{})},ship:{...SHIP_INIT,...(s.ship||{})},clubs:CLUBS_INIT.map(c=>({...c,...((s.clubs||[]).find(x=>x.id===c.id)||{})}))};}catch(e){}
@@ -637,17 +643,27 @@ function renderInventory(s){
   sim.daily.forEach(d=>{if(d.t>today) timeline.push({t:d.t,orders:d.orders});}); // dias já passados já saíram do stock
   const totalOrders=timeline.reduce((a,d)=>a+d.orders,0);
 
+  const rateOf=it=>{
+    if(it.mailer) return 0;
+    const floor=(it.f==="sleeve"||it.f==="grip")?Math.max(0,Number(inv.floorRate)||0)/100:0;
+    return Math.max(floor,(it.shop-(it.gift||0)*SAMPLE_ORDERS)/SAMPLE_ORDERS);
+  };
+  // Criança Grande (14x6) ainda não tem histórico: estimado em % do Criança Médio.
+  const km=ITEMS.find(x=>x.f==="builtin"&&x.code==="KM");
+  const rates=new Map(ITEMS.map(it=>[it,it.f==="builtin"&&it.code==="KL"?Math.max(rateOf(it),rateOf(km)*Math.max(0,Number(inv.klPct)||0)/100):rateOf(it)]));
   const rows=ITEMS.map(it=>{
     const stock=it.mailer?Number(inv.mailers)||0:it.stock;
-    const floor=(it.f==="sleeve"||it.f==="grip")?Math.max(0,Number(inv.floorRate)||0)/100:0;
-    const rate=it.mailer?0:Math.max(floor,(it.shop-(it.gift||0)*SAMPLE_ORDERS)/SAMPLE_ORDERS);
+    const rate=rates.get(it);
+    // Tamanhos novos: até a encomenda chegar, essas vendas saem do tamanho "sub" (ex: Criança Médio → M).
+    const subRate=ITEMS.filter(x=>x.f===it.f&&x.sub&&x.sub===it.code).reduce((a,x)=>a+rates.get(x),0);
     const kShare=Math.min(100,Math.max(0,Number(inv.giftKids)||0))/100;
     const gift=it.giftSide==="A"?1-kShare:it.giftSide==="K"?kShare:0, mRate=Number(inv.mailerRate)||1;
     const clubDay=state.clubsOn&&!it.mailer?clubMonthly(it,state.clubs)*12/365:0;
     let cum=0,needBF=0,out=null,clubCum=0; const curve=[];
     for(const d of timeline){
-      const inBW=d.t>=bwFrom&&d.t<=bwTo;
-      const per=it.mailer?1+(mRate-1)*(inBW?mult:1):gift+rate*(inBW?mult:1);
+      const inBW=d.t>=bwFrom&&d.t<=bwTo, before=d.t<arrive;
+      const r=(it.sub&&before?0:rate)+(before?subRate:0);
+      const per=it.mailer?1+(mRate-1)*(inBW?mult:1):gift+r*(inBW?mult:1);
       cum+=d.orders*per+clubDay; clubCum+=clubDay; curve.push({t:d.t,v:cum});
       if(d.t<=endBF) needBF=cum;
       if(out===null&&cum>stock) out=d.t;
@@ -655,12 +671,23 @@ function renderInventory(s){
     const per100=it.mailer?mRate*100:(gift+rate)*100;
     const want=cum*(1+(Number(inv.safety)||0)/100)-stock;
     const minSleeve=it.f==="sleeve"?Math.max(0,Number(inv.minSleeve)||0):0;
-    const auto=Math.max(cum>0&&want>0?Math.ceil(want/10)*10:0,Math.max(0,Math.ceil((minSleeve-stock)/5)*5));
-    // Built-In: encomenda fixa à Zhejiang (mínimo 500), só S e M
-    const qty=it.f==="builtin"?Math.max(0,Number(it.n==="Built-In S"?inv.fixS:it.n==="Built-In M"?inv.fixM:0)||0):auto;
+    const qty=Math.max(cum>0&&want>0?Math.ceil(want/10)*10:0,Math.max(0,Math.ceil((minSleeve-stock)/5)*5));
     const status=out===null?"ok":out<arrive?"bad":"warn";
-    return {...it,stock,per100,needBF,needJan:cum,clubJan:clubCum,out,qty,status,value:qty*(it.f==="builtin"?unit("builtin","prod")+unit("builtin","air"):(it.cost||0)),curve};
+    return {...it,stock,per100,needBF,needJan:cum,clubJan:clubCum,out,qty,status,curve};
   });
+  // Built-In: a Zhejiang faz no mínimo zMin. O que faltar para lá chegar vai, 10 a 10, para o tamanho
+  // que fica com menos semanas de stock a 31 Jan (ao ritmo de janeiro).
+  {
+    const bi=rows.filter(r=>r.f==="builtin"), jan1=parse("2027-01-01"), jan31=parse("2027-01-31");
+    const janDay=r=>(cumAt(r.curve,jan31)-cumAt(r.curve,jan1))/30;
+    let tot=bi.reduce((a,r)=>a+r.qty,0);
+    const zMin=Math.max(0,Number(inv.zMin)||0);
+    while(tot<zMin&&bi.some(r=>janDay(r)>0.01)){
+      const r=bi.filter(r=>janDay(r)>0.01).reduce((a,b)=>(b.stock+b.qty-b.needJan)/janDay(b)<(a.stock+a.qty-a.needJan)/janDay(a)?b:a);
+      r.qty+=10; r.topUp=(r.topUp||0)+10; tot+=10;
+    }
+  }
+  rows.forEach(r=>{r.value=r.qty*(r.f==="builtin"?unit("builtin","prod")+unit("builtin","air"):(r.cost||0));});
   lastInv={rows,safety:(Number(inv.safety)||0)/100};
 
   renderClubs();
@@ -690,14 +717,15 @@ function renderInventory(s){
       <td class="g">${n0(sum(r=>r.needBF))}</td><td>${n0(sum(r=>r.needJan))}</td><td></td><td>${n0(sum(r=>r.qty))}</td><td>${eur(sum(r=>r.value))}</td><td>${n0(sum(r=>r.stock+r.qty))}</td><td>${n0(sum(r=>r.stock+r.qty-r.needJan))}</td></tr>`;
     rs.forEach(r=>{
       const zero=r.needJan<0.5, siteJan=r.needJan-r.clubJan, forClub=Math.round(r.qty*cl(r));
-      const flag=zero?`<span class="muted">sem vendas previstas</span>`
+      const flag=r.sub?`<span class="flag warn">tamanho novo</span> <span class="muted" style="font-size:12px">até chegar sai o ${r.sub}</span>`
+        :zero?`<span class="muted">sem vendas previstas</span>`
         :r.status==="ok"?`<span class="flag ok">chega</span>`
         :`<span class="flag ${r.status}">${r.status==="bad"?"esgota antes ~":"esgota ~"}${fmtD(r.out)}</span>`;
       const z=v=>v<0.5?' class="zero"':"";
       html+=`<tr><td>${r.n}${r.giftSide?' <span class="muted">(inclui oferta)</span>':""}</td><td>${n0(r.stock)}</td>
         <td class="g">${r.mailer?"—":r.shop}</td><td${z(r.per100)}>${r.per100.toFixed(1)}</td><td${z(siteJan)}>${n0(siteJan)}</td>
         <td class="g${r.club?"":" zero"}">${r.club||"—"}</td><td${z(r.clubJan)}>${r.clubJan<0.5?"—":n0(r.clubJan)}</td><td${z(forClub)}>${forClub?n0(forClub):"—"}</td>
-        <td class="g${zero?" zero":""}">${n0(r.needBF)}</td><td${z(r.needJan)}>${n0(r.needJan)}</td><td>${flag}</td><td><b>${r.qty?n0(r.qty):"—"}</b></td><td>${r.cost==null?"—":r.qty?eur(r.value):"—"}</td><td><b>${n0(r.stock+r.qty)}</b></td><td class="${r.stock+r.qty-r.needJan<0?"neg":""}">${n0(r.stock+r.qty-r.needJan)}</td></tr>`;
+        <td class="g${zero?" zero":""}">${n0(r.needBF)}</td><td${z(r.needJan)}>${n0(r.needJan)}</td><td>${flag}</td><td><b>${r.qty?n0(r.qty):"—"}</b>${r.topUp?` <span class="muted" style="font-size:12px">(+${r.topUp} p/ mínimo)</span>`:""}</td><td>${r.cost==null?"—":r.qty?eur(r.value):"—"}</td><td><b>${n0(r.stock+r.qty)}</b></td><td class="${r.stock+r.qty-r.needJan<0?"neg":""}">${n0(r.stock+r.qty-r.needJan)}</td></tr>`;
     });
   });
   document.getElementById("inv-table").innerHTML=html+`</tbody>`;
@@ -903,7 +931,7 @@ function renderShipControls(){
 const SHIP_CTL=[["ship-pay","pay"],["ship-sample","sample"],["ship-prod","prod"],["ship-sleeve","sleeveReady"],["ship-air","air"],["ship-train","train"],["ship-ratio","ratio"],["ship-zprod","zProd"],["ship-zair","zAir"],["ship-ztrain","zTrain"],["ship-usd","usd"]];
 
 function renderClubs(){
-  const F=[["corMes","Meia cor do clube"],["branco","Meia branca"],["preto","Meia preta"],["canS","Embutida Criança Pequeno (S)"],["canM","Embutida Adulto Pequeno (M)"],["canL","Embutida Adulto Médio (L)"],["m8c","Mini 8x5 Cinza"],["m8p","Mini 8x5 Preto"],["m10c","Mini 10x6 Cinza"],["m10p","Mini 10x6 Preto"],["a15","Airflow 15x9"],["a9","Airflow 9x6"]];
+  const F=[["corMes","Meia cor do clube"],["branco","Meia branca"],["preto","Meia preta"],["canS","Embutida Criança Pequeno (S)"],["canKM","Embutida Criança Médio (M Criança)"],["canKL","Embutida Criança Grande (L Criança)"],["canM","Embutida Adulto Pequeno (M)"],["canL","Embutida Adulto Médio (L)"],["m8c","Mini 8x5 Cinza"],["m8p","Mini 8x5 Preto"],["m10c","Mini 10x6 Cinza"],["m10p","Mini 10x6 Preto"],["a15","Airflow 15x9"],["a9","Airflow 9x6"]];
   document.getElementById("clubs-on").checked=!!state.clubsOn;
   document.getElementById("clubs-table").innerHTML=`<thead><tr><th>Clube</th>${F.map(([,l])=>`<th>${l}<br><span style="font-weight:500;text-transform:none">/ mês</span></th>`).join("")}</tr></thead><tbody>${state.clubs.map(c=>`<tr><td><b>${c.nome}</b> <span class="muted">· meia ${c.cor.toLowerCase()} Kids</span></td>${F.map(([k])=>`<td><input type="number" min="0" step="1" id="club-${c.id}-${k}" data-club="${c.id}" data-k="${k}" value="${c[k]}" aria-label="${c.nome} ${k}"></td>`).join("")}</tr>`).join("")}</tbody>`;
   document.querySelectorAll("#clubs-table input").forEach(inp=>inp.addEventListener("change",()=>{
@@ -920,8 +948,8 @@ function renderInvControls(){
   document.getElementById("inv-gift-kids").value=inv.giftKids;
   document.getElementById("inv-min-sleeve").value=inv.minSleeve;
   document.getElementById("inv-floor").value=inv.floorRate;
-  document.getElementById("inv-fix-s").value=inv.fixS;
-  document.getElementById("inv-fix-m").value=inv.fixM;
+  document.getElementById("inv-kl-pct").value=inv.klPct;
+  document.getElementById("inv-zmin").value=inv.zMin;
 }
 function renderTabs(){
   document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===state.tab)));
@@ -945,7 +973,7 @@ document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",
 SHIP_CTL.forEach(([id,k])=>{
   document.getElementById(id).addEventListener("change",e=>{state.ship[k]=e.target.value;update(id);});
 });
-[["inv-offer","offer"],["inv-safety","safety"],["inv-arrival","arrival"],["inv-mailers","mailers"],["inv-mailer-rate","mailerRate"],["inv-gift-kids","giftKids"],["inv-min-sleeve","minSleeve"],["inv-floor","floorRate"],["inv-fix-s","fixS"],["inv-fix-m","fixM"]].forEach(([id,k])=>{
+[["inv-offer","offer"],["inv-safety","safety"],["inv-arrival","arrival"],["inv-mailers","mailers"],["inv-mailer-rate","mailerRate"],["inv-gift-kids","giftKids"],["inv-min-sleeve","minSleeve"],["inv-floor","floorRate"],["inv-kl-pct","klPct"],["inv-zmin","zMin"]].forEach(([id,k])=>{
   document.getElementById(id).addEventListener("change",e=>{state.inv[k]=e.target.value;update(id);});
 });
 update();
