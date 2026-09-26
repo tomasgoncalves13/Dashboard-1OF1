@@ -278,6 +278,7 @@ table.inv{min-width:1180px}
             <option value="recent">Só desde 9 Set (ads)</option>
           </select></div>
         <div class="ctl"><label for="inv-kl-pct">Criança Grande (14x6): vendas em % do Criança Médio</label><input type="number" id="inv-kl-pct" min="0" max="200" step="10"></div>
+        <div class="ctl"><label for="inv-kids-pct">Caneleiras de criança: % do total (vazio = histórico)</label><input type="number" id="inv-kids-pct" min="0" max="100" step="5"></div>
         <div class="ctl"><label for="inv-zmin">Built-In: mínimo da encomenda (Zhejiang)</label><input type="number" id="inv-zmin" min="0" step="50"></div>
       </div>
     </section>
@@ -521,7 +522,7 @@ PHASES.forEach((p,pi)=>{
   ws.forEach((w,i)=>days.push({t:a+i*DAY,pi,w:w/mean}));
 });
 
-const INV_DEFAULT={offer:"1",safety:10,arrival:"2026-12-01",mailers:200,mailerRate:1.1,giftKids:35,minSleeve:25,floorRate:2,klRatio:50,zMin:500,sizeMix:"pooled"};
+const INV_DEFAULT={offer:"1",safety:10,arrival:"2026-12-01",mailers:200,mailerRate:1.1,giftKids:35,minSleeve:25,floorRate:2,klRatio:50,zMin:500,sizeMix:"pooled",kidsPct:50};
 const SHIP_INIT={pay:"2026-09-28",sample:1,prod:3,sleeveReady:1,air:2,train:5,ratio:3,zProd:4.3,zAir:2,zTrain:6.4,usd:0.86,opt:"auto"};
 let state={sc:"real",creative:-30,b:{...PRESETS.real.b},tab:"plano",inv:{...INV_DEFAULT},ship:{...SHIP_INIT},clubsOn:true,clubs:CLUBS_INIT.map(c=>({...c}))};
 try{const s=JSON.parse(localStorage.getItem("plano-q4-v2")||"null"); if(s&&s.b) state={...state,...s,inv:{...INV_DEFAULT,...(s.inv||{})},ship:{...SHIP_INIT,...(s.ship||{})},clubs:CLUBS_INIT.map(c=>({...c,...((s.clubs||[]).find(x=>x.id===c.id)||{})}))};}catch(e){}
@@ -670,6 +671,14 @@ function renderInventory(s){
   // Criança Grande (14x6) ainda não tem histórico: estimado em % do Criança Médio.
   const km=ITEMS.find(x=>x.f==="builtin"&&x.code==="KM");
   const rates=new Map(ITEMS.map(it=>[it,it.f==="builtin"&&it.code==="KL"?Math.max(rateOf(it),rateOf(km)*Math.max(0,Number(inv.klRatio)||0)/100):rateOf(it)]));
+  // Tendência (dono, 26 Set): a parte de criança nas caneleiras está a subir. Se houver % definida, o volume total
+  // mantém-se e reparte-se: criança = % (S / M Criança / L Criança na proporção acima), adulto = o resto.
+  {
+    const kp=Number(inv.kidsPct), bi=ITEMS.filter(x=>x.f==="builtin"), isKid=x=>["S","KM","KL"].includes(x.code);
+    const tot=bi.reduce((a,x)=>a+rates.get(x),0), kids=bi.filter(isKid).reduce((a,x)=>a+rates.get(x),0);
+    if(inv.kidsPct!==""&&kp>=0&&kp<=100&&kids>0&&kids<tot)
+      bi.forEach(x=>rates.set(x,rates.get(x)*(isKid(x)?tot*kp/100/kids:tot*(1-kp/100)/(tot-kids))));
+  }
   const rows=ITEMS.map(it=>{
     const stock=it.mailer?Number(inv.mailers)||0:it.stock;
     const rate=rates.get(it);
@@ -969,6 +978,7 @@ function renderInvControls(){
   document.getElementById("inv-kl-pct").value=inv.klRatio;
   document.getElementById("inv-mix").value=inv.sizeMix;
   document.getElementById("inv-zmin").value=inv.zMin;
+  document.getElementById("inv-kids-pct").value=inv.kidsPct;
 }
 function renderTabs(){
   document.querySelectorAll(".tabs button").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.tab===state.tab)));
@@ -992,7 +1002,7 @@ document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",
 SHIP_CTL.forEach(([id,k])=>{
   document.getElementById(id).addEventListener("change",e=>{state.ship[k]=e.target.value;update(id);});
 });
-[["inv-offer","offer"],["inv-safety","safety"],["inv-arrival","arrival"],["inv-mailers","mailers"],["inv-mailer-rate","mailerRate"],["inv-gift-kids","giftKids"],["inv-min-sleeve","minSleeve"],["inv-floor","floorRate"],["inv-kl-pct","klRatio"],["inv-mix","sizeMix"],["inv-zmin","zMin"]].forEach(([id,k])=>{
+[["inv-offer","offer"],["inv-safety","safety"],["inv-arrival","arrival"],["inv-mailers","mailers"],["inv-mailer-rate","mailerRate"],["inv-gift-kids","giftKids"],["inv-min-sleeve","minSleeve"],["inv-floor","floorRate"],["inv-kl-pct","klRatio"],["inv-mix","sizeMix"],["inv-kids-pct","kidsPct"],["inv-zmin","zMin"]].forEach(([id,k])=>{
   document.getElementById(id).addEventListener("change",e=>{state.inv[k]=e.target.value;update(id);});
 });
 update();
