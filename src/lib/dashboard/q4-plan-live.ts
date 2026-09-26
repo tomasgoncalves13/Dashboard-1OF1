@@ -21,6 +21,8 @@ export type Q4PlanLive = {
   sampleOrders: number;
   ordersPerDay: number;
   items: Record<string, { stock: number; site: number; club: number }>;
+  // Caneleiras Embutidas vendidas no site por tamanho físico: época passada (Out 2025–Jan 2026) e desde sempre.
+  builtInMix: { season: Record<string, number>; all: Record<string, number> };
 };
 
 export async function getQ4PlanLive(storeId: string): Promise<Q4PlanLive> {
@@ -38,7 +40,7 @@ export async function getQ4PlanLive(storeId: string): Promise<Q4PlanLive> {
   });
   const orderIds = orders.map((o) => o.shopifyId).filter((id): id is string => !!id);
 
-  const [items, site, club, builtInLines] = await Promise.all([
+  const [items, site, club, builtInLines, builtInAll] = await Promise.all([
     prisma.inventoryItem.findMany({ where: { storeId }, select: { id: true, code: true, stockOnHand: true } }),
     prisma.stockMovement.groupBy({
       by: ["inventoryItemId"],
@@ -54,12 +56,38 @@ export async function getQ4PlanLive(storeId: string): Promise<Q4PlanLive> {
       where: { orderId: { in: orders.map((o) => o.id) }, variant: { product: { title: { contains: "Embutidas" } } } },
       select: { quantity: true, variant: { select: { title: true, product: { select: { title: true } } } } },
     }),
+    prisma.orderItem.findMany({
+      where: {
+        order: {
+          storeId,
+          channel: "SHOPIFY",
+          financialStatus: { in: ["PAID", "PARTIALLY_REFUNDED"] },
+          cancelledAt: null,
+        },
+        variant: { product: { title: { contains: "Embutidas" } } },
+      },
+      select: {
+        quantity: true,
+        order: { select: { processedAt: true } },
+        variant: { select: { title: true, product: { select: { title: true } } } },
+      },
+    }),
   ]);
 
-  const builtInSite: Record<string, number> = { "BUILTIN-S": 0, "BUILTIN-KM": 0, "BUILTIN-KL": 0, "BUILTIN-M": 0, "BUILTIN-L": 0, "BUILTIN-XL": 0 };
+  const sizes = () => ({ "BUILTIN-S": 0, "BUILTIN-KM": 0, "BUILTIN-KL": 0, "BUILTIN-M": 0, "BUILTIN-L": 0, "BUILTIN-XL": 0 }) as Record<string, number>;
+  const builtInSite = sizes();
   for (const l of builtInLines) {
     const code = l.variant && builtInCode(l.variant.product.title, l.variant.title);
     if (code) builtInSite[code] += l.quantity;
+  }
+  const season = sizes();
+  const all = sizes();
+  for (const l of builtInAll) {
+    const code = l.variant && builtInCode(l.variant.product.title, l.variant.title);
+    if (!code) continue;
+    all[code] += l.quantity;
+    const t = l.order.processedAt.getTime();
+    if (t >= Date.UTC(2025, 9, 1) && t < Date.UTC(2026, 1, 1)) season[code] += l.quantity;
   }
 
   const sold = (rows: typeof site, id: string) => -(rows.find((r) => r.inventoryItemId === id)?._sum.quantity ?? 0);
@@ -69,6 +97,7 @@ export async function getQ4PlanLive(storeId: string): Promise<Q4PlanLive> {
     today,
     sampleOrders: orders.length,
     ordersPerDay: Math.round((orders.length / days) * 10) / 10,
+    builtInMix: { season, all },
     items: Object.fromEntries(
       items.map((i) => [
         i.code,
